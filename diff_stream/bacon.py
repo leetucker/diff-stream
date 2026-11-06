@@ -76,7 +76,9 @@ class BaconResult:
     def summary(self):
         """Weights, within-type weighted estimates and contributions by type."""
         table = self._table.group_by("comparison_type", maintain_order=True).agg(
-            pl.len().alias("n_comparisons"), pl.col("weight").sum(), pl.col("contribution").sum()
+            pl.len().cast(pl.UInt32).alias("n_comparisons"),
+            pl.col("weight").sum(),
+            pl.col("contribution").sum(),
         )
         if self.diagnostics.get("covariate_adjusted", False):
             within = self.within_timing().with_columns(

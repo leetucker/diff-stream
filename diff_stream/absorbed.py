@@ -543,7 +543,7 @@ def drop_unimputable(store, terms, anticipation):
     totals, by_cell = pl.collect_all(
         [
             treated.select(
-                (weight * pl.col("__unimputable")).sum().alias("dropped"),
+                (weight * pl.col("__unimputable").cast(pl.Float64)).sum().alias("dropped"),
                 (weight + 0 * pl.col("y")).sum().alias("treated"),
                 pl.col("__unimputable").sum().alias("rows"),
             ),

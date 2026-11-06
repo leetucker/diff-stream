@@ -109,7 +109,7 @@ def test_parallel_validates_resources_before_starting_workers(tmp_path):
         refit_bootstrap("y~1", data, n_workers=2, **{**options, "n_threads": 1})
     with pytest.raises(MemoryError, match="whole-job memory"):
         # room for the parent's staging, not for two workers, whatever this process holds
-        limit = (current_rss_gb() or 0) + 0.6
+        limit = (current_rss_gb() or 0) + 0.9
         refit_bootstrap("y~1", data, n_workers=2, max_memory_gb=limit, **options)
     assert not list(tmp_path.iterdir())
 

@@ -316,7 +316,7 @@ def test_bootstrap_allocation_guard(panel, tmp_path, monkeypatch):
             panel,
             multiplier_bootstrap_reps=10**8,
             # room for staging, not for 10**8 draws, whatever this process holds
-            max_memory_gb=(current_rss_gb() or 0) + 0.6,
+            max_memory_gb=(current_rss_gb() or 0) + 1.5,
             preprocess_mb=1,
             workdir=tmp_path,
             **KW,

@@ -1,0 +1,7 @@
+# Checked out with LF endings on every platform: tests compare SHA-256 digests of
+# the sources and reference files recorded in the PROVENANCE.json files.
+* text=auto eol=lf
+*.gz binary
+*.parquet binary
+*.png binary
+*.pdf binary

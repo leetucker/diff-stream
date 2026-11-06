@@ -207,7 +207,7 @@ def test_identification_errors_and_guard_cleanup(tmp_path, monkeypatch):
             sample("balanced"),
             pretrend_leads=10**6,
             # room for staging, not for a million leads, whatever this process holds
-            max_memory_gb=(current_rss_gb() or 0) + 0.6,
+            max_memory_gb=(current_rss_gb() or 0) + 1.5,
             preprocess_mb=1,
             workdir=tmp_path,
             **KW,
