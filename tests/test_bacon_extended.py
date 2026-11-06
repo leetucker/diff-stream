@@ -8,6 +8,7 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
+from benchmarks._estimators import public
 from benchmarks.bacon_extended_validation import (
     CASES,
     check,
@@ -16,9 +17,9 @@ from benchmarks.bacon_extended_validation import (
     retained,
     sample,
 )
-from diff_stream import bacon_decomp, cs_stream
+from diff_stream import bacon_decomp, did_callaway_santanna
 
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2, preprocess_mb=4, batch_units=7)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2, preprocess_mb=4, batch_units=7)
 
 
 @pytest.mark.parametrize("case", CASES)
@@ -30,7 +31,9 @@ def test_native_bacon_and_independent_row_projection(case, controlled, kind, wei
     fit = bacon_decomp(
         "y~x+z" if controlled else "y~1",
         sample(case),
-        panel_mode="complete" if case == "complete" else "balanced",
+        incomplete_units=public(
+            "incomplete_units", "complete" if case == "complete" else "balanced"
+        ),
         weights=weight,
         **KW,
     )
@@ -109,7 +112,7 @@ def test_covariate_and_weight_units_partition_and_cleanup(scale, tmp_path):
 def test_guards_identification_profile_and_estimator_boundary(tmp_path):
     d = sample("always")
     with pytest.raises(ValueError, match="clean pre-period"):
-        cs_stream("y~1", d, panel=("id", "time"), cohort="first_treat")
+        did_callaway_santanna("y~1", d, panel=("id", "time"), cohort="first_treat")
     explained = d.with_columns(
         ((pl.col("first_treat") > 0) & (pl.col("time") >= pl.col("first_treat")))
         .cast(pl.Float64)
@@ -117,12 +120,12 @@ def test_guards_identification_profile_and_estimator_boundary(tmp_path):
     )
     with pytest.raises(ValueError, match="collinear"):
         bacon_decomp("y~perfect", explained, workdir=tmp_path, **KW)
-    with pytest.raises(ValueError, match="unbalanced"):
-        bacon_decomp("y~x", d, panel_mode="unbalanced", **KW)
+    with pytest.raises(ValueError, match="balanced panel"):
+        bacon_decomp("y~x", d, incomplete_units="keep", **KW)
     with pytest.raises(ValueError, match="batch_units"):
         bacon_decomp("y~x", d, **{**KW, "batch_units": 0})
     with pytest.raises(MemoryError):
-        bacon_decomp("y~x", d, memory_gb=0.01, workdir=tmp_path, **KW)
+        bacon_decomp("y~x", d, max_memory_gb=0.01, workdir=tmp_path, **KW)
     prof = bacon_decomp("y~x+z", d, profile=True, workdir=tmp_path, **KW)
     assert prof.notes["covariate_adjusted"] and prof.notes["always_treated_units"] > 0
     assert not list(tmp_path.iterdir())
@@ -134,10 +137,10 @@ def test_extended_bacon_constrained(resource_runner, resource_enforcement, tmp_p
 
     work = tmp_path / "child"
     code = f"""import json
-from diff_stream import bacon_decomp
+from diff_stream import bacon_decomp, did_callaway_santanna
 import polars as pl
 x=pl.read_csv({str(DATA)!r}).with_columns(pl.when(pl.col('first_treat')==2).then(1).otherwise(pl.col('first_treat')).alias('first_treat'))
-r=bacon_decomp('y~x+z',x,panel=('id','time'),cohort='first_treat',weights='w',threads=2,batch_units=7,preprocess_mb=4,workdir={str(work)!r})
+r=bacon_decomp('y~x+z',x,panel=('id','time'),cohort='first_treat',weights='w',n_threads=2,batch_units=7,preprocess_mb=4,workdir={str(work)!r})
 print(r.summary_json(comparisons=True))
 """
     env = dict(

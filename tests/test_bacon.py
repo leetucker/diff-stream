@@ -8,13 +8,14 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
+from benchmarks._estimators import public
 from benchmarks._files import read_csv
-from diff_stream import BaconResult, bacon_decomp, cs_stream
+from diff_stream import BaconResult, bacon_decomp, did_callaway_santanna
 from diff_stream.simulate import simulate_panel
 from diff_stream.store import PanelStore
 
 ROOT = Path(__file__).parent / "data"
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2)
 CASES = [
     "heterogeneous",
     "no_never",
@@ -78,7 +79,7 @@ def dense_twfe(d):
 def test_r_bacondecomp_and_full_twfe(case):
     d = fixture(case)
     mode = "complete" if case == "complete" else "balanced"
-    r = bacon_decomp("y ~ 1", d, panel_mode=mode, **KW)
+    r = bacon_decomp("y ~ 1", d, incomplete_units=public("incomplete_units", mode), **KW)
     assert isinstance(r, BaconResult)
     rows = r.comparisons().sort(["treated_cohort", "control_cohort"])
     ref = read_csv(ROOT / "bacon_reference" / f"{case}.csv").sort(["treated", "untreated"])
@@ -172,7 +173,7 @@ def test_sources_partitions_identifiers_and_storage(tmp_path):
 
 
 def test_profile_and_guards(tmp_path, monkeypatch):
-    from diff_stream import bacon
+    from diff_stream import bacon, bacon_decomp
 
     d = fixture("heterogeneous")
 
@@ -184,7 +185,7 @@ def test_profile_and_guards(tmp_path, monkeypatch):
     assert p.notes["n_comparisons"] == 9
     assert p.notes["n_cohorts"] == 4
     with pytest.raises(MemoryError, match="preprocessing"):
-        bacon_decomp("y ~ 1", d, memory_gb=0.01, workdir=tmp_path, **KW)
+        bacon_decomp("y ~ 1", d, max_memory_gb=0.01, workdir=tmp_path, **KW)
     assert not list(tmp_path.iterdir())
     # Finish validated staging, then refuse the result-table allocation.
     original_init = bacon.PanelStore.__init__
@@ -209,7 +210,7 @@ def test_profile_and_guards(tmp_path, monkeypatch):
         ("all_never", "two distinct"),
         ("one_timing", "two distinct"),
         ("missing", "missing"),
-        ("nonconsecutive", "consecutive"),
+        ("nonconsecutive", "evenly spaced"),
     ],
 )
 def test_invalid_panels_cleanup(change, match, tmp_path):
@@ -255,15 +256,15 @@ def test_unsupported_options_and_strict_reference_requirement(monkeypatch):
         raise AssertionError("executed rows")
 
     monkeypatch.setattr(PanelStore, "__init__", no_scan)
-    with pytest.raises(ValueError, match="unbalanced"):
-        bacon_decomp("y ~ 1", d, panel_mode="unbalanced", **KW)
+    with pytest.raises(ValueError, match="balanced panel"):
+        bacon_decomp("y ~ 1", d, incomplete_units="keep", **KW)
     with pytest.raises(ValueError, match="numeric"):
         bacon_decomp("y ~ 1", d.with_columns(pl.lit("bad").alias("w")), weights="w", **KW)
     with pytest.raises(NotImplementedError):
         bacon_decomp("y ~ baseline | id", d, **KW)
     monkeypatch.setattr(PanelStore, "__init__", original)
     with pytest.raises(ValueError, match="never-treated"):
-        cs_stream("y ~ 1", fixture("no_never"), reference_group="nevertreated", **KW)
+        did_callaway_santanna("y ~ 1", fixture("no_never"), last_treated_controls="never", **KW)
 
 
 def test_constant_effects_and_outcome_levels():

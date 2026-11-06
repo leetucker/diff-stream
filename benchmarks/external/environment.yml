@@ -1,0 +1,19 @@
+# R for the benchmarks' comparators, from conda-forge, into benchmarks/external/.r:
+#
+#   micromamba create -p benchmarks/external/.r -f benchmarks/external/environment.yml
+#
+# and then the R packages from a CRAN snapshot (remote/setup_external.sh does both on
+# the EC2 instance; benchmarks/README.md has the commands). arrow reads the Parquet
+# files; the compilers build the packages that have C or C++ code.
+name: diff-stream-benchmarks-r
+channels:
+  - conda-forge
+dependencies:
+  - r-base=4.5.3
+  - r-arrow
+  - r-jsonlite
+  - r-data.table
+  - r-rcpp
+  - cxx-compiler
+  - c-compiler
+  - make

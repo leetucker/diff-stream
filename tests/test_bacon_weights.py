@@ -8,6 +8,7 @@ import pytest
 from numpy.testing import assert_allclose
 from test_bacon import CASES, KW, ROOT, fixture
 
+from benchmarks._estimators import public
 from benchmarks._files import read_csv
 from diff_stream import bacon_decomp
 from diff_stream.simulate import simulate_panel
@@ -44,7 +45,13 @@ def dense_wls(d):
 def test_r_weighted_twfe_and_comparisons(case, kind):
     d = weighted_panel(case, kind)
     r = bacon_decomp(
-        "y ~ 1", d, weights="w", panel_mode="complete" if case == "complete" else "balanced", **KW
+        "y ~ 1",
+        d,
+        weights="w",
+        incomplete_units=public(
+            "incomplete_units", "complete" if case == "complete" else "balanced"
+        ),
+        **KW,
     )
     rows = r.comparisons().sort(["treated_cohort", "control_cohort"])
     ref = read_csv(REF / f"{case}_{kind}.csv").sort(["treated", "untreated"])
@@ -97,11 +104,24 @@ def test_r_weighted_twfe_and_comparisons(case, kind):
 def test_equal_weights_and_common_rescaling(case, tmp_path):
     d = weighted_panel(case)
     mode = "complete" if case == "complete" else "balanced"
-    a = bacon_decomp("y ~ 1", d, weights="w", panel_mode=mode, workdir=tmp_path, **KW)
+    a = bacon_decomp(
+        "y ~ 1",
+        d,
+        weights="w",
+        incomplete_units=public("incomplete_units", mode),
+        workdir=tmp_path,
+        **KW,
+    )
     for scale in (1e-200, 1e200):
         scaled = d.with_columns(pl.col("w") * scale).sample(fraction=1, shuffle=True, seed=19)
         b = bacon_decomp(
-            "y ~ 1", scaled, weights="w", panel_mode=mode, preprocess_mb=1, workdir=tmp_path, **KW
+            "y ~ 1",
+            scaled,
+            weights="w",
+            incomplete_units=public("incomplete_units", mode),
+            preprocess_mb=1,
+            workdir=tmp_path,
+            **KW,
         )
         assert_allclose(a.twfe_estimate, b.twfe_estimate, atol=2e-12)
         assert_allclose(a.comparisons()["estimate"], b.comparisons()["estimate"], atol=2e-12)
@@ -116,9 +136,13 @@ def test_equal_weights_and_common_rescaling(case, tmp_path):
             b.diagnostics["total_unit_weight"],
             rtol=1e-13,
         )
-    plain = bacon_decomp("y ~ 1", d, panel_mode=mode, **KW)
+    plain = bacon_decomp("y ~ 1", d, incomplete_units=public("incomplete_units", mode), **KW)
     equal = bacon_decomp(
-        "y ~ 1", d.with_columns(pl.lit(7.3).alias("w")), weights="w", panel_mode=mode, **KW
+        "y ~ 1",
+        d.with_columns(pl.lit(7.3).alias("w")),
+        weights="w",
+        incomplete_units=public("incomplete_units", mode),
+        **KW,
     )
     assert_allclose(plain.twfe_estimate, equal.twfe_estimate, atol=1e-12)
     assert_allclose(plain.comparisons()["estimate"], equal.comparisons()["estimate"], atol=1e-12)
@@ -170,7 +194,7 @@ def test_invalid_values_and_cleanup(bad, tmp_path):
 def test_varying_weights_and_schema_rejection(tmp_path, monkeypatch):
     d = fixture("complete").with_columns(pl.col("time").cast(pl.Float64).alias("w"))
     with pytest.raises(ValueError, match="constant within unit"):
-        bacon_decomp("y ~ 1", d, weights="w", panel_mode="complete", workdir=tmp_path, **KW)
+        bacon_decomp("y ~ 1", d, weights="w", incomplete_units="drop", workdir=tmp_path, **KW)
 
     def no_source(*args, **kwargs):
         raise AssertionError("executed rows")
@@ -182,17 +206,17 @@ def test_varying_weights_and_schema_rejection(tmp_path, monkeypatch):
     for name in (True, 12, [], "", "time", "y"):
         with pytest.raises(ValueError, match="column name|distinct"):
             bacon_decomp("y ~ 1", d, weights=name, **KW)
-    with pytest.raises(ValueError, match="native unbalanced"):
-        bacon_decomp("y ~ 1", d, weights="w", panel_mode="unbalanced", **KW)
+    with pytest.raises(ValueError, match="balanced panel"):
+        bacon_decomp("y ~ 1", d, weights="w", incomplete_units="keep", **KW)
     assert not list(tmp_path.iterdir())
 
 
 def test_profile_and_weighted_complete_deletion(monkeypatch):
-    from diff_stream import bacon
+    from diff_stream import bacon, bacon_decomp
 
     d = weighted_panel("complete")
     clean = retained(d, "complete")
-    a = bacon_decomp("y ~ 1", d, weights="w", panel_mode="complete", **KW)
+    a = bacon_decomp("y ~ 1", d, weights="w", incomplete_units="drop", **KW)
     b = bacon_decomp("y ~ 1", clean, weights="w", **KW)
     assert_allclose(a.twfe_estimate, b.twfe_estimate, atol=1e-12)
     assert_allclose(a.comparisons()["weight"], b.comparisons()["weight"], atol=1e-14)
@@ -203,7 +227,7 @@ def test_profile_and_weighted_complete_deletion(monkeypatch):
         raise AssertionError("constructed table while profiling")
 
     monkeypatch.setattr(bacon, "_decompose", no_table)
-    p = bacon_decomp("y ~ 1", d, weights="w", panel_mode="complete", profile=True, **KW)
+    p = bacon_decomp("y ~ 1", d, weights="w", incomplete_units="drop", profile=True, **KW)
     assert p.notes["sampling_weights"] == "w"
     assert_allclose(p.notes["total_unit_weight"], a.diagnostics["total_unit_weight"])
     assert p.notes["n_comparisons"] == 9

@@ -21,7 +21,7 @@ class CSBalanceCollector:
         names = store.design.names if store.design is not None else []
         self.keep = [j for j, name in enumerate(names) if name != "Intercept"]
         if not self.keep:
-            raise ValueError("balance=True requires non-intercept CS covariates")
+            raise ValueError("covariate_balance=True requires covariates in the formula")
         self.names = [names[j] for j in self.keep]
         self.columns = [f"__x{j}" for j in range(len(self.keep))]
         self.tables = []

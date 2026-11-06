@@ -7,9 +7,10 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
-from diff_stream import LowEffectiveSampleWarning, cs_stream, sunab_stream
+from benchmarks._estimators import public
+from diff_stream import LowEffectiveSampleWarning, did_callaway_santanna, did_sun_abraham
 
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2)
 
 
 def panel(mode="balanced"):
@@ -37,9 +38,22 @@ def panel(mode="balanced"):
 def test_weight_ess_matches_observed_strata_and_warning_preserves_fit(mode, method):
     data = panel(mode)
     with pytest.warns(LowEffectiveSampleWarning, match="below 30"):
-        a = cs_stream("y ~ 1", data, weights="w", panel_mode=mode, est_method=method, **KW)
-    b = cs_stream(
-        "y ~ 1", data, weights="w", panel_mode=mode, est_method=method, ess_warn_threshold=0, **KW
+        a = did_callaway_santanna(
+            "y ~ 1",
+            data,
+            weights="w",
+            incomplete_units=public("incomplete_units", mode),
+            adjustment=public("adjustment", method),
+            **KW,
+        )
+    b = did_callaway_santanna(
+        "y ~ 1",
+        data,
+        weights="w",
+        incomplete_units=public("incomplete_units", mode),
+        adjustment=public("adjustment", method),
+        effective_sample_warning=0,
+        **KW,
     )
     try:
         assert_allclose(a.beta, b.beta, atol=0, rtol=0)
@@ -56,8 +70,8 @@ def test_weight_ess_matches_observed_strata_and_warning_preserves_fit(mode, meth
             assert_allclose(
                 row["effective_n"], weights.sum() ** 2 / (weights @ weights), atol=1e-10
             )
-        assert a.group_time()["min_effective_n"].min() < 30
-        assert not a.group_time()["suppressed"].any()
+        assert a.cohort_time()["min_effective_sample"].min() < 30
+        assert not a.cohort_time()["suppressed"].any()
     finally:
         a.cleanup()
         b.cleanup()
@@ -65,14 +79,14 @@ def test_weight_ess_matches_observed_strata_and_warning_preserves_fit(mode, meth
 
 @pytest.mark.parametrize("vcov", ["CRV0", "CRV1"])
 def test_suppression_is_a_copy_and_does_not_reweight_aggregates(vcov):
-    fit = cs_stream(
+    fit = did_callaway_santanna(
         "y ~ 1",
         panel(),
         weights="w",
         vcov=vcov,
-        ess_warn_threshold=0,
-        bootstrap_reps=51,
-        bootstrap_seed=2,
+        effective_sample_warning=0,
+        multiplier_bootstrap_reps=51,
+        multiplier_bootstrap_seed=2,
         **KW,
     )
     try:
@@ -88,14 +102,14 @@ def test_suppression_is_a_copy_and_does_not_reweight_aggregates(vcov):
         again = suppressed.suppress(0)
         assert_allclose(again.beta, suppressed.beta, equal_nan=True)
         assert again.diagnostics["suppression_threshold"] == 30
-        assert np.isnan(suppressed.aggregate("simple").beta).all()
+        assert np.isnan(suppressed.aggregate("overall").beta).all()
         a, b = suppressed.aggregate(), fit.aggregate().suppress(30)
         assert_allclose(a.beta, b.beta, equal_nan=True)
         assert_allclose(a.vcov, b.vcov, equal_nan=True)
         assert "suppressed coefficients" in a.summary_text()
         assert_allclose(
-            suppressed.pretrend_test(level="dynamic", horizons=[-3])["statistic"],
-            fit.pretrend_test(level="dynamic", horizons=[-3])["statistic"],
+            suppressed.pretrend_test(level="event_time", horizons=[-3])["statistic"],
+            fit.pretrend_test(level="event_time", horizons=[-3])["statistic"],
         )
         assert_allclose(a.contributions()["weight"], fit.contributions()["weight"])
         assert np.isfinite(a.beta).any() and np.isnan(a.beta).any()
@@ -131,12 +145,12 @@ def test_suppression_is_a_copy_and_does_not_reweight_aggregates(vcov):
             equal_nan=True,
         )
         # Suppression thresholds operate on Kish ESS, hence common weight scale cancels.
-        scaled = cs_stream(
+        scaled = did_callaway_santanna(
             "y ~ 1",
             panel().with_columns(pl.col("w") * 1e100),
             weights="w",
-            ess_warn_threshold=None,
-            ess_suppress_threshold=30,
+            effective_sample_warning=None,
+            min_effective_sample=30,
             **KW,
         )
         assert_allclose(scaled.beta, suppressed.beta, equal_nan=True, atol=1e-9)
@@ -149,39 +163,39 @@ def test_unweighted_fast_path_threshold_boundary_and_invalid_options():
     d = panel().filter(pl.col("id") < 220).drop("w")
     with warnings.catch_warnings(record=True) as seen:
         warnings.simplefilter("always")
-        fit = cs_stream("y ~ 1", d, ess_warn_threshold=100, **KW)
+        fit = did_callaway_santanna("y ~ 1", d, effective_sample_warning=100, **KW)
     assert not any(isinstance(w.message, LowEffectiveSampleWarning) for w in seen)
     assert fit.effective_sample_size()["effective_n"].min() == 100
     assert np.isnan(fit.suppress(121).beta).all()
     for bad in [-1, True, float("nan"), float("inf"), "30"]:
-        with pytest.raises(ValueError, match="ess_warn_threshold"):
-            cs_stream("y ~ 1", d, ess_warn_threshold=bad, **KW)
-        with pytest.raises(ValueError, match="min_effective_n"):
+        with pytest.raises(ValueError, match="effective_sample_warning"):
+            did_callaway_santanna("y ~ 1", d, effective_sample_warning=bad, **KW)
+        with pytest.raises(ValueError, match="min_effective_sample"):
             fit.suppress(bad)
-    with pytest.raises(ValueError, match="CS options"):
-        sunab_stream("y ~ 1", d, ess_suppress_threshold=30, **KW)
+    with pytest.raises(TypeError, match="min_effective_sample"):
+        did_sun_abraham("y ~ 1", d, min_effective_sample=30, **KW)
 
 
 @pytest.mark.parametrize("control", ["nevertreated", "notyettreated"])
 def test_native_unbalanced_fit_time_suppression_equals_post_estimation(control):
     d = panel("unbalanced")
-    a = cs_stream(
+    a = did_callaway_santanna(
         "y ~ 1",
         d,
         weights="w",
-        panel_mode="unbalanced",
-        control_group=control,
-        ess_warn_threshold=None,
+        incomplete_units="keep",
+        control_group=public("control_group", control),
+        effective_sample_warning=None,
         **KW,
     )
-    b = cs_stream(
+    b = did_callaway_santanna(
         "y ~ 1",
         d,
         weights="w",
-        panel_mode="unbalanced",
-        control_group=control,
-        ess_warn_threshold=None,
-        ess_suppress_threshold=30,
+        incomplete_units="keep",
+        control_group=public("control_group", control),
+        effective_sample_warning=None,
+        min_effective_sample=30,
         **KW,
     )
     try:

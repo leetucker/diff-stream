@@ -13,6 +13,7 @@ import polars as pl
 from hdfe_stream.core.results_base import RegressionResult
 
 from ._core.nuisance import solve_checked
+from ._present import label_frame, labels_of
 
 
 @dataclass(kw_only=True)
@@ -25,13 +26,15 @@ class BJSPlaceboResult(RegressionResult):
 
     n_units: int
     _support: pl.DataFrame = field(repr=False)
+    _internal: dict | None = field(default=None, repr=False)
+    _periods: object = field(default=None, repr=False)
     estimator = "bjs_placebo"
     cells = ()
     _normal_inference = True
 
     def support(self):
         """Observed cohort/date support and original-scale weight totals."""
-        return self._support.clone()
+        return label_frame(self._support, labels_of(self))
 
     def pretrend_test(self, *, level="auto", horizons=None):
         """Joint clean-lead Wald test; horizon selection does not refit the model."""
@@ -83,12 +86,12 @@ def fit_placebos(store, pretrends, anticipation, *, fml, depvar, panel, vcov):
                 )
     if np.any(support == 0):
         raise ValueError(
-            f"BJS requested clean placebo horizons are not observed: {horizons[support == 0].tolist()}; reduce pretrends"
+            f"BJS requested clean placebo horizons are not observed: {horizons[support == 0].tolist()}; reduce pretrend_leads"
         )
     Z = np.eye(T)[:, 1:]
     P = T - 1 + L
     Q, q = np.zeros((P, P)), np.zeros(P)
-    context = "BJS clean placebo design is unidentified (missing earlier clean reference or disconnected/collinear design); reduce pretrends"
+    context = "BJS clean placebo design is unidentified (missing earlier clean reference or disconnected/collinear design); reduce pretrend_leads"
 
     def batches():
         return store.batches(include_weights=True, actual_cohort=True)
@@ -148,7 +151,7 @@ def fit_placebos(store, pretrends, anticipation, *, fml, depvar, panel, vcov):
         weights=None,
         _support=pl.DataFrame(rows),
         diagnostics=dict(
-            aggregation="dynamic",
+            aggregation="event_time",
             anticipation=anticipation,
             reference_event_time=None,
             fitted_horizons=horizons.tolist(),

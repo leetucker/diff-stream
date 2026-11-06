@@ -20,9 +20,10 @@ from numpy.testing import assert_allclose
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import polars as pl
 
+from benchmarks._estimators import public
 from benchmarks._files import digest as file_digest  # noqa: E402
 from benchmarks._files import read_csv  # noqa: E402
-from diff_stream import cs_stream
+from diff_stream import did_callaway_santanna
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "tests/data/mpdta.csv"
@@ -45,17 +46,17 @@ def canonical(control, base, method):
 
 def compare_case(data, design, control, base, method):
     boot = canonical(control, base, method)
-    f = cs_stream(
+    f = did_callaway_santanna(
         "lemp ~ 1" if design == "constant" else "lemp ~ lpop",
         data,
         panel=("countyreal", "year"),
         cohort="first.treat",
-        est_method=method,
-        control_group=control,
+        adjustment=public("adjustment", method),
+        control_group=public("control_group", control),
         base_period=base,
-        threads=2,
-        bootstrap_reps=999 if boot else 0,
-        bootstrap_seed=815 if boot else None,
+        n_threads=2,
+        multiplier_bootstrap_reps=999 if boot else 0,
+        multiplier_bootstrap_seed=815 if boot else None,
         batch_units=73,
         preprocess_mb=64,
     )
@@ -83,7 +84,11 @@ def compare_case(data, design, control, base, method):
         )
     rows = []
     for kind in ("dynamic", "simple", "cohort", "calendar", "balanced"):
-        a = f.aggregate(balance_e=1) if kind == "balanced" else f.aggregate(kind)
+        a = (
+            f.aggregate(balanced_horizon=1)
+            if kind == "balanced"
+            else f.aggregate(public("kind", kind))
+        )
         label = "group" if kind == "cohort" else kind
         z = read_csv(REF / f"{prefix}_{label}.csv", null_values="NA")
         order = [z["term"].to_list().index(n) for n in a.coefnames]

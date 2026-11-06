@@ -14,6 +14,7 @@ from numpy.testing import assert_allclose
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from benchmarks._estimators import public  # noqa: E402
 from benchmarks._files import csv_files, read_csv  # noqa: E402
 from benchmarks._files import digest as file_digest  # noqa: E402
 from diff_stream import twfe_weights  # noqa: E402
@@ -162,10 +163,10 @@ def fit(c, **kw):
         sample(c["case"]),
         panel=("id", "time"),
         treatment="d",
-        panel_mode=c["mode"],
+        incomplete_units=public("incomplete_units", c["mode"]),
         weights=c["weight"],
         allow_time_varying_weights=True,
-        threads=2,
+        n_threads=2,
         preprocess_mb=4,
         batch_units=17,
         **kw,

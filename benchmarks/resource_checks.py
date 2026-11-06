@@ -336,7 +336,7 @@ def fit_child(config):
     start = time.perf_counter()
     result = None
     try:
-        result = api.diff_stream(
+        result = api._fit(
             config["formula"],
             config["path"],
             panel=("id", "time"),

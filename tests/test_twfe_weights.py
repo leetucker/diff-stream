@@ -15,7 +15,7 @@ from benchmarks._files import read_csv
 from benchmarks.twfe_weights_validation import check, configs, dense, fit, provenance, sample
 from diff_stream import TWFEWeightResult, twfe_weights
 
-KW = dict(panel=("id", "time"), treatment="d", threads=2, preprocess_mb=4, batch_units=7)
+KW = dict(panel=("id", "time"), treatment="d", n_threads=2, preprocess_mb=4, batch_units=7)
 
 
 @pytest.mark.parametrize("config", configs(), ids=lambda c: c["name"])
@@ -45,7 +45,7 @@ def test_concentrated_weights_against_original_row_wls(concentration):
         data,
         weights="w",
         allow_time_varying_weights=True,
-        panel_mode="unbalanced",
+        incomplete_units="keep",
         keep_cells=True,
         **KW,
     ) as result:
@@ -70,7 +70,7 @@ def test_known_heterogeneous_effects_and_reversals(seed):
         data,
         weights="w",
         allow_time_varying_weights=True,
-        panel_mode="unbalanced",
+        incomplete_units="keep",
         keep_cells=True,
         **KW,
     ) as r:
@@ -206,7 +206,7 @@ def test_cohort_convenience_and_sample_policies(tmp_path):
     unbalanced = sample("unbalanced")
     with pytest.raises(ValueError, match="balanced panels"):
         twfe_weights("y~1", unbalanced, workdir=tmp_path, **KW)
-    r = twfe_weights("y~1", unbalanced, panel_mode="complete", workdir=tmp_path, **KW)
+    r = twfe_weights("y~1", unbalanced, incomplete_units="drop", workdir=tmp_path, **KW)
     assert r.diagnostics["dropped_units"] == 6 and r.diagnostics["dropped_rows"] > 0
     assert not list(tmp_path.iterdir())
 
@@ -219,7 +219,7 @@ def test_zero_weights_zero_outcome_and_degenerate_sensitivity():
     assert zero.twfe_estimate == 0
     assert zero.sensitivity().row(0, named=True)["value"] == 0
     assert zero.sensitivity().row(1, named=True)["status"] == "undefined_zero_coefficient"
-    coarse = twfe_weights("y~1", sample("absorbing"), zero_tol=1, **KW)
+    coarse = twfe_weights("y~1", sample("absorbing"), zero_tolerance=1, **KW)
     assert coarse.summary().filter(pl.col("sign") == "zero")["n_cells"][0] > 0
     assert coarse.summary_dict()["weights"]["raw_weight_sum"] == pytest.approx(1)
 
@@ -269,7 +269,7 @@ def test_identification_and_source_validation(case, tmp_path):
 def test_resource_admission_profile_and_no_retained_cells(tmp_path):
     data = sample("absorbing")
     with pytest.raises(MemoryError):
-        twfe_weights("y~x", data, memory_gb=0.01, workdir=tmp_path, **KW)
+        twfe_weights("y~x", data, max_memory_gb=0.01, workdir=tmp_path, **KW)
     with pytest.raises(ValueError, match="max_design_columns"):
         twfe_weights("y~x", data, max_design_columns=2, workdir=tmp_path, **KW)
     profile = twfe_weights("y~x", data, profile=True, workdir=tmp_path, **KW)
@@ -289,7 +289,7 @@ import polars as pl
 import pyarrow.parquet as pq
 d=pl.read_csv({str(path)!r})
 d=d.join(pl.DataFrame({{'rep':range(200)}}),how='cross').with_columns((pl.col('id')+100*pl.col('rep')).alias('id')).drop('rep')
-with twfe_weights('y~x+z',d,panel=('id','time'),cohort='first_treat',weights='w',threads=2,keep_cells=True,batch_units=7,preprocess_mb=4,workdir={str(work)!r}) as r:
+with twfe_weights('y~x+z',d,panel=('id','time'),cohort='first_treat',weights='w',n_threads=2,keep_cells=True,batch_units=7,preprocess_mb=4,workdir={str(work)!r}) as r:
  with pq.ParquetFile(r._path,pre_buffer=False) as pf:
   assert pf.metadata.num_row_groups < 8
  r.write_cells({str(tmp_path / "cells.parquet")!r})

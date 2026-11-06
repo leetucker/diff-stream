@@ -3,10 +3,10 @@
 from dataclasses import dataclass
 
 import numpy as np
-from hdfe_stream.core.influence import ClusterScoreAccumulator
 
 from ._core.contrasts import fit_contrasts
 from ._core.nuisance import fit_systems
+from .cohort_scores import CohortScoreCovariance
 
 
 @dataclass
@@ -18,6 +18,9 @@ class Comparison:
     targets: np.ndarray
     bases: np.ndarray
     weightperiod: int = 0
+    # members[label] marks the cohort and its controls; cohort labels are
+    # nonnegative integers below len(members).
+    members: np.ndarray = None
 
     def weights(self, raw, mask):
         w = raw[3]
@@ -25,12 +28,16 @@ class Comparison:
 
     def select(self, raw):
         g, y, x = raw[:3]
-        mask = (g == self.cohort) | np.isin(g, self.controls)
+        if self.members is None:
+            mask = (g == self.cohort) | np.isin(g, self.controls)
+        else:
+            mask = self.members[g]
+        rows = np.flatnonzero(mask)[:, None]
         return (
             mask,
-            x[mask, self.xperiod, :],
-            g[mask] == self.cohort,
-            y[mask][:, self.targets] - y[mask][:, self.bases],
+            x[rows[:, 0], self.xperiod, :],
+            g[rows[:, 0]] == self.cohort,
+            y[rows, self.targets] - y[rows, self.bases],
         )
 
     def __call__(self, raw):
@@ -63,8 +70,15 @@ def fit_cs(
         comparisons[key][0].append(j)
         comparisons[key][1].append(tindex)
         comparisons[key][2].append(bases[j])
+    size = max(groups) + 1
+
+    def members(g, c):
+        table = np.zeros(size, dtype=bool)
+        table[[g, *c]] = True
+        return table
+
     transforms = [
-        Comparison(g, c, xb, ix, np.array(t, dtype=int), np.array(b, dtype=int), wp)
+        Comparison(g, c, xb, ix, np.array(t, dtype=int), np.array(b, dtype=int), wp, members(g, c))
         for (g, c, xb, wp), (ix, t, b) in comparisons.items()
     ]
 
@@ -80,25 +94,23 @@ def fit_cs(
     beta = np.zeros(M)
     for c, f in zip(transforms, fitted, strict=True):
         beta[c.cells] = f.estimate
-    accumulator = ClusterScoreAccumulator()
     cohorts = np.array([g for g, t in cells])
+    counts = np.array([store.gw[g] for g, t in cells], dtype=float)
+    # Unadjusted sums of [scores, share] outer products: api.py owns the
+    # explicit CRV0/CRV1 factor for all covariance blocks.
+    accumulator = CohortScoreCovariance(cohorts, counts / store.n_units)
     for raw in batches():
         g, _, _, w = raw
         scores = np.zeros((len(g), M))
-        counts = np.array([store.gw[g] for g, t in cells], dtype=float)
         anchor = w[:, 0] if w.ndim == 2 else w
-        share = anchor[:, None] * ((g[:, None] == cohorts[None, :]) - counts / store.n_units)
         for c, f in zip(transforms, fitted, strict=True):
             mask, X, d, Y = c.select(raw)
             scores[np.ix_(np.flatnonzero(mask), c.cells)] = f.scores(X, d, Y, c.weights(raw, mask))
-        accumulator.add_clusters(scores, share)
+        accumulator.add(g, scores, anchor)
         if multiplier is not None:
+            share = anchor[:, None] * ((g[:, None] == cohorts[None, :]) - counts / store.n_units)
             multiplier.update(scores, share)
-    counts = np.array([store.gw[g] for g, t in cells], dtype=float)
-    # add_clusters consumes per-unit scores and sums does not apply an SSC.
-    # api.py owns the explicit CRV0/CRV1 factor for all covariance blocks.
-    joint = accumulator.sums
-    V, cross, share_cov = joint[:M, :M], joint[:M, M:], joint[M:, M:]
+    V, cross, share_cov = accumulator.blocks()
     if balance_collector is not None:
         balance_collector.balanced(transforms, fitted, cells, batches)
     metadata = dict(

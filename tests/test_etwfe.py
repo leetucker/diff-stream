@@ -9,6 +9,7 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
+from benchmarks._estimators import public
 from benchmarks.etwfe_validation import (
     compare_reference,
     configuration,
@@ -17,24 +18,28 @@ from benchmarks.etwfe_validation import (
     scenarios,
     verify_provenance,
 )
-from diff_stream import diff_stream, etwfe_stream
+from diff_stream import did_extended_twfe
 
 SCENARIOS = list(scenarios())
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2, batch_units=37, preprocess_mb=4)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2, batch_units=37, preprocess_mb=4)
 
 
 def fit_case(panel, control, fe, case, A, inference):
     formula, weight = configuration(case)
-    return etwfe_stream(
+    return did_extended_twfe(
         formula,
         sample(panel),
         **KW,
-        control_group="nevertreated" if control == "never" else "notyettreated",
+        control_group=public(
+            "control_group", "nevertreated" if control == "never" else "notyettreated"
+        ),
         fixed_effects=fe,
-        inference=inference,
+        treat_sample_as_fixed=public("treat_sample_as_fixed", inference),
         weights=weight,
         allow_time_varying_weights=True,
-        panel_mode="unbalanced" if panel == "unbalanced" else "balanced",
+        incomplete_units=public(
+            "incomplete_units", "unbalanced" if panel == "unbalanced" else "balanced"
+        ),
         anticipation=A,
     )
 
@@ -49,7 +54,7 @@ def test_independent_dense_stacked_inference(scenario, inference):
     assert_allclose(fit.beta, beta, atol=2e-9, rtol=0)
     assert_allclose(fit.vcov, V, atol=2e-9, rtol=0)
     for kind, (b, v) in aggregates.items():
-        a = fit.aggregate(kind)
+        a = fit.aggregate(public("kind", kind))
         assert_allclose(a.beta, b, atol=2e-9, rtol=0)
         assert_allclose(a.vcov, v, atol=2e-9, rtol=0)
     assert np.linalg.eigvalsh(fit.vcov).min() > -1e-9
@@ -74,46 +79,46 @@ def test_weight_covariate_scaling_and_partition_order(control, fe, tmp_path):
     d = sample("unbalanced")
     kw = dict(
         **KW,
-        panel_mode="unbalanced",
+        incomplete_units="keep",
         weights="w",
         allow_time_varying_weights=True,
-        control_group=control,
+        control_group=public("control_group", control),
         fixed_effects=fe,
         workdir=tmp_path,
     )
-    baseline = etwfe_stream("y~x+z", d, **kw)
+    baseline = did_extended_twfe("y~x+z", d, **kw)
     source = d.with_columns(
         pl.col("w") * 1e8,
         pl.col("x") * 1e-7,
         ("unit_" + pl.col("id").cast(pl.String).str.pad_start(128, "0")).alias("id"),
     ).sample(fraction=1, shuffle=True, seed=43)
     options = {**kw, "batch_units": 19, "preprocess_mb": 1}
-    actual = etwfe_stream("y~x+z", source, **options)
+    actual = did_extended_twfe("y~x+z", source, **options)
     assert_allclose(actual.beta, baseline.beta, atol=2e-9, rtol=0)
     assert_allclose(actual.vcov, baseline.vcov, atol=2e-9, rtol=0)
     assert_allclose(
-        actual.aggregate("simple").vcov, baseline.aggregate("simple").vcov, atol=2e-9, rtol=0
+        actual.aggregate("overall").vcov, baseline.aggregate("overall").vcov, atol=2e-9, rtol=0
     )
     assert not list(tmp_path.iterdir())
 
 
 def test_complete_profile_dispatch_and_reporting(tmp_path):
     d = sample("unbalanced")
-    kw = dict(**KW, workdir=tmp_path, panel_mode="complete")
-    fit = diff_stream("y~x", d, estimator="etwfe", **kw)
+    kw = dict(**KW, workdir=tmp_path, incomplete_units="drop")
+    fit = did_extended_twfe("y~x", d, **kw)
     n = fit.n_units
     scaled = fit.with_vcov("CRV1")
     assert_allclose(scaled.vcov, fit.vcov * n / (n - 1))
-    assert_allclose(scaled.aggregate("simple").vcov, fit.aggregate("simple").vcov * n / (n - 1))
+    assert_allclose(scaled.aggregate("overall").vcov, fit.aggregate("overall").vcov * n / (n - 1))
     assert_allclose(scaled.with_vcov("CRV0").vcov, fit.vcov)
     assert fit.diagnostics["dropped_units"] > 0
-    assert "cohort" in fit.group_time().columns
+    assert "cohort" in fit.cohort_time().columns
     assert fit.aggregate(balance_window=(-2, 1)).composition().height > 0
     assert fit.pretrend_test(horizons=[-2])["n_restrictions"] > 0
     assert json.loads(fit.summary_json())["depvar"] == "y"
     fit.cleanup()
-    profile = etwfe_stream("y~x", d, profile=True, **kw)
-    assert profile.model == "diff-stream etwfe"
+    profile = did_extended_twfe("y~x", d, profile=True, **kw)
+    assert profile.model == "diff-stream did_extended_twfe"
     assert not list(tmp_path.iterdir())
 
 
@@ -122,12 +127,12 @@ def test_complete_profile_dispatch_and_reporting(tmp_path):
     [
         {"control_group": "bad"},
         {"fixed_effects": "bad"},
-        {"inference": "bad"},
+        {"treat_sample_as_fixed": "bad"},
         {"max_design_columns": 0},
         {"max_design_columns": True},
         {"batch_units": 0},
-        {"threads": 0},
-        {"panel_mode": "bad"},
+        {"n_threads": 0},
+        {"incomplete_units": "bad"},
         {"anticipation": True},
         {"anticipation": -1},
         {"vcov": "iid"},
@@ -137,7 +142,7 @@ def test_complete_profile_dispatch_and_reporting(tmp_path):
 )
 def test_invalid_options_before_staging(option, tmp_path):
     with pytest.raises(ValueError):
-        etwfe_stream(
+        did_extended_twfe(
             "y~1",
             "missing.parquet",
             panel=("id", "time"),
@@ -152,18 +157,18 @@ def test_identification_and_admission_cleanup(tmp_path):
     d = sample("balanced")
     kw = dict(**KW, workdir=tmp_path)
     with pytest.raises(ValueError, match="expanded design"):
-        etwfe_stream("y~x+z", d, max_design_columns=10, **kw)
+        did_extended_twfe("y~x+z", d, max_design_columns=10, **kw)
     with pytest.raises(MemoryError):
-        etwfe_stream("y~1", d, memory_gb=0.01, **kw)
+        did_extended_twfe("y~1", d, max_memory_gb=0.01, **kw)
     with pytest.raises(ValueError, match="constant within unit"):
-        etwfe_stream("y~1", d, weights="w", **kw)
+        did_extended_twfe("y~1", d, weights="w", **kw)
     # Remove an entire cohort's normalized reference date. The cohort/cell
     # intercept alias must not become an arbitrarily normalized treatment ATT.
     bad = d.filter(~((pl.col("first_treat") == 5) & (pl.col("time") == 4)))
     with pytest.raises(ValueError, match="unidentified"):
-        etwfe_stream("y~1", bad, panel_mode="unbalanced", **kw)
-    with pytest.raises(ValueError, match="CS/BJS/Gardner"):
-        diff_stream("y~1", d, estimator="etwfe", pretrends=1, **kw)
+        did_extended_twfe("y~1", bad, incomplete_units="keep", **kw)
+    with pytest.raises(TypeError, match="pretrend_leads"):
+        did_extended_twfe("y~1", d, pretrend_leads=1, **kw)
     assert not list(tmp_path.iterdir())
 
 
@@ -174,9 +179,9 @@ def test_etwfe_constrained_fit(resource_runner, resource_enforcement, tmp_path):
     path = DATA / "richer_unbalanced_panel.csv"
     work = tmp_path / "child"
     code = f"""import json,polars as pl
-from diff_stream import etwfe_stream
-r=etwfe_stream('y~x+z',pl.read_csv({str(path)!r}),panel=('id','time'),cohort='first_treat',control_group='notyettreated',fixed_effects='unit',panel_mode='unbalanced',weights='w',allow_time_varying_weights=True,threads=2,preprocess_mb=4,batch_units=37,workdir={str(work)!r})
-a=r.aggregate('simple')
+from diff_stream import did_extended_twfe
+r=did_extended_twfe('y~x+z',pl.read_csv({str(path)!r}),panel=('id','time'),cohort='first_treat',control_group='not_yet_treated',fixed_effects='unit',incomplete_units='keep',weights='w',allow_time_varying_weights=True,n_threads=2,preprocess_mb=4,batch_units=37,workdir={str(work)!r})
+a=r.aggregate('overall')
 print(json.dumps(dict(beta=r.beta.tolist(),vcov=r.vcov.tolist(),att=a.beta.tolist(),att_vcov=a.vcov.tolist())))
 """
     env = dict(
@@ -193,7 +198,7 @@ print(json.dumps(dict(beta=r.beta.tolist(),vcov=r.vcov.tolist(),att=a.beta.tolis
         assert result.kernel["events"]["oom_kill"] == 0
     fit = fit_case("unbalanced", "notyet", "unit", "numeric_varying", 0, "unconditional")
     got = json.loads(result.stdout)
-    a = fit.aggregate("simple")
+    a = fit.aggregate("overall")
     for key, expected in [
         ("beta", fit.beta),
         ("vcov", fit.vcov),
@@ -215,17 +220,17 @@ def test_categorical_compiler_matches_explicit_numeric_coding(fe, inference):
     )
     kw = dict(
         **KW,
-        panel_mode="unbalanced",
-        control_group="notyettreated",
+        incomplete_units="keep",
+        control_group="not_yet_treated",
         fixed_effects=fe,
-        inference=inference,
+        treat_sample_as_fixed=public("treat_sample_as_fixed", inference),
         weights="w",
         allow_time_varying_weights=True,
     )
-    categorical = etwfe_stream("y~x+C(category)", d, **kw)
-    numeric = etwfe_stream("y~x+ca+cb", coded, **kw)
+    categorical = did_extended_twfe("y~x+C(category)", d, **kw)
+    numeric = did_extended_twfe("y~x+ca+cb", coded, **kw)
     assert_allclose(categorical.beta, numeric.beta, atol=2e-9, rtol=0)
     assert_allclose(categorical.vcov, numeric.vcov, atol=2e-9, rtol=0)
     assert_allclose(
-        categorical.aggregate("simple").vcov, numeric.aggregate("simple").vcov, atol=2e-9, rtol=0
+        categorical.aggregate("overall").vcov, numeric.aggregate("overall").vcov, atol=2e-9, rtol=0
     )

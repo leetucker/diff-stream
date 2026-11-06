@@ -18,9 +18,10 @@ from numpy.testing import assert_allclose
 from scipy.stats import f as f_distribution
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from benchmarks._estimators import public
 from benchmarks._files import csv_files, read_csv  # noqa: E402
 from benchmarks._files import digest as file_digest  # noqa: E402
-from diff_stream import bjs_stream
+from diff_stream import did_bjs
 
 ROOT = Path(__file__).resolve().parents[1]
 AVERAGES = ("cohort_time", "event_time", "cohort", "all")
@@ -28,6 +29,37 @@ AVERAGES = ("cohort_time", "event_time", "cohort", "all")
 
 def sha256(path):
     return file_digest(path)
+
+
+COMMAND_SOURCES = "command_sources.json"
+
+
+def returned_hashes(directory):
+    """Hashes of a returned results directory, with the Stata command files.
+
+    The .do script copies the installed command files (did_imputation.ado,
+    reghdfe.ado, ftools.ado) into its results so the review can record which
+    versions ran. They are third-party code, so the repository keeps only their
+    hashes and version headers, in command_sources.json; when a fresh return
+    supplies the files, their hashes must match any recorded ones.
+    """
+    hashes = {
+        p.name: sha256(p)
+        for p in sorted(directory.iterdir())
+        if p.is_file() and p.suffix != ".ado" and p.name != COMMAND_SOURCES
+    }
+    manifest = directory / COMMAND_SOURCES
+    recorded = (
+        {name: entry["sha256"] for name, entry in json.loads(manifest.read_text())["files"].items()}
+        if manifest.exists()
+        else {}
+    )
+    present = {p.name: sha256(p) for p in sorted(directory.glob("*.ado"))}
+    for name in present.keys() & recorded.keys():
+        assert present[name] == recorded[name], name
+    hashes.update(recorded)
+    hashes.update(present)
+    return dict(sorted(hashes.items()))
 
 
 def check_log(directory, *markers):
@@ -95,22 +127,26 @@ def audit_baseline(directory):
     data = ROOT / "tests/data/reference_panel.csv"
     checks = []
     for avg, leaveout in product(AVERAGES, (False, True)):
-        fit = bjs_stream(
+        fit = did_bjs(
             "y ~ 1",
             read_csv(data),
             panel=("id", "time"),
             cohort="first_treat",
-            avgeffectsby=avg,
-            leaveout=leaveout,
-            threads=2,
+            residual_averaging=avg,
+            leave_out=leaveout,
+            n_threads=2,
         )
         try:
             for kind in ("dynamic", "simple"):
                 stem = f"bjs_{avg}_{'leaveout' if leaveout else 'plugin'}_{kind}"
                 exported = read_export(directory / stem)
                 labels = ["ATT" if t == "tau" else "event::" + t[3:] for t in exported[0]]
-                assert set(labels) == set(fit.aggregate(kind).coefnames)
-                checks.append(dict(case=stem, **compare(fit.aggregate(kind), exported, labels)))
+                assert set(labels) == set(fit.aggregate(public("kind", kind)).coefnames)
+                checks.append(
+                    dict(
+                        case=stem, **compare(fit.aggregate(public("kind", kind)), exported, labels)
+                    )
+                )
         finally:
             fit.cleanup()
     check_log(directory)
@@ -131,7 +167,7 @@ def audit_baseline(directory):
         maxima={key: max(row[key] for row in checks) for key in checks[0] if key != "case"},
         input_sha256=sha256(data),
         original_bundle_manifest=provenance,
-        returned_sha256={p.name: sha256(p) for p in sorted(directory.iterdir()) if p.is_file()},
+        returned_sha256=returned_hashes(directory),
     )
 
 
@@ -159,18 +195,18 @@ def audit_extended(directory, bundle):
         adjustment = corrections["imputation"]
         assert np.isfinite(adjustment) and adjustment > 0
         for avg, leaveout in product(AVERAGES, (False, True)):
-            fit = bjs_stream(
+            fit = did_bjs(
                 "y ~ 1",
                 read_csv(bundle / case["python_input"]),
                 panel=("id", "time"),
                 cohort="first_treat",
-                panel_mode=case["panel_mode"],
+                incomplete_units=public("incomplete_units", case["panel_mode"]),
                 anticipation=case["anticipation"],
-                pretrends=case["pretrends"],
+                pretrend_leads=case["pretrends"],
                 weights="sampling_weight" if case["weighted"] else None,
-                avgeffectsby=avg,
-                leaveout=leaveout,
-                threads=2,
+                residual_averaging=avg,
+                leave_out=leaveout,
+                n_threads=2,
             )
             try:
                 placebo = fit.placebos()
@@ -189,10 +225,14 @@ def audit_extended(directory, bundle):
                         else f"event::{int(t[3:]) - case['anticipation']}"
                         for t in exported[0]
                     ]
-                    assert set(labels) == set(fit.aggregate(kind).coefnames + placebo.coefnames)
+                    assert set(labels) == set(
+                        fit.aggregate(public("kind", kind)).coefnames + placebo.coefnames
+                    )
                     # Keep strict point-estimate failures in the report and continue
                     # auditing every fit. Do not relax the original 1e-7 threshold.
-                    post = compare(fit.aggregate(kind), exported, labels, check_beta=False)
+                    post = compare(
+                        fit.aggregate(public("kind", kind)), exported, labels, check_beta=False
+                    )
                     pre = compare(placebo, exported, labels, scale=adjustment)
                     stats = read_csv(directory / (stem + "_meta.csv")).row(0, named=True)
                     L = case["pretrends"]
@@ -234,7 +274,7 @@ def audit_extended(directory, bundle):
         tolerance_absolute=1e-7,
         convention="Post CRV0; did_imputation placebo SSC and native reghdfe SSC differ by nested-FE adjustment of one; native F checked separately",
         bundle_manifest=manifest,
-        returned_sha256={p.name: sha256(p) for p in sorted(directory.iterdir()) if p.is_file()},
+        returned_sha256=returned_hashes(directory),
     )
 
 

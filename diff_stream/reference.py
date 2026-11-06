@@ -56,37 +56,20 @@ def reference_store(store, policy, anticipation):
         raise ValueError(
             "fewer than two clean dates remain before the last-treated reference is affected"
         )
-    root = store.root / "reference"
-    root.mkdir()
     data = (
         pl.scan_parquet(store.paths, low_memory=True)
         .filter(pl.col("t") < cutoff)
-        .with_columns(
-            pl.col("u").alias("id"),
-            pl.when(pl.col("g") == reference).then(0).otherwise(pl.col("g")).alias("g"),
-        )
-        .drop("u")
+        .with_columns(pl.when(pl.col("g") == reference).then(0).otherwise(pl.col("g")).alias("g"))
     )
-    if store.weighted:
-        data = data.with_columns(pl.col("w") * store.weight_scale)
-    design = FrozenDesign(list(store.design.names)) if store.design is not None else None
-    restricted = PanelStore(
+    restricted = restage(
+        store,
         data,
-        root,
-        store.batch_units,
-        store.budget,
-        store.leaf_bytes * 4 / 1e6,
-        design,
+        "reference",
         "balanced" if store.panel_mode in ("balanced", "complete") else "unbalanced",
         anticipation,
-        allow_time_varying_weights=store.allow_time_varying_weights,
-        retain_actual_cohort=store.retain_actual_cohort,
-        actual_cohort_column="g_actual" if store.retain_actual_cohort else None,
     )
     dropped_rows = store.n_rows_used - restricted.n_rows_used
     dropped_units = store.n_units - restricted.n_units
-    restricted.n_rows = store.n_rows
-    restricted.n_units_input = store.n_units_input
     metadata = dict(
         reference_group_requested=policy,
         reference_group="lasttreated",
@@ -111,3 +94,32 @@ def reference_store(store, policy, anticipation):
         stacklevel=3,
     )
     return restricted, metadata
+
+
+def restage(store, data, name, panel_mode, anticipation):
+    """Stage a subset of a store's rows (``data``, with the store's columns) as
+    a new store, keeping the input counts and the original period labels."""
+    root = store.root / name
+    root.mkdir()
+    data = data.with_columns(pl.col("u").alias("id")).drop("u")
+    if store.weighted:
+        data = data.with_columns(pl.col("w") * store.weight_scale)
+    design = FrozenDesign(list(store.design.names)) if store.design is not None else None
+    restricted = PanelStore(
+        data,
+        root,
+        store.batch_units,
+        store.budget,
+        store.leaf_bytes * 4 / 1e6,
+        design,
+        panel_mode,
+        anticipation,
+        allow_time_varying_weights=store.allow_time_varying_weights,
+        retain_actual_cohort=store.retain_actual_cohort,
+        actual_cohort_column="g_actual" if store.retain_actual_cohort else None,
+    )
+    # The restaged rows are already numbered consecutively; keep the original labels.
+    restricted.period_labels = store.period_labels
+    restricted.n_rows = store.n_rows
+    restricted.n_units_input = store.n_units_input
+    return restricted

@@ -9,15 +9,17 @@ from hdfe_stream.core.wildboot import WEIGHTS
 from numpy.testing import assert_allclose
 from scipy.special import ndtri
 from scipy.stats import chi2
+from stream_limits import current_rss_gb
 
+from benchmarks._estimators import fit_estimator, public
 from benchmarks._files import read_csv
-from diff_stream import diff_stream
+from diff_stream import did_bjs
 from diff_stream._core.multiplier import StreamingMultiplier, multiplier_band
 from diff_stream.store import PanelStore
 
 ROOT = Path(__file__).parent / "data"
 REF = ROOT / "inference_reference"
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2)
 REPS = 199
 SCENARIOS = [
     ("constant", "dr", "nevertreated", "varying"),
@@ -88,23 +90,23 @@ def test_r_common_draws(
         else panel
     )
     sample = "unbalanced" if unbalanced else "balanced"
-    r = diff_stream(
+    r = fit_estimator(
         "y ~ 1" if design == "constant" else "y ~ x + z",
         d,
         weights="w" if weighted else None,
-        panel_mode=sample,
+        incomplete_units=public("incomplete_units", sample),
         anticipation=A,
-        est_method=method,
-        control_group=control,
+        adjustment=public("adjustment", method),
+        control_group=public("control_group", control),
         base_period=base,
-        bootstrap_reps=REPS,
-        bootstrap_seed=5,
+        multiplier_bootstrap_reps=REPS,
+        multiplier_bootstrap_seed=5,
         batch_units=17,
         **KW,
     )
     prefix = f"{sample}_{int(weighted)}_{A}_{design}_{control}_{base}_{method}"
     for kind in ("cells", "dynamic", "simple", "cohort", "calendar"):
-        a = r if kind == "cells" else r.aggregate(kind)
+        a = r if kind == "cells" else r.aggregate(public("kind", kind))
         label = "group" if kind == "cohort" else kind
         ref = read_csv(REF / f"{prefix}_{label}.csv.gz")
         ix = [ref["term"].to_list().index(n) for n in a.coefnames]
@@ -126,7 +128,7 @@ def test_r_common_draws(
     assert_allclose(p["pvalue"], reference["pvalue"], atol=1e-8)
     assert p["df1"] == reference["df"]
     assert all(h < -A for h in p["horizons"])
-    direct, aggregated = r.pretrend_test(level="dynamic"), r.aggregate().pretrend_test()
+    direct, aggregated = r.pretrend_test(level="event_time"), r.aggregate().pretrend_test()
     for key in ("statistic", "pvalue"):
         assert_allclose(direct.pop(key), aggregated.pop(key), atol=1e-12)
     assert direct == aggregated
@@ -152,7 +154,9 @@ def test_reducer_reuses_hdfe_samplers_and_bounds_blocks(weights, monkeypatch):
 @pytest.mark.parametrize("estimator", ["cs", "sunab"])
 @pytest.mark.parametrize("base", ["varying", "universal"])
 def test_clean_pretrend_selection(panel, estimator, base):
-    r = diff_stream("y ~ 1", panel, estimator=estimator, anticipation=2, base_period=base, **KW)
+    # Sun-Abraham always omits the last clean period; base_period is a CS option.
+    base = {"base_period": base} if estimator == "cs" else {}
+    r = fit_estimator("y ~ 1", panel, estimator=estimator, anticipation=2, **base, **KW)
     test = r.pretrend_test(horizons=[-4, -5])
     ix = [i for i, (g, t) in enumerate(r.cells) if t - g in (-4, -5)]
     b, V = r.beta[ix], r.vcov[np.ix_(ix, ix)]
@@ -165,18 +169,18 @@ def test_clean_pretrend_selection(panel, estimator, base):
     for bad in [[-2], [-1], [0], [-99], [], [True], [1.2]]:
         with pytest.raises(ValueError, match="clean|not estimated"):
             r.pretrend_test(horizons=bad)
-    with pytest.raises(ValueError, match="dynamic"):
-        r.aggregate("simple").pretrend_test()
+    with pytest.raises(ValueError, match="event-time"):
+        r.aggregate("overall").pretrend_test()
     with pytest.raises(ValueError, match="level"):
         r.pretrend_test(level="invalid")
 
 
 def test_unsupported_and_degenerate_pretests(panel):
-    b = diff_stream("y ~ 1", panel, estimator="bjs", anticipation=2, **KW)
-    with pytest.raises(ValueError, match="pretrends"):
+    b = did_bjs("y ~ 1", panel, anticipation=2, **KW)
+    with pytest.raises(ValueError, match="pretrend_leads"):
         b.pretrend_test()
     b.cleanup()
-    f = diff_stream("y ~ 1", panel, **KW)
+    f = fit_estimator("y ~ 1", panel, **KW)
     f.vcov[:] = 0
     with pytest.raises(ValueError, match="zero"):
         f.pretrend_test()
@@ -184,21 +188,27 @@ def test_unsupported_and_degenerate_pretests(panel):
     with pytest.raises(ValueError, match="singular"):
         f.pretrend_test()
     with pytest.raises(ValueError, match="no estimated"):
-        diff_stream("y ~ 1", panel, **KW).aggregate(horizons=[0]).pretrend_test()
+        fit_estimator("y ~ 1", panel, **KW).aggregate(horizons=[0]).pretrend_test()
 
 
 def test_band_quantiles_selection_crv_and_no_refit(panel, tmp_path, monkeypatch):
-    f = diff_stream(
+    f = fit_estimator(
         "y ~ x + z",
         panel,
         weights="w",
-        bootstrap_reps=299,
-        bootstrap_seed=37,
+        multiplier_bootstrap_reps=299,
+        multiplier_bootstrap_seed=37,
         workdir=tmp_path,
         **KW,
     )
-    g = diff_stream(
-        "y ~ x + z", panel, weights="w", bootstrap_reps=299, bootstrap_seed=37, batch_units=11, **KW
+    g = fit_estimator(
+        "y ~ x + z",
+        panel,
+        weights="w",
+        multiplier_bootstrap_reps=299,
+        multiplier_bootstrap_seed=37,
+        batch_units=11,
+        **KW,
     )
     assert_allclose(f.multiplier_draws(), g.multiplier_draws(), atol=1e-11)
     assert not list(tmp_path.iterdir())
@@ -236,14 +246,14 @@ def test_band_quantiles_selection_crv_and_no_refit(panel, tmp_path, monkeypatch)
 @pytest.mark.parametrize(
     "option,value",
     [
-        ("bootstrap_reps", True),
-        ("bootstrap_reps", 1),
-        ("bootstrap_reps", -1),
-        ("bootstrap_reps", 1.5),
-        ("bootstrap_seed", True),
-        ("bootstrap_seed", -1),
-        ("bootstrap_seed", 1.5),
-        ("bootstrap_weights", "bad"),
+        ("multiplier_bootstrap_reps", True),
+        ("multiplier_bootstrap_reps", 1),
+        ("multiplier_bootstrap_reps", -1),
+        ("multiplier_bootstrap_reps", 1.5),
+        ("multiplier_bootstrap_seed", True),
+        ("multiplier_bootstrap_seed", -1),
+        ("multiplier_bootstrap_seed", 1.5),
+        ("multiplier_bootstrap_weights", "bad"),
     ],
 )
 def test_invalid_options_before_execution(panel, option, value, monkeypatch):
@@ -251,18 +261,18 @@ def test_invalid_options_before_execution(panel, option, value, monkeypatch):
         PanelStore, "__init__", lambda *a, **kw: (_ for _ in ()).throw(AssertionError("executed"))
     )
     with pytest.raises(ValueError, match="bootstrap"):
-        diff_stream("y ~ 1", panel, **{option: value}, **KW)
+        fit_estimator("y ~ 1", panel, **{option: value}, **KW)
 
 
 def test_disabled_profile_and_invalid_inference(panel):
-    f = diff_stream("y ~ 1", panel, **KW)
+    f = fit_estimator("y ~ 1", panel, **KW)
     with pytest.raises(ValueError, match="bootstrap_reps"):
         f.multiplier_confint()
     for estimator in ("sunab", "bjs"):
-        with pytest.raises(ValueError, match="only for CS"):
-            diff_stream("y ~ 1", panel, estimator=estimator, bootstrap_reps=99, **KW)
-    p = diff_stream("y ~ 1", panel, bootstrap_reps=999, profile=True, **KW)
-    assert p.notes["bootstrap_reps"] == 999
+        with pytest.raises(TypeError, match="multiplier_bootstrap_reps"):
+            fit_estimator("y ~ 1", panel, estimator=estimator, multiplier_bootstrap_reps=99, **KW)
+    p = fit_estimator("y ~ 1", panel, multiplier_bootstrap_reps=999, profile=True, **KW)
+    assert p.notes["multiplier_bootstrap_reps"] == 999
     with pytest.raises(ValueError, match="zero"):
         multiplier_band(np.zeros((99, 2)), 0.05)
     for alpha in [0, 1, -0.1, np.nan, True]:
@@ -275,13 +285,21 @@ def test_disabled_profile_and_invalid_inference(panel):
 def test_complete_sample_and_bootstrap_disabled_equivalence(panel):
     d = panel.filter(~((pl.col("id") % 4 == 0) & pl.col("time").is_in([3, 7])))
     complete = d.filter(pl.col("time").count().over("id") == 8)
-    kw = dict(weights="w", anticipation=2, bootstrap_reps=199, bootstrap_seed=71, **KW)
-    a = diff_stream("y ~ x + z", d, panel_mode="complete", **kw)
-    b = diff_stream("y ~ x + z", complete, **kw)
+    kw = dict(
+        weights="w",
+        anticipation=2,
+        multiplier_bootstrap_reps=199,
+        multiplier_bootstrap_seed=71,
+        **KW,
+    )
+    a = fit_estimator("y ~ x + z", d, incomplete_units="drop", **kw)
+    b = fit_estimator("y ~ x + z", complete, **kw)
     assert_allclose(a.multiplier_draws(), b.multiplier_draws(), atol=1e-11)
     assert_allclose(a.aggregate().multiplier_draws(), b.aggregate().multiplier_draws(), atol=1e-11)
-    c = diff_stream("y ~ 1", panel, bootstrap_reps=199, bootstrap_seed=71, **KW)
-    plain = diff_stream("y ~ 1", panel, **KW)
+    c = fit_estimator(
+        "y ~ 1", panel, multiplier_bootstrap_reps=199, multiplier_bootstrap_seed=71, **KW
+    )
+    plain = fit_estimator("y ~ 1", panel, **KW)
     assert_allclose(c.beta, plain.beta, atol=1e-11)
     assert_allclose(c.vcov, plain.vcov, atol=1e-11)
     assert_allclose(c.aggregate().vcov, plain.aggregate().vcov, atol=1e-11)
@@ -293,11 +311,12 @@ def test_bootstrap_allocation_guard(panel, tmp_path, monkeypatch):
 
     monkeypatch.setattr(StreamingMultiplier, "__init__", unexpected)
     with pytest.raises(MemoryError, match="numerical buffers"):
-        diff_stream(
+        fit_estimator(
             "y ~ 1",
             panel,
-            bootstrap_reps=10**8,
-            memory_gb=1,
+            multiplier_bootstrap_reps=10**8,
+            # room for staging, not for 10**8 draws, whatever this process holds
+            max_memory_gb=(current_rss_gb() or 0) + 0.6,
             preprocess_mb=1,
             workdir=tmp_path,
             **KW,
@@ -308,7 +327,7 @@ def test_bootstrap_allocation_guard(panel, tmp_path, monkeypatch):
 def test_pretrend_wald_invariant_to_restriction_units(panel):
     from copy import copy
 
-    f = diff_stream("y ~ 1", panel, **KW)
+    f = fit_estimator("y ~ 1", panel, **KW)
     original = f.pretrend_test()
     g = copy(f)
     scaling = np.ones(len(g.beta))

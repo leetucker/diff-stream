@@ -17,9 +17,10 @@ from numpy.testing import assert_allclose
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from benchmarks._estimators import public  # noqa: E402
 from benchmarks._files import digest as file_digest  # noqa: E402
 from benchmarks._files import read_csv  # noqa: E402
-from diff_stream import etwfe_stream  # noqa: E402
+from diff_stream import did_extended_twfe  # noqa: E402
 
 DATA = ROOT / "tests/data"
 REF = DATA / "etwfe_reference"
@@ -176,9 +177,7 @@ def compare_reference(fit, prefix):
     keys = list(zip(ref["first_treat"].to_numpy() + A, ref["time"], strict=True))
     ix = [keys.index(c) for c in fit.cells]
     V = read_csv(REF / (prefix + "_cells_vcov.csv"), has_header=False).to_numpy()[np.ix_(ix, ix)]
-    factor = (
-        fit.n_units / (fit.n_units - 1) if fit.diagnostics["inference"] == "unconditional" else 1
-    )
+    factor = fit.n_units / (fit.n_units - 1) if not fit.diagnostics["treat_sample_as_fixed"] else 1
     beta = ref["estimate"].to_numpy()[ix]
     assert_allclose(fit.beta, beta, atol=2e-9, rtol=0)
     assert_allclose(fit.vcov * factor, V, atol=2e-9, rtol=0)
@@ -192,7 +191,7 @@ def compare_reference(fit, prefix):
         ("cohort", "group", "first_treat"),
         ("calendar", "calendar", "time"),
     ]:
-        agg = fit.aggregate(kind)
+        agg = fit.aggregate(public("kind", kind))
         ref = read_csv(REF / (prefix + "_" + rkind + ".csv"))
         if key:
             levels = ref[key].to_numpy() + (
@@ -273,19 +272,23 @@ def main():
         formula, weight = configuration(case)
         for inference in ["conditional", "unconditional"]:
             prefix = f"{panel}_{control}_{fe}_{case}_{A}_{inference}"
-            fit = etwfe_stream(
+            fit = did_extended_twfe(
                 formula,
                 d,
                 panel=("id", "time"),
                 cohort="first_treat",
-                control_group="nevertreated" if control == "never" else "notyettreated",
+                control_group=public(
+                    "control_group", "nevertreated" if control == "never" else "notyettreated"
+                ),
                 fixed_effects=fe,
-                inference=inference,
+                treat_sample_as_fixed=public("treat_sample_as_fixed", inference),
                 weights=weight,
                 allow_time_varying_weights=True,
-                panel_mode="unbalanced" if panel == "unbalanced" else "balanced",
+                incomplete_units=public(
+                    "incomplete_units", "unbalanced" if panel == "unbalanced" else "balanced"
+                ),
                 anticipation=A,
-                threads=2,
+                n_threads=2,
                 batch_units=37,
                 preprocess_mb=4,
             )

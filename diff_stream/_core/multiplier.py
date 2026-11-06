@@ -20,13 +20,13 @@ def validate_bootstrap(reps, seed, weights):
         or not isinstance(reps, Integral)
         or (reps != 0 and reps < 2)
     ):
-        raise ValueError("bootstrap_reps must be 0 (disabled) or an integer >= 2")
+        raise ValueError("multiplier_bootstrap_reps must be 0 (disabled) or an integer >= 2")
     if seed is not None and (
         isinstance(seed, (bool, np.bool_)) or not isinstance(seed, Integral) or seed < 0
     ):
-        raise ValueError("bootstrap_seed must be a nonnegative integer or None")
+        raise ValueError("multiplier_bootstrap_seed must be a nonnegative integer or None")
     if not isinstance(weights, str) or weights not in WEIGHTS:
-        raise ValueError(f"bootstrap_weights must be one of {sorted(WEIGHTS)}")
+        raise ValueError(f"multiplier_bootstrap_weights must be one of {sorted(WEIGHTS)}")
 
 
 class StreamingMultiplier:
@@ -83,7 +83,7 @@ def multiplier_band(draws, alpha, *, joint=True, analytic_se=None):
         se = np.asarray(analytic_se)
     if not np.isfinite(draws).all() or not np.isfinite(se).all() or np.any(se <= 0):
         raise ValueError(
-            "selected coefficients have zero or non-finite bootstrap/analytic scale; select supported coefficients or increase bootstrap_reps"
+            "selected coefficients have zero or non-finite bootstrap/analytic scale; select supported coefficients or increase multiplier_bootstrap_reps"
         )
     t = np.abs(draws / se)
     critical = np.quantile(t.max(axis=1) if joint else t, 1 - alpha, axis=0, method="inverted_cdf")

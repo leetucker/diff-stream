@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT))
 from stream_limits.launcher import run_limited  # noqa: E402
 from stream_limits.testing import verify_memory_limit  # noqa: E402
 
+from benchmarks._estimators import public  # noqa: E402
 from benchmarks.gardner_resources import save  # noqa: E402
 
 
@@ -49,12 +50,14 @@ def child(c):
         source,
         panel=("id", "time"),
         treatment="d",
-        panel_mode="unbalanced" if c["unbalanced"] else "balanced",
+        incomplete_units=public(
+            "incomplete_units", "unbalanced" if c["unbalanced"] else "balanced"
+        ),
         weights="w",
         allow_time_varying_weights=True,
         keep_cells=True,
-        threads=2,
-        memory_gb=1.5,
+        n_threads=2,
+        max_memory_gb=1.5,
         preprocess_mb=8,
         batch_units=128,
         workdir=c["workdir"],

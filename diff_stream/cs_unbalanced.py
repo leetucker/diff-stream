@@ -7,11 +7,11 @@ rows. Units seen at only one date contribute; scores are folded by unit.
 from dataclasses import dataclass
 
 import numpy as np
-from hdfe_stream.core.influence import ClusterScoreAccumulator
 from scipy.special import expit
 
 from ._core.functionals import NormalizedMeans
 from ._core.nuisance import fit_linear_systems, fit_systems, solve_checked
+from .cohort_scores import CohortScoreCovariance
 
 
 @dataclass
@@ -200,25 +200,23 @@ def fit_cs_unbalanced(
     for f in fitted:
         f.finish()
     M = len(cells)
-    accumulator = ClusterScoreAccumulator()
     cohorts = np.array([g for g, _ in cells])
+    counts = np.array([store.gw[g] for g, _ in cells], float)
+    # Unadjusted sums of [scores, share] outer products: api.py owns the
+    # explicit CRV0/CRV1 factor for all covariance blocks.
+    accumulator = CohortScoreCovariance(cohorts, counts / store.n_units)
     for raw in batches():
         g, y, _, w = raw
         scores = np.zeros((len(g), M))
-        counts = np.array([store.gw[g] for g, _ in cells], float)
         anchor = w.sum(axis=1) / np.isfinite(y).sum(axis=1) if w.ndim == 2 else w
-        share = anchor[:, None] * ((g[:, None] == cohorts) - counts / store.n_units)
         for j, f in enumerate(fitted):
             unit, phi = f.scores(raw)
             np.add.at(scores[:, j], unit, phi)
-        accumulator.add_clusters(scores, share)
+        accumulator.add(g, scores, anchor)
         if multiplier is not None:
+            share = anchor[:, None] * ((g[:, None] == cohorts) - counts / store.n_units)
             multiplier.update(scores, share)
-    counts = np.array([store.gw[g] for g, _ in cells], float)
-    # add_clusters consumes per-unit scores and sums does not apply an SSC.
-    # api.py owns the explicit CRV0/CRV1 factor for all covariance blocks.
-    joint = accumulator.sums
-    V, cross, share_cov = joint[:M, :M], joint[:M, M:], joint[M:, M:]
+    V, cross, share_cov = accumulator.blocks()
     if balance_collector is not None:
         balance_collector.unbalanced(comparisons, fitted, batches)
     metadata = dict(

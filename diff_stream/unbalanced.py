@@ -250,7 +250,7 @@ class ObservedBJSInference:
                     unidentified |= invalid.any(axis=0)
                     if invalid.any() and not allow_unidentified:
                         raise ValueError(
-                            "BJS leaveout requires more than one contributing unit in each residual group; use broader avgeffectsby groups"
+                            "BJS leave_out requires more than one contributing unit in each residual group; use a coarser residual_averaging"
                         )
                     contribution = np.divide(
                         contribution,

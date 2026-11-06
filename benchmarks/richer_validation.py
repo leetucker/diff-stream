@@ -20,11 +20,12 @@ import stream_limits  # noqa: E402
 stream_limits.limit_threads(2)
 import numpy as np  # noqa: E402
 
-from diff_stream import diff_stream  # noqa: E402
+from benchmarks._estimators import fit_estimator, public  # noqa: E402
+from diff_stream import did_bjs  # noqa: E402
 
 REF = ROOT / "tests/data/richer_reference"
 EXPORTER = ROOT / "benchmarks/external/richer_reference.R"
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2)
 SPECS = ["plain_varying", "numeric_varying", "extra_fe_varying", "extra_fe_unit", "extra_fe_equal"]
 
 
@@ -94,17 +95,17 @@ def audit():
             ["varying", "universal"],
             ["reg", "ipw", "dr"],
         ):
-            r = diff_stream(
+            r = fit_estimator(
                 "y ~ 1" if design == "constant" else "y ~ x+z",
                 d,
                 weights="w",
                 allow_time_varying_weights=True,
-                panel_mode=label,
+                incomplete_units=public("incomplete_units", label),
                 anticipation=A,
-                est_method=method,
-                control_group=control,
+                adjustment=public("adjustment", method),
+                control_group=public("control_group", control),
                 base_period=base,
-                ess_warn_threshold=None,
+                effective_sample_warning=None,
                 **KW,
             )
             prefix = f"cs_{label}_{A}_{design}_{control}_{base}_{method}"
@@ -114,19 +115,21 @@ def audit():
                 if base == "varying" and kind != "dynamic":
                     continue
                 compare(
-                    r.aggregate(kind), prefix + "_" + ("group" if kind == "cohort" else kind), 3e-8
+                    r.aggregate(public("kind", kind)),
+                    prefix + "_" + ("group" if kind == "cohort" else kind),
+                    3e-8,
                 )
         for spec, est in itertools.product(SPECS, ["sunab", "bjs"]):
             f, w = formula(spec)
-            r = diff_stream(
+            r = fit_estimator(
                 f,
                 d,
                 weights=w,
                 allow_time_varying_weights=True,
                 estimator=est,
                 anticipation=A,
-                panel_mode=label,
-                pretrends=2 if est == "bjs" else 0,
+                incomplete_units=public("incomplete_units", label),
+                pretrend_leads=2 if est == "bjs" else 0,
                 batch_units=37,
                 **KW,
             )
@@ -138,7 +141,7 @@ def audit():
                 else:
                     for kind in ["cells", "dynamic", "simple"]:
                         compare(
-                            r if kind == "cells" else r.aggregate(kind),
+                            r if kind == "cells" else r.aggregate(public("kind", kind)),
                             prefix + "_cohort_time_plugin_" + kind,
                             1e-9,
                         )
@@ -148,23 +151,22 @@ def audit():
         for avg, lo in itertools.product(
             ["cohort_time", "event_time", "cohort", "all"], [False, True]
         ):
-            r = diff_stream(
+            r = did_bjs(
                 formula("extra_fe_varying")[0],
                 d,
                 weights="w",
                 allow_time_varying_weights=True,
-                estimator="bjs",
                 anticipation=A,
-                panel_mode=label,
-                avgeffectsby=avg,
-                leaveout=lo,
+                incomplete_units=public("incomplete_units", label),
+                residual_averaging=avg,
+                leave_out=lo,
                 **KW,
             )
             fits += 1
             try:
                 for kind in ["cells", "dynamic", "simple"]:
                     compare(
-                        r if kind == "cells" else r.aggregate(kind),
+                        r if kind == "cells" else r.aggregate(public("kind", kind)),
                         f"bjs_{label}_{A}_extra_fe_varying_{avg}_{'leaveout' if lo else 'plugin'}_{kind}",
                         1e-9,
                     )

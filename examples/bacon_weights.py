@@ -14,7 +14,7 @@ bacon = bacon_decomp(
     panel=("id", "time"),
     cohort="first_treat",
     weights="sampling_weight",
-    threads=2,
+    n_threads=2,
 )
 print("Weighted TWFE:", bacon.twfe_estimate)
 print("Reconstructed:", bacon.decomposed_estimate)

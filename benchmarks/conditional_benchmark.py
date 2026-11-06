@@ -13,20 +13,21 @@ from _harness import measure, run_child
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT.parent))
-from diff_stream import cs_stream  # noqa: E402
+from benchmarks._estimators import public  # noqa: E402
+from diff_stream import did_callaway_santanna  # noqa: E402
 from diff_stream.simulate import simulate_conditional_panel  # noqa: E402
 
 
 def runner(config, n, path, workdir):
     method, threads = config.split(":")
     start = time.perf_counter()
-    r = cs_stream(
+    r = did_callaway_santanna(
         "y ~ x + z",
         path,
         panel=("id", "time"),
         cohort="first_treat",
-        est_method=method,
-        threads=int(threads),
+        adjustment=public("adjustment", method),
+        n_threads=int(threads),
         workdir=workdir,
     )
     return dict(

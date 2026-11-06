@@ -21,7 +21,8 @@ import polars as pl
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from benchmarks import resource_checks as h
-from diff_stream import cs_stream
+from benchmarks._estimators import public
+from diff_stream import did_callaway_santanna
 
 OUT = h.ROOT / "benchmarks/results/numerical_stress"
 SCENARIOS = (
@@ -112,7 +113,7 @@ def sample(scenario, unbalanced=False, n=2400):
 
 
 def result_payload(fit, scale):
-    a = fit.aggregate("simple")
+    a = fit.aggregate("overall")
     return dict(
         cells=[list(c) for c in fit.cells],
         beta=(fit.beta / scale).tolist(),
@@ -173,18 +174,18 @@ def run(out, rscript):
                 )
                 fit = None
                 try:
-                    fit = cs_stream(
+                    fit = did_callaway_santanna(
                         fml,
                         d,
                         panel=("id", "time"),
                         cohort="first_treat",
-                        est_method=method,
-                        panel_mode=mode,
+                        adjustment=public("adjustment", method),
+                        incomplete_units=public("incomplete_units", mode),
                         weights="w",
-                        threads=2,
+                        n_threads=2,
                         batch_units=137,
                         preprocess_mb=4,
-                        trim_level=0.8 if scenario.startswith("overlap_") else 0.995,
+                        propensity_trim=0.8 if scenario.startswith("overlap_") else 0.995,
                     )
                     payload = result_payload(fit, scale)
                     assert np.isfinite(fit.beta).all() and np.isfinite(fit.vcov).all()

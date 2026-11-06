@@ -56,7 +56,7 @@ def test_layout_sources_and_id_relabeling(tmp_path):
             panel=("state", "class"),
             cohort="first_treat",
             preprocess_mb=1,
-            threads=2,
+            n_threads=2,
             workdir=tmp_path / "work",
         )
         assert_allclose(fit.twfe_estimate, original.twfe_estimate, atol=1e-12)

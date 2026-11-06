@@ -1,17 +1,17 @@
 """Aggregation and contributor inspection on a simulated unbalanced panel."""
 
-from diff_stream import cs_stream
+from diff_stream import did_callaway_santanna
 from diff_stream.simulate import simulate_conditional_panel
 
 panel = simulate_conditional_panel(1200, 8, seed=99)
 panel = panel.filter(~((panel["id"] % 4 == 0) & (panel["time"] == 7)))
-fit = cs_stream(
+fit = did_callaway_santanna(
     "y ~ x + z",
     panel,
     panel=("id", "time"),
     cohort="first_treat",
-    panel_mode="unbalanced",
-    threads=2,
+    incomplete_units="keep",
+    n_threads=2,
 )
 for kind in ["cohort", "calendar"]:
     result = fit.aggregate(kind)

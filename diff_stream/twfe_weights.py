@@ -11,8 +11,11 @@ import pyarrow.parquet as pq
 from hdfe_stream.core.profile import Component, Profile
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
+from . import _docs, _options
 from ._core.nuisance import solve_checked
+from ._core.partition import preprocess_budget_mb
 from ._core.within import center_groups, independent_columns
+from ._present import public_profile
 from .twfe_store import WeightStore, inspect_weights
 
 
@@ -327,7 +330,7 @@ def _fit(store, path, zero_tol):
     return float(beta), summary, sensitivity, meta
 
 
-def twfe_weights(
+def _twfe_weights(
     fml,
     data,
     *,
@@ -340,34 +343,19 @@ def twfe_weights(
     keep_cells=False,
     zero_tol=1e-10,
     batch_units=256,
-    preprocess_mb=64,
+    preprocess_mb=None,
     threads=None,
     memory_gb=None,
+    memory_reserve=None,
     workdir=None,
     profile=False,
     max_design_columns=2048,
 ):
-    """Diagnose binary-treatment TWFE weights under the published feTR convention.
+    """TWFE treatment-effect weights from internal option names; see twfe_weights.
 
-    Supply exactly one of treatment='binary_column' or cohort='first_treat'.
-    Direct treatment may reverse. Unit/time effects are automatic; fml supplies
-    the outcome and optional bounded covariates. Native unbalanced fits use
-    observed cells; complete mode explicitly drops incomplete units. Time is
-    positive integer valued; calendar gaps are allowed. Duplicate cells and
-    missing/nonfinite required values raise. Sampling weights must be positive;
-    changing weights within units require allow_time_varying_weights=True.
-
-    Cell weights sum to one and may be negative. Their causal interpretation
-    needs the paper's common-trends/contemporaneous-effect assumptions; this
-    method does not estimate an ATT or supply ATT inference. zero_tol classifies
-    summary weights as zero, matching R's 1e-10 default, without changing raw
-    cell weights. Sensitivity measures follow R TwoWayFEWeights type='feTR'.
-
-    keep_cells=True retains temporary Parquet for cells()/iter_cells()/write_cells();
-    use a context manager or cleanup(). Otherwise scratch is released before
-    return and only reduced summaries remain. profile=True validates/stages the
-    source and returns a resource estimate before projection. Dense state is
-    bounded by dates/covariates, batch_units and the memory admission guard.
+    Native unbalanced fits use observed cells. zero_tol classifies summary
+    weights as zero (R's 1e-10 default) without changing raw cell weights.
+    keep_cells retains temporary Parquet until cleanup().
     """
     if panel_mode not in ("balanced", "unbalanced", "complete"):
         raise ValueError("panel_mode must be balanced, unbalanced or complete")
@@ -377,12 +365,11 @@ def twfe_weights(
     if threads is not None and (
         isinstance(threads, bool) or not isinstance(threads, int) or threads < 1
     ):
-        raise ValueError("threads must be a positive integer")
-    if isinstance(preprocess_mb, bool) or not np.isfinite(preprocess_mb) or preprocess_mb < 1:
-        raise ValueError("preprocess_mb must be finite and at least 1 MB")
+        raise ValueError("n_threads must be a positive integer")
     if isinstance(zero_tol, bool) or not np.isfinite(zero_tol) or zero_tol < 0:
-        raise ValueError("zero_tol must be finite and nonnegative")
-    budget = MemoryBudget(memory_gb)
+        raise ValueError("zero_tolerance must be finite and nonnegative")
+    budget = MemoryBudget(memory_gb, memory_reserve)
+    preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline = current_rss_gb() or 0
     lf, y, plan = inspect_weights(fml, data, panel, treatment, cohort, weights)
     if workdir is not None:
@@ -485,3 +472,81 @@ def twfe_weights(
     finally:
         if run is not None:
             run.cleanup()
+
+
+@_docs.document
+def twfe_weights(
+    fml,
+    data,
+    *,
+    panel,
+    treatment=None,
+    cohort=None,
+    weights=None,
+    allow_time_varying_weights=False,
+    incomplete_units="error",
+    keep_cells=False,
+    zero_tolerance=1e-10,
+    max_design_columns=2048,
+    n_threads=None,
+    max_memory_gb=None,
+    memory_reserve=None,
+    workdir=None,
+    profile=False,
+    batch_units=256,
+    preprocess_mb=None,
+):
+    """de Chaisemartin and D'Haultfoeuille's weights behind a TWFE estimate.
+
+    Under heterogeneous effects, the coefficient on a binary treatment in a
+    regression with unit and time fixed effects is a weighted sum of the
+    effects in each treated unit-period, and some weights can be negative.
+    This reports those weights and two sensitivity measures: how much effect
+    heterogeneity would be needed for the estimate to have the opposite sign
+    from every unit-period's effect. It is a diagnostic, not an estimator of
+    a causal effect. It follows the authors' R package TwoWayFEWeights
+    (``type="feTR"``).
+
+    de Chaisemartin, C. and D'Haultfoeuille, X. (2020). Two-way fixed effects
+    estimators with heterogeneous treatment effects. *American Economic
+    Review* 110(9), 2964-2996.
+
+    Parameters
+    ----------
+    fml : str
+        ``"y ~ 1"``, or ``"y ~ x + z"`` with covariates. Unit and time fixed
+        effects are always included.
+    data : polars.DataFrame, polars.LazyFrame, str or Path
+        The panel, or a Parquet path or glob.
+    panel : tuple of str
+        The unit and time columns. Times are positive integers; gaps are
+        allowed.
+    treatment, cohort : str, optional
+        Exactly one: a binary treatment column (which may switch on and off),
+        or a first-treated-period column (0 = never treated).
+    weights : str, optional
+        A column of positive sampling weights.
+    allow_time_varying_weights : bool, default False
+        Accept weights that change over time within a unit.
+    incomplete_units : {"error", "drop", "keep"}, default "error"
+        Refuse a panel with missing unit-periods, drop the incomplete units,
+        or use the observed unit-periods.
+    keep_cells : bool, default False
+        Keep every treated cell's weight for ``cells()``, ``iter_cells()`` and
+        ``write_cells()`` (on disk, until ``cleanup()``).
+    zero_tolerance : float, default 1e-10
+        Weights smaller than this in absolute value count as zero in the
+        summary (R's default).
+    max_design_columns : int, default 2048
+        The limit on the expanded covariate design.
+    {RESOURCES}
+
+    Returns
+    -------
+    TWFEWeightResult or Profile
+        ``summary()`` reports the positive and negative weights and the
+        sensitivity measures.
+    """
+    options = dict(locals())
+    fml, data = options.pop("fml"), options.pop("data")
+    return public_profile(_twfe_weights(fml, data, **_options.internal(options)))

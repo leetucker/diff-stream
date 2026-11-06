@@ -12,17 +12,17 @@ from numpy.testing import assert_allclose
 from scipy.optimize import root
 from scipy.special import expit
 
+from benchmarks._estimators import fit_estimator, public
 from benchmarks._files import read_csv
-from diff_stream import diff_stream
 
 DATA = Path(__file__).parent / "data"
 KW = dict(
     panel=("id", "time"),
     cohort="first_treat",
-    threads=2,
+    n_threads=2,
     preprocess_mb=4,
     batch_units=37,
-    ess_warn_threshold=None,
+    effective_sample_warning=None,
 )
 
 
@@ -81,18 +81,18 @@ def test_balance_selection_and_propensity_weights(panel, target, control, method
         DATA / ("richer_panel.csv" if panel == "balanced" else "richer_unbalanced_panel.csv")
     )
     ecdf = method == "dr" and target == 6 and control == "nevertreated"
-    fit = diff_stream(
+    fit = fit_estimator(
         "y~x+z",
         d,
         **KW,
-        panel_mode=panel,
-        control_group=control,
-        est_method=method,
+        incomplete_units=public("incomplete_units", panel),
+        control_group=public("control_group", control),
+        adjustment=public("adjustment", method),
         weights="w",
         allow_time_varying_weights=True,
-        trim_level=0.65,
-        balance=True,
-        balance_ecdf=ecdf,
+        propensity_trim=0.65,
+        covariate_balance=True,
+        balance_distributions=ecdf,
         workdir=tmp_path,
     )
     table = fit.covariate_balance(cohort=5, time=target)
@@ -168,26 +168,26 @@ def test_balance_is_opt_in_and_does_not_change_estimation(tmp_path):
     d = read_csv(DATA / "richer_unbalanced_panel.csv")
     kwargs = dict(
         **KW,
-        panel_mode="unbalanced",
+        incomplete_units="keep",
         weights="w",
         allow_time_varying_weights=True,
         workdir=tmp_path,
     )
-    plain = diff_stream("y~x+z", d, **kwargs)
-    balanced = diff_stream("y~x+z", d, balance=True, **kwargs)
+    plain = fit_estimator("y~x+z", d, **kwargs)
+    balanced = fit_estimator("y~x+z", d, covariate_balance=True, **kwargs)
     assert_allclose(plain.beta, balanced.beta, atol=1e-12, rtol=0)
     assert_allclose(plain.vcov, balanced.vcov, atol=1e-12, rtol=0)
     with pytest.raises(ValueError, match="balance=True"):
         plain.covariate_balance()
     for kwargs in [
-        dict(estimator="sunab", balance=True),
-        dict(balance_ecdf=True),
-        dict(balance="yes"),
+        dict(estimator="sunab", covariate_balance=True),
+        dict(balance_distributions=True),
+        dict(covariate_balance="yes"),
     ]:
-        with pytest.raises(ValueError):
-            diff_stream("y~x", d, **KW, **kwargs)
-    with pytest.raises(ValueError, match="non-intercept"):
-        diff_stream("y~1", d, balance=True, panel_mode="unbalanced", **KW)
+        with pytest.raises((ValueError, TypeError)):
+            fit_estimator("y~x", d, **KW, **kwargs)
+    with pytest.raises(ValueError, match="requires covariates"):
+        fit_estimator("y~1", d, covariate_balance=True, incomplete_units="keep", **KW)
     assert not list(tmp_path.iterdir())
     table = balanced.covariate_balance()
     assert len(table) > 0
@@ -200,10 +200,10 @@ def test_reference_and_balance_constrained(resource_runner, resource_enforcement
     path = DATA / "richer_unbalanced_panel.csv"
     work = tmp_path / "child"
     code = f"""import json,warnings,polars as pl
-from diff_stream import diff_stream,ReferenceWindowWarning
+from diff_stream import ReferenceWindowWarning, did_callaway_santanna
 warnings.filterwarnings('ignore',category=ReferenceWindowWarning)
 d=pl.read_csv({str(path)!r}).filter(pl.col('first_treat')!=0)
-r=diff_stream('y~x+z',d,panel=('id','time'),cohort='first_treat',panel_mode='unbalanced',weights='w',allow_time_varying_weights=True,balance=True,threads=2,preprocess_mb=4,batch_units=37,ess_warn_threshold=None,workdir={str(work)!r})
+r=did_callaway_santanna('y~x+z',d,panel=('id','time'),cohort='first_treat',incomplete_units='keep',weights='w',allow_time_varying_weights=True,covariate_balance=True,n_threads=2,preprocess_mb=4,batch_units=37,effective_sample_warning=None,workdir={str(work)!r})
 print(json.dumps(dict(beta=r.beta.tolist(),vcov=r.vcov.tolist(),balance_rows=r.covariate_balance().height,last=r.diagnostics['reference_cohort'])))
 """
     env = dict(

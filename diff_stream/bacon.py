@@ -16,6 +16,9 @@ import polars as pl
 from hdfe_stream.core.profile import Component, Profile
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
+from . import _docs, _options
+from ._core.partition import preprocess_budget_mb
+from ._present import label_frame, public_diagnostics, public_profile
 from .store import PanelStore, inspect
 
 
@@ -200,44 +203,29 @@ def _decompose(store):
     return pl.DataFrame(rows), twfe, float(reconstructed), variance
 
 
-def bacon_decomp(
+def _bacon_decomp(
     fml,
     data,
     *,
     panel,
-    cohort,
+    cohort=None,
+    treatment=None,
     panel_mode="balanced",
     weights=None,
     threads=None,
     memory_gb=None,
+    memory_reserve=None,
     workdir=None,
     profile=False,
-    preprocess_mb=64,
+    preprocess_mb=None,
     batch_units=1024,
 ):
-    """Decompose the OLS/WLS coefficient on treatment with unit/time effects.
+    """Goodman-Bacon decomposition from internal option names; see bacon_decomp.
 
-    fml is an outcome formula ``'y ~ 1'`` or ``'y ~ x + z'``; treatment comes
-    from cohort (0=never). Requires balanced absorbing-treatment panels. Optional
-    weights='column' supplies positive, finite sampling weights constant within
-    unit. All fits/comparison weights use the same sampling weights; physical
-    unit counts remain separate from input-scale weight totals. Common positive
-    rescaling leaves estimates and decomposition weights unchanged.
-    panel_mode='complete' explicitly drops
-    incomplete units; native unbalanced mode is unsupported. Positive cohorts
-    on/before the first date normalize to an always-treated group. Future
-    cohorts normalize to never-treated within the sample.
-    A never-treated group is optional when distinct treated timings identify
-    the regression. The result reports comparisons/weights/contributions and
-    a TWFE reconstruction, without causal ATT inference. With covariates, the
-    within-timing component and full-period timing-group dyads jointly recover
-    TWFE; dyad weights alone sum to 1-within_weight. See docs/bacon_extensions.md.
-
-    Resource/source parameters follow diff_stream(). profile=True returns a
-    Profile after disk-backed validation, before allocating the comparison
-    table. Without covariates numerical state is O(groups * periods + groups**2).
-    Covariates add a dense projection Gram and bounded unit batches; batch_units
-    controls the latter. Preprocessing uses bounded whole-unit partitions.
+    Positive cohorts on or before the first date form an always-treated
+    group; future cohorts are never treated within the sample. With
+    covariates, the within-timing component and the full-period timing-group
+    dyads jointly recover the TWFE coefficient.
     """
     if panel_mode not in ("balanced", "complete"):
         raise ValueError(
@@ -248,14 +236,13 @@ def bacon_decomp(
     if threads is not None and (
         isinstance(threads, bool) or not isinstance(threads, int) or threads < 1
     ):
-        raise ValueError("threads must be a positive integer")
-    if isinstance(preprocess_mb, bool) or not np.isfinite(preprocess_mb) or preprocess_mb < 1:
-        raise ValueError("preprocess_mb must be finite and at least 1 MB")
-    budget = MemoryBudget(memory_gb)
+        raise ValueError("n_threads must be a positive integer")
+    budget = MemoryBudget(memory_gb, memory_reserve)
+    preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline = current_rss_gb() or 0
     with thread_scope(threads):
         lf, yname, design = inspect(
-            fml, data, panel, cohort, weights=weights, allow_covariates=True
+            fml, data, panel, cohort, treatment=treatment, weights=weights, allow_covariates=True
         )
         if not budget.fits((preprocess_mb * 1e6 + 96e6) / 1e9):
             raise MemoryError(
@@ -404,9 +391,68 @@ def bacon_decomp(
                 decomposed_estimate=decomposed,
                 n_units=store.n_units,
                 n_obs=store.n_rows_used,
-                diagnostics=diagnostics,
-                _table=table,
+                diagnostics=public_diagnostics(diagnostics, store.period_labels),
+                _table=label_frame(table, store.period_labels),
                 within_weight=within_weight,
                 within_estimate=within_estimate,
                 within_contribution=within_contribution,
             )
+
+
+@_docs.document
+def bacon_decomp(
+    fml,
+    data,
+    *,
+    panel,
+    cohort=None,
+    treatment=None,
+    weights=None,
+    incomplete_units="error",
+    n_threads=None,
+    max_memory_gb=None,
+    memory_reserve=None,
+    workdir=None,
+    profile=False,
+    batch_units=1024,
+    preprocess_mb=None,
+):
+    """Goodman-Bacon's decomposition of the two-way fixed effects estimate.
+
+    Writes the coefficient on treatment in a regression with unit and time
+    fixed effects as a weighted average of every two-group, two-period
+    comparison in the data, including the "forbidden" ones that use
+    already-treated units as controls. It is a diagnostic of what the
+    conventional estimate averages, not an estimator of a causal effect.
+
+    Goodman-Bacon, A. (2021). Difference-in-differences with variation in
+    treatment timing. *Journal of Econometrics* 225(2), 254-277.
+
+    Parameters
+    ----------
+    fml : str
+        ``"y ~ 1"``, or ``"y ~ x + z"`` for the covariate-adjusted
+        decomposition. Treatment comes from ``cohort``.
+    {DATA}
+        Units treated before the first period (always treated) are allowed;
+        a never-treated group is not required.
+    weights : str, optional
+        A column of sampling weights, positive and constant within each unit.
+    incomplete_units : {"error", "drop"}, default "error"
+        Refuse a panel with missing unit-periods, or drop the incomplete
+        units. The decomposition needs a balanced panel.
+    {RESOURCES}
+
+    Returns
+    -------
+    BaconResult or Profile
+        ``comparisons()`` lists each comparison's estimate, weight and type;
+        ``summary()`` totals them by type.
+    """
+    options = dict(locals())
+    fml, data = options.pop("fml"), options.pop("data")
+    if incomplete_units == "keep":
+        raise ValueError(
+            "bacon_decomp needs a balanced panel: incomplete_units must be 'error' or 'drop'"
+        )
+    return public_profile(_bacon_decomp(fml, data, **_options.internal(options)))

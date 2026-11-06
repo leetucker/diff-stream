@@ -21,7 +21,8 @@ from numpy.testing import assert_allclose
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from diff_stream import refit_bootstrap  # noqa: E402
+from benchmarks._estimators import public  # noqa: E402
+from diff_stream import did_callaway_santanna, refit_bootstrap  # noqa: E402
 from diff_stream._core.resample import DiskGroupResampler  # noqa: E402
 from diff_stream.simulate import simulate_conditional_panel  # noqa: E402
 
@@ -46,16 +47,16 @@ def fit(case, method):
         sample(case),
         panel=("id", "time"),
         cohort="first_treat",
-        estimator="cs",
-        est_method=method,
+        estimator=did_callaway_santanna,
+        adjustment=public("adjustment", method),
         reps=9,
         seed=29,
-        aggregate="dynamic",
+        aggregate="event_time",
         weights="w",
         allow_time_varying_weights=True,
-        panel_mode="balanced" if case == "balanced" else "unbalanced",
-        ess_warn_threshold=None,
-        threads=2,
+        incomplete_units="error" if case == "balanced" else "keep",
+        effective_sample_warning=None,
+        n_threads=2,
         preprocess_mb=4,
         batch_units=37,
     )

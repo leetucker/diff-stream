@@ -8,12 +8,13 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
+from benchmarks._estimators import fit_estimator, public
 from benchmarks._files import read_csv
-from diff_stream import diff_stream
+from diff_stream import did_bjs, did_sun_abraham
 from diff_stream.simulate import simulate_panel
 
 ROOT = Path(__file__).parent / "data"
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2)
 
 
 @pytest.fixture(scope="module", params=["balanced", "unbalanced"])
@@ -37,19 +38,21 @@ def reference_sample(request):
 )
 def test_r_aggte(reference_sample, control, base, case):
     sample, data = reference_sample
-    r = diff_stream(
+    r = fit_estimator(
         "y ~ 1" if sample == "balanced" else "y ~ x + z",
         data,
-        control_group=control,
+        control_group=public("control_group", control),
         base_period=base,
-        panel_mode="balanced" if sample == "balanced" else "unbalanced",
+        incomplete_units=public(
+            "incomplete_units", "balanced" if sample == "balanced" else "unbalanced"
+        ),
         **KW,
     )
-    options = {"balance_e": int(case[-1])} if "balance" in case else {}
+    options = {"balanced_horizon": int(case[-1])} if "balance" in case else {}
     if case == "cohort_horizons":
         options["horizons"] = [0, 1]
     kind = case.split("_")[0]
-    a = r.aggregate(kind, **options)
+    a = r.aggregate(public("kind", kind), **options)
     ref = read_csv(
         ROOT / "aggregation_reference" / f"{sample}_{control}_{base}_{case}.csv", null_values="NA"
     )
@@ -66,10 +69,10 @@ def test_r_aggte(reference_sample, control, base, case):
         rows = c.filter(pl.col("aggregate") == name)
         assert_allclose(rows["weight"].sum(), 1)
         assert_allclose(rows["weighted_estimate"].sum(), a.beta[j])
-    assert a.contributions().equals(r.contributions(kind, **options))
-    assert a.composition().equals(r.composition(kind, **options))
+    assert a.contributions().equals(r.contributions(public("kind", kind), **options))
+    assert a.composition().equals(r.composition(public("kind", kind), **options))
     if kind == "cohort":
-        assert_allclose(a.beta, r.aggregate("group", **options).beta)
+        assert_allclose(a.beta, r.aggregate("cohort", **options).beta)
 
 
 def dense_bjs(data, cells, A, average, leaveout):
@@ -131,19 +134,18 @@ def dense_bjs(data, cells, A, average, leaveout):
 @pytest.mark.parametrize("leaveout", [False, True])
 def test_new_bjs_contrasts(data, unbalanced, average, leaveout):
     p = data.filter(~((pl.col("id") % 3 == 0) & (pl.col("time") == 3))) if unbalanced else data
-    r = diff_stream(
+    r = did_bjs(
         "y ~ 1",
         p,
-        estimator="bjs",
-        panel_mode="unbalanced",
-        avgeffectsby=average,
-        leaveout=leaveout,
+        incomplete_units="keep",
+        residual_averaging=average,
+        leave_out=leaveout,
         **KW,
     )
     try:
         for kind in ["cohort", "calendar", "dynamic"]:
             options = {"balance_window": (0, 1)} if kind == "dynamic" else {}
-            a = r.aggregate(kind, **options)
+            a = r.aggregate(public("kind", kind), **options)
             keys = (
                 [0, 1]
                 if kind == "dynamic"
@@ -181,7 +183,7 @@ def test_new_bjs_contrasts(data, unbalanced, average, leaveout):
 def test_counts_composition_and_balancing(estimator):
     data = simulate_panel(160, 7, seed=81)
     data = data.filter(~((pl.col("id") % 3 == 0) & (pl.col("time") == 4)))
-    r = diff_stream("y ~ 1", data, estimator=estimator, panel_mode="unbalanced", **KW)
+    r = fit_estimator("y ~ 1", data, estimator=estimator, incomplete_units="keep", **KW)
     try:
         original_warnings = list(r.diagnostics["warnings"])
         a = r.aggregate(balance_window=(0, 2))
@@ -215,11 +217,11 @@ def test_counts_composition_and_balancing(estimator):
     "options",
     [
         dict(kind="bad"),
-        dict(balance_e=True),
-        dict(balance_e=-1),
-        dict(balance_e=1.2),
-        dict(balance_e=1, balance_window=(0, 1)),
-        dict(kind="cohort", balance_e=1),
+        dict(balanced_horizon=True),
+        dict(balanced_horizon=-1),
+        dict(balanced_horizon=1.2),
+        dict(balanced_horizon=1, balance_window=(0, 1)),
+        dict(kind="cohort", balanced_horizon=1),
         dict(balance_window=(2, 0)),
         dict(balance_window=[0]),
         dict(balance_window="ab"),
@@ -227,12 +229,12 @@ def test_counts_composition_and_balancing(estimator):
         dict(horizons=[0.5]),
         dict(horizons=2),
         dict(balance_window=(0, 1000000000)),
-        dict(balance_e=1000000000),
+        dict(balanced_horizon=1000000000),
         dict(horizons=[]),
     ],
 )
 def test_invalid_aggregation_options(data, options):
-    r = diff_stream("y ~ 1", data, **KW)
+    r = fit_estimator("y ~ 1", data, **KW)
     with pytest.raises(ValueError):
         r.aggregate(**options)
 
@@ -241,7 +243,7 @@ def test_support_holes_and_baseline_normalization():
     data = simulate_panel(150, 7, seed=49)
     # Remove cohort 3's entire exposure-1 cell, leaving exposures 0 and 2.
     data = data.filter(~((pl.col("first_treat") == 3) & (pl.col("time") == 4)))
-    r = diff_stream("y ~ 1", data, estimator="sunab", panel_mode="unbalanced", **KW)
+    r = did_sun_abraham("y ~ 1", data, incomplete_units="keep", **KW)
     a = r.aggregate(balance_window=(-1, 2))
     assert a.coefnames == ["event::0", "event::1", "event::2"]
     assert 3 not in a.contributions()["cohort"]
@@ -255,8 +257,8 @@ def test_support_holes_and_baseline_normalization():
 
 
 def test_group_time_counts_and_missing_metadata(data):
-    r = diff_stream("y ~ 1", data, **KW)
-    table = r.group_time()
+    r = fit_estimator("y ~ 1", data, **KW)
+    table = r.cohort_time()
     assert table["weight_units"].equals(table["n_units"])
     assert table["observed_units"].equals(table["cohort_units"])
     old = replace(r, observed_counts=None)
@@ -273,7 +275,7 @@ def test_sa_aggregates_dense_regression(data, unbalanced):
     from oracles import regression
 
     p = data.filter(~((pl.col("id") % 3 == 0) & (pl.col("time") == 3))) if unbalanced else data
-    r = diff_stream("y ~ 1", p, estimator="sunab", panel_mode="unbalanced", **KW)
+    r = did_sun_abraham("y ~ 1", p, incomplete_units="keep", **KW)
     beta, V = regression(p, "sunab", r.cells)
     for kind in ["cohort", "calendar"]:
         keys = sorted({g if kind == "cohort" else t for g, t in r.cells if t >= g})
@@ -292,7 +294,7 @@ def test_sa_aggregates_dense_regression(data, unbalanced):
                 * selected
             )
             A[j] = weights / weights.sum()
-        a = r.aggregate(kind)
+        a = r.aggregate(public("kind", kind))
         assert_allclose(a.beta, A @ beta, atol=1e-10)
         assert_allclose(a.vcov, A @ V @ A.T, atol=1e-10)
 
@@ -300,7 +302,7 @@ def test_sa_aggregates_dense_regression(data, unbalanced):
 @pytest.mark.parametrize("base,cohorts", [("varying", [4, 5]), ("universal", [3, 4, 5])])
 def test_prepost_windows_respect_normalization(base, cohorts):
     data = simulate_panel(200, 7, seed=83)
-    r = diff_stream("y ~ 1", data, base_period=base, **KW)
+    r = fit_estimator("y ~ 1", data, base_period=base, **KW)
     a = r.aggregate(balance_window=(-2, 2))
     assert all(c == cohorts for c in a.composition()["cohorts"].to_list())
     assert (-1 in a.contributions()["event_time"]) == (base == "varying")
@@ -308,18 +310,18 @@ def test_prepost_windows_respect_normalization(base, cohorts):
 
 
 def test_balance_e_guarantees_post_membership_only(data):
-    r = diff_stream("y ~ 1", data, **KW)
-    a = r.aggregate(balance_e=1)
+    r = fit_estimator("y ~ 1", data, **KW)
+    a = r.aggregate(balanced_horizon=1)
     rows = a.composition().filter(pl.col("aggregate").is_in(["event::0", "event::1"]))
     assert rows["cohorts"].to_list()[0] == rows["cohorts"].to_list()[1]
     assert a.diagnostics["cohort_composition_changes"]
-    b = r.aggregate(balance_e=1, horizons=[0, 1])
+    b = r.aggregate(balanced_horizon=1, horizons=[0, 1])
     assert not b.diagnostics["cohort_composition_changes"]
     assert not b.diagnostics["cohort_weights_change"]
 
 
 def test_calendar_horizons_select_cells(data):
-    r = diff_stream("y ~ 1", data, **KW)
+    r = fit_estimator("y ~ 1", data, **KW)
     a = r.aggregate("calendar", horizons=[0])
     ix = [j for j, (g, t) in enumerate(r.cells) if g == t]
     assert a.coefnames == [f"calendar::{r.cells[j][0]}" for j in ix]
@@ -330,12 +332,12 @@ def test_calendar_horizons_select_cells(data):
 
 def test_cohort_without_any_post_cells_is_reported(data):
     p = data.filter(~((pl.col("first_treat") == 5) & (pl.col("time") == 5)))
-    r = diff_stream("y ~ 1", p, estimator="bjs", panel_mode="unbalanced", **KW)
+    r = did_bjs("y ~ 1", p, incomplete_units="keep", **KW)
     try:
         a = r.aggregate("cohort")
         assert 5 not in a.contributions()["cohort"]
         assert any(x["cohort"] == 5 for x in a.diagnostics["excluded_cohorts"])
-        b = r.aggregate(balance_e=0)
+        b = r.aggregate(balanced_horizon=0)
         assert any(
             x["cohort"] == 5 and x["missing_horizons"] == [0]
             for x in b.diagnostics["excluded_cohorts"]

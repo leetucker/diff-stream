@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from stream_limits import MemoryBudget  # noqa: E402
 
+from benchmarks._estimators import public  # noqa: E402
 from benchmarks._files import csv_files, read_csv  # noqa: E402
 from benchmarks._files import digest as file_digest  # noqa: E402
 from benchmarks._files import exists as csv_exists  # noqa: E402
@@ -31,13 +32,17 @@ from benchmarks.etwfe_validation import SOURCE as ETWFE_SOURCE  # noqa: E402
 from benchmarks.etwfe_validation import dense_oracle as etwfe_dense  # noqa: E402
 from benchmarks.gardner_validation import SOURCE as GARDNER_SOURCE  # noqa: E402
 from benchmarks.gardner_validation import dense_oracle as gardner_dense  # noqa: E402
-from diff_stream import bjs_stream, etwfe_stream, gardner_stream  # noqa: E402
+from diff_stream import (  # noqa: E402
+    did_bjs,  # noqa: E402
+    did_extended_twfe,
+    did_two_stage,
+)
 from diff_stream.reference import reference_store  # noqa: E402
 from diff_stream.store import PanelStore, inspect  # noqa: E402
 
 OUT = ROOT / "benchmarks/results/reference_population_review"
 EXPORTER = ROOT / "benchmarks/external/reference_population_review.R"
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2, preprocess_mb=4, batch_units=37)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2, preprocess_mb=4, batch_units=37)
 
 
 def cases():
@@ -67,18 +72,22 @@ def sample(c, restricted=False):
 
 def configurations(c):
     rich = c["rich"]
-    yield "bjs", dict(fml="y~x+I(x**2)|region^time" if rich else "y~1"), bjs_stream
+    yield "bjs", dict(fml="y~x+I(x**2)|region^time" if rich else "y~1"), did_bjs
     for spec in ["static", "dynamic"]:
         yield (
             "gardner_" + spec,
-            dict(fml="y~x+I(x**2)|region^time" if rich else "y~1", specification=spec),
-            gardner_stream,
+            dict(fml="y~x+I(x**2)|region^time" if rich else "y~1", event_study=spec == "dynamic"),
+            did_two_stage,
         )
     for inf in ["conditional", "unconditional"]:
         yield (
             "etwfe_" + inf,
-            dict(fml="y~x+z" if rich else "y~1", control_group="notyettreated", inference=inf),
-            etwfe_stream,
+            dict(
+                fml="y~x+z" if rich else "y~1",
+                control_group="not_yet_treated",
+                treat_sample_as_fixed=inf == "conditional",
+            ),
+            did_extended_twfe,
         )
 
 
@@ -108,13 +117,11 @@ def audit():
         for name, kwargs, entry in configurations(c):
             options = dict(
                 **KW,
-                panel_mode=c["panel"],
+                incomplete_units=public("incomplete_units", c["panel"]),
                 anticipation=c["A"],
                 weights=weight,
                 allow_time_varying_weights=True,
             )
-            if name == "bjs":
-                options["ess_warn_threshold"] = None
             try:
                 unrestricted = entry(data=full, **kwargs, **options)
             except ValueError as e:
@@ -124,7 +131,7 @@ def audit():
                 unrestricted.cleanup()
             r = entry(data=restricted, **kwargs, **options)
             try:
-                target = r.aggregate("dynamic") if name == "bjs" else r
+                target = r.aggregate("event_time") if name == "bjs" else r
                 errors = compare(target, c["name"] + "_" + name)
                 if name.startswith("gardner"):
                     terms, b, V = gardner_dense(
@@ -187,15 +194,14 @@ def audit():
         raw_window = full.filter(pl.col("time") < full["first_treat"].max() - c["A"])
         opts = dict(
             **KW,
-            panel_mode=c["panel"],
+            incomplete_units=public("incomplete_units", c["panel"]),
             anticipation=c["A"],
-            pretrends=2,
+            pretrend_leads=2,
             weights=weight,
             allow_time_varying_weights=True,
-            ess_warn_threshold=None,
         )
-        raw_fit = bjs_stream("y~1", raw_window, **opts)
-        coded_fit = bjs_stream("y~1", restricted, **opts)
+        raw_fit = did_bjs("y~1", raw_window, **opts)
+        coded_fit = did_bjs("y~1", restricted, **opts)
         try:
             placebos.append(
                 dict(
@@ -213,13 +219,12 @@ def audit():
         (pl.col("first_treat") == 0).cast(pl.Int64).alias("region")
     )
     failures = []
-    for name, entry in [("bjs", bjs_stream), ("gardner", gardner_stream)]:
+    for name, entry in [("bjs", did_bjs), ("gardner", did_two_stage)]:
         try:
             entry(
                 "y~1|region^time",
                 d,
                 **KW,
-                **({"ess_warn_threshold": None} if name == "bjs" else {}),
             )
         except ValueError as e:
             assert "unidentified" in str(e), str(e)
@@ -235,16 +240,15 @@ def audit():
             .alias("first_treat")
         )
         for name, entry in [
-            ("bjs", bjs_stream),
-            ("gardner", gardner_stream),
-            ("etwfe", etwfe_stream),
+            ("bjs", did_bjs),
+            ("gardner", did_two_stage),
+            ("etwfe", did_extended_twfe),
         ]:
             result = entry(
                 "y~1",
                 d,
                 anticipation=A,
                 **KW,
-                **({"ess_warn_threshold": None} if name == "bjs" else {}),
             )
             assert result.n_obs == len(d)
             futures.append(dict(estimator=name, anticipation=A, retained_rows=result.n_obs))

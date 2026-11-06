@@ -12,11 +12,18 @@ from numpy.testing import assert_allclose
 from scipy.stats import norm
 from stream_limits import MemoryBudget
 
-from diff_stream import BootstrapFailureWarning, RefitBootstrapResult, diff_stream, refit_bootstrap
+from benchmarks._estimators import ESTIMATORS, fit_estimator, public
+from diff_stream import (
+    BootstrapFailureWarning,
+    RefitBootstrapResult,
+    did_bjs,
+    did_callaway_santanna,
+    refit_bootstrap,
+)
 from diff_stream._core.resample import DiskGroupResampler
 from diff_stream.simulate import simulate_conditional_panel
 
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2, preprocess_mb=4, batch_units=37)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2, preprocess_mb=4, batch_units=37)
 
 
 def small_data(last=False, unbalanced=False):
@@ -38,18 +45,18 @@ def test_every_draw_matches_explicit_unit_duplication(estimator, last, anticipat
     options = dict(
         weights="w",
         allow_time_varying_weights=True,
-        panel_mode="unbalanced",
+        incomplete_units="keep",
         anticipation=anticipation,
     )
-    if estimator in ["bjs", "cs"]:
-        options["ess_warn_threshold"] = None
+    if estimator == "cs":
+        options["effective_sample_warning"] = None
     if estimator == "gardner":
-        options["specification"] = "static"
-    target = None if estimator == "gardner" else "dynamic"
+        options["event_study"] = False
+    target = None if estimator == "gardner" else "event_time"
     r = refit_bootstrap(
         "y~x",
         data,
-        estimator=estimator,
+        estimator=ESTIMATORS[estimator],
         reps=4,
         seed=29,
         aggregate=target,
@@ -71,19 +78,19 @@ def test_every_draw_matches_explicit_unit_duplication(estimator, last, anticipat
                 for i, u in enumerate(indices)
             ]
         )
-        with diff_stream(
+        with fit_estimator(
             "y~x",
             rows,
             panel=("boot", "time"),
             cohort="first_treat",
             estimator=estimator,
-            reference_group="nevertreated",
-            threads=2,
+            last_treated_controls="never",
+            n_threads=2,
             preprocess_mb=4,
             batch_units=37,
             **options,
         ) as fitted:
-            value = fitted.aggregate(target) if target else fitted
+            value = fitted.aggregate(public("kind", target)) if target else fitted
             ix = [value.coefnames.index(n) for n in r.coefnames]
             assert_allclose(r._draws[j], value.beta[ix], atol=2e-9, rtol=0)
     assert_allclose(r.se, np.std(r._draws, axis=0, ddof=1), atol=1e-12)
@@ -180,9 +187,9 @@ def test_failures_are_not_redrawn_or_used_without_acknowledgment(tmp_path):
             d,
             reps=24,
             seed=17,
-            aggregate="simple",
-            estimator="cs",
-            ess_warn_threshold=None,
+            aggregate="overall",
+            estimator=did_callaway_santanna,
+            effective_sample_warning=None,
             workdir=tmp_path,
             **KW,
         )
@@ -205,18 +212,17 @@ def test_complete_panel_and_covariates_of_original_ids(tmp_path):
     # Original ID remains a covariate. Only the explicit unit FE is stripped
     # before assigning the separate bootstrap panel ID.
     options = dict(
-        estimator="bjs",
-        panel_mode="complete",
+        estimator=did_bjs,
+        incomplete_units="drop",
         weights="w",
         allow_time_varying_weights=True,
-        ess_warn_threshold=None,
     )
     a = refit_bootstrap(
         "y~x+I(id*time)|id+time",
         data,
         reps=3,
         seed=2,
-        aggregate="simple",
+        aggregate="overall",
         workdir=tmp_path,
         **KW,
         **options,
@@ -227,10 +233,10 @@ def test_complete_panel_and_covariates_of_original_ids(tmp_path):
         complete,
         reps=3,
         seed=2,
-        aggregate="simple",
+        aggregate="overall",
         workdir=tmp_path,
         **KW,
-        **{**options, "panel_mode": "balanced"},
+        **{**options, "incomplete_units": "error"},
     )
     assert_allclose(a._draws, b._draws, atol=2e-9, rtol=0)
     assert a.diagnostics["unit_count"] == complete["id"].n_unique()
@@ -245,21 +251,25 @@ def test_no_never_reference_window_frozen_even_if_cohort_lost():
         data,
         reps=3,
         seed=8,
-        aggregate="simple",
-        estimator="bjs",
-        ess_warn_threshold=None,
+        aggregate="overall",
+        estimator=did_bjs,
         **KW,
     )
     assert r.diagnostics["fixed_reference_cohort"] == 5
     assert r.diagnostics["reference_cutoff"] == 5
-    assert r.diagnostics["replicate_reference_group"] == "nevertreated"
+    assert r.diagnostics["replicate_reference"] == "never_treated"
     assert r.diagnostics["analysis_time_max"] == 4
 
 
 def test_reproducibility_entropy_target_selection_and_guards(tmp_path):
     data = small_data(False, False)
     opts = dict(
-        estimator="cs", aggregate="dynamic", ess_warn_threshold=None, reps=3, workdir=tmp_path, **KW
+        estimator=did_callaway_santanna,
+        aggregate="event_time",
+        effective_sample_warning=None,
+        reps=3,
+        workdir=tmp_path,
+        **KW,
     )
     a = refit_bootstrap("y~1", data, **opts)
     b = refit_bootstrap(
@@ -267,11 +277,16 @@ def test_reproducibility_entropy_target_selection_and_guards(tmp_path):
     )
     assert_allclose(a._draws[:, :2], b._draws, atol=1e-12, rtol=0)
     assert a.diagnostics["unit_order_sha256"] == b.diagnostics["unit_order_sha256"]
-    for kwargs in [dict(reps=1), dict(seed=-1), dict(bootstrap_reps=4), dict(profile=True)]:
+    for kwargs in [
+        dict(reps=1),
+        dict(seed=-1),
+        dict(multiplier_bootstrap_reps=4),
+        dict(profile=True),
+    ]:
         with pytest.raises(ValueError):
             refit_bootstrap("y~1", data, **{**opts, **kwargs})
     with pytest.raises(MemoryError):
-        refit_bootstrap("y~1", data, memory_gb=0.01, **opts)
+        refit_bootstrap("y~1", data, max_memory_gb=0.01, **opts)
     assert not list(tmp_path.iterdir())
 
 
@@ -279,7 +294,7 @@ def test_reproducibility_entropy_target_selection_and_guards(tmp_path):
 def test_resource_and_programming_errors_propagate_and_clean_scratch(error, monkeypatch, tmp_path):
     import diff_stream.bootstrap as module
 
-    original = module.diff_stream
+    original = module._fit
     calls = 0
 
     def fail_after_original(*args, **kwargs):
@@ -289,15 +304,16 @@ def test_resource_and_programming_errors_propagate_and_clean_scratch(error, monk
             raise error("injected failure")
         return original(*args, **kwargs)
 
-    monkeypatch.setattr(module, "diff_stream", fail_after_original)
+    monkeypatch.setattr(module, "_fit", fail_after_original)
     with pytest.raises(error, match="injected failure"):
         refit_bootstrap(
             "y~1",
             small_data(),
             reps=3,
             seed=2,
-            aggregate="simple",
-            ess_warn_threshold=None,
+            estimator=did_callaway_santanna,
+            aggregate="overall",
+            effective_sample_warning=None,
             workdir=tmp_path,
             **KW,
         )
@@ -316,9 +332,9 @@ def test_frozen_native_did_refits_and_base_r_intervals(case, method):
 
 @pytest.mark.resource
 def test_refit_bootstrap_constrained(resource_runner, resource_enforcement, tmp_path):
-    code = f"""from diff_stream import refit_bootstrap
+    code = f"""from diff_stream import did_bjs, refit_bootstrap
 from diff_stream.simulate import simulate_panel
-r=refit_bootstrap('y~1',simulate_panel(80,5,seed=17),panel=('id','time'),cohort='first_treat',estimator='bjs',reps=3,seed=42,aggregate='simple',ess_warn_threshold=None,threads=2,preprocess_mb=4,workdir={str(tmp_path / "child")!r})
+r=refit_bootstrap('y~1',simulate_panel(80,5,seed=17),panel=('id','time'),cohort='first_treat',estimator=did_bjs,reps=3,seed=42,aggregate='overall',n_threads=2,preprocess_mb=4,workdir={str(tmp_path / "child")!r})
 assert r.successful_reps==3
 print(r.summary_json())
 """

@@ -10,8 +10,9 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
+from benchmarks._estimators import public
 from benchmarks._files import read_csv
-from diff_stream import cs_stream
+from diff_stream import did_callaway_santanna
 
 ROOT = Path(__file__).parent / "data/numerical_stress"
 REFERENCES = {r["name"]: r for r in json.loads((ROOT / "reference.json").read_text())}
@@ -25,16 +26,16 @@ def test_external_stress_estimates_and_joint_covariance(scenario, mode, method, 
     if mode == "unbalanced":
         data = data.filter(~((pl.col("id") % 4 == 0) & pl.col("time").is_in([2, 4])))
     ref = REFERENCES[f"{mode}_{scenario}_{method}"]["fit"]
-    fit = cs_stream(
+    fit = did_callaway_santanna(
         "y ~ x + z",
         data,
         panel=("id", "time"),
         cohort="first_treat",
-        panel_mode=mode,
+        incomplete_units=public("incomplete_units", mode),
         weights="w",
-        est_method=method,
-        threads=2,
-        trim_level=0.8 if scenario == "overlap_very_weak" else 0.995,
+        adjustment=public("adjustment", method),
+        n_threads=2,
+        propensity_trim=0.8 if scenario == "overlap_very_weak" else 0.995,
         batch_units=137,
         workdir=tmp_path,
     )
@@ -43,7 +44,7 @@ def test_external_stress_estimates_and_joint_covariance(scenario, mode, method, 
         ix = [keys.index(c) for c in fit.cells]
         assert_allclose(fit.beta, np.asarray(ref["beta"])[ix], atol=2e-7, rtol=0)
         assert_allclose(fit.vcov, np.asarray(ref["vcov"])[np.ix_(ix, ix)], atol=2e-7, rtol=0)
-        a = fit.aggregate("simple")
+        a = fit.aggregate("overall")
         assert_allclose(a.beta[0], ref["att"], atol=2e-7, rtol=0)
         assert_allclose(a.se[0], ref["se"], atol=2e-7, rtol=0)
         if scenario == "overlap_very_weak" and method != "reg":

@@ -136,7 +136,7 @@ class WeightStore(GroupPartitions):
         self.input_units += len(starts)
         complete = lengths == self.periods
         if self.panel_mode == "balanced" and not complete.all():
-            raise ValueError("balanced panels required; use panel_mode='unbalanced' or 'complete'")
+            raise ValueError("balanced panels required; set incomplete_units='keep' or 'drop'")
         if self.panel_mode == "complete":
             d = d.filter(pl.Series(complete[u]))
             lengths = lengths[complete]

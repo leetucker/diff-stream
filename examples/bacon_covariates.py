@@ -13,9 +13,7 @@ result = bacon_decomp(
     data,
     panel=("state", "year"),
     cohort="first_treat",
-    threads=2,
-    batch_units=16,
-    preprocess_mb=4,
+    n_threads=2,
 )
 print("TWFE:", result.twfe_estimate)
 print(result.summary())

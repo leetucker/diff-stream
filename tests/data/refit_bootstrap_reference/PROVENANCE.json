@@ -5,7 +5,7 @@
   "coverage_claim": false,
   "files": {
     "benchmarks/external/refit_bootstrap_reference.R": "ebaad37d1becb69d32627fd90661a245374409538938d8c92cd7010b03ae31dc",
-    "benchmarks/refit_bootstrap_validation.py": "0110c31f46c4b03c233dec74aac394b08c17430b22b6604f7a13e1d8351f39d7",
+    "benchmarks/refit_bootstrap_validation.py": "f69a95fc498849a759ac08596806d185fe8d1ca834b11c77affa66e78df32008",
     "tests/data/refit_bootstrap_reference/balanced_dr_draws.csv": "f18393880ce135047eb5bf873a9cdacd94a4f52c72a06a9b49184d1ff3cca12f",
     "tests/data/refit_bootstrap_reference/unbalanced_last_ipw_draws.csv": "2a50dacc4eb02634cc13e0e11617581a47025ad0919606030da70bccadea48b7",
     "tests/data/refit_bootstrap_reference/unbalanced_last_reg_summary.csv": "42fde0c3edf8c25d3b52ad4fc4d4bd8238f50031c2e8045ac10e299a58c4e569",
@@ -46,6 +46,12 @@
       "date": "2026-11-05",
       "generated_with_sha256": "2365d6150fe05bb8b44837890f8d1a2c38e46c2e151451d376d089f78a0c6da2",
       "change": "--rscript default: a local absolute Rscript path replaced by DIFF_RSCRIPT, then Rscript on PATH. Command-line default only; no change to draws, fits or comparisons. References were not regenerated."
+    },
+    {
+      "file": "benchmarks/refit_bootstrap_validation.py",
+      "date": "2026-11-05",
+      "previous_sha256": "0110c31f46c4b03c233dec74aac394b08c17430b22b6604f7a13e1d8351f39d7",
+      "change": "API rename only: refit_bootstrap(estimator=did_callaway_santanna) and the public option names (adjustment, incomplete_units, effective_sample_warning, n_threads, aggregate='event_time'). Same estimator, options, draws and comparisons; references were not regenerated."
     }
   ]
 }

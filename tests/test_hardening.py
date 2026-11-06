@@ -5,15 +5,15 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
-from diff_stream import bjs_stream, cs_stream
+from diff_stream import did_bjs, did_callaway_santanna
 from diff_stream.simulate import simulate_panel
 
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2)
 
 
 def test_leaveout_changes_covariance_and_preserves_crv_scaling(data):
-    a = bjs_stream("y ~ 1", data, **KW)
-    b = bjs_stream("y ~ 1", data, leaveout=True, **KW)
+    a = did_bjs("y ~ 1", data, **KW)
+    b = did_bjs("y ~ 1", data, leave_out=True, **KW)
     assert_allclose(a.beta, b.beta)
     # With larger cohorts the adjustment is small but nonzero.
     assert np.max(np.abs(a.vcov - b.vcov)) > 1e-5
@@ -33,19 +33,19 @@ def test_singleton_and_broader_residual_groups():
         .otherwise(3)
         .alias("first_treat")
     )
-    with pytest.raises(ValueError, match="leaveout requires"):
-        bjs_stream("y ~ 1", d, leaveout=True, **KW)
-    r = bjs_stream("y ~ 1", d, leaveout=True, avgeffectsby="all", **KW)
+    with pytest.raises(ValueError, match="leave_out requires"):
+        did_bjs("y ~ 1", d, leave_out=True, **KW)
+    r = did_bjs("y ~ 1", d, leave_out=True, residual_averaging="all", **KW)
     assert np.isnan(r.se).any()
-    a = r.aggregate("simple")
+    a = r.aggregate("overall")
     assert np.isfinite(a.se).all()
     assert a.se[0] > 0
 
 
 def test_smart_aggregation_is_contrast_specific(data):
-    r = bjs_stream("y ~ 1", data, avgeffectsby="all", leaveout=True, **KW)
+    r = did_bjs("y ~ 1", data, residual_averaging="all", leave_out=True, **KW)
     A = r.counts / r.counts.sum()
-    a = r.aggregate("simple")
+    a = r.aggregate("overall")
     assert_allclose(a.beta, A @ r.beta)
     assert abs(a.vcov[0, 0] - A @ r.vcov @ A) > 1e-6
     # Subsetting horizons also recomputes the correct smart weights.
@@ -54,7 +54,7 @@ def test_smart_aggregation_is_contrast_specific(data):
     assert_allclose(s.vcov, r.aggregate().vcov[:2, :2])
 
 
-@pytest.mark.parametrize("fit", [cs_stream, bjs_stream])
+@pytest.mark.parametrize("fit", [did_callaway_santanna, did_bjs])
 def test_partitioned_results_match_single_leaf(fit):
     d = simulate_panel(5000, 5, seed=887)
     a = fit("y ~ 1", d, preprocess_mb=64, **KW)
@@ -68,7 +68,9 @@ def test_partitioned_results_match_single_leaf(fit):
 
 
 def test_recursive_partition_budget():
-    p = cs_stream("y ~ 1", simulate_panel(50000, 8), preprocess_mb=1, profile=True, **KW)
+    p = did_callaway_santanna(
+        "y ~ 1", simulate_panel(50000, 8), preprocess_mb=1, profile=True, **KW
+    )
     assert p.notes["max_partition_depth"] >= 2
     assert p.notes["max_decoded_leaf_bytes"] <= 250000
     assert p.notes["n_units"] == 50000
@@ -80,7 +82,7 @@ def test_budget_fails_before_source_is_executed(data, monkeypatch, tmp_path):
 
     monkeypatch.setattr(pl.LazyFrame, "sink_parquet", fail)
     with pytest.raises(MemoryError, match="before staging"):
-        cs_stream("y ~ 1", data, memory_gb=0.001, workdir=tmp_path, **KW)
+        did_callaway_santanna("y ~ 1", data, max_memory_gb=0.001, workdir=tmp_path, **KW)
     assert list(tmp_path.iterdir()) == []
 
 
@@ -94,7 +96,7 @@ def test_extreme_unit_skew_fails_without_oversized_sort(tmp_path):
         }
     )
     with pytest.raises(ValueError, match="balanced"):
-        cs_stream("y ~ 1", d, preprocess_mb=1, workdir=tmp_path, **KW)
+        did_callaway_santanna("y ~ 1", d, preprocess_mb=1, workdir=tmp_path, **KW)
     assert list(tmp_path.iterdir()) == []
 
 
@@ -103,10 +105,10 @@ def test_extreme_unit_skew_fails_without_oversized_sort(tmp_path):
     [
         {"preprocess_mb": 0},
         {"preprocess_mb": float("inf")},
-        {"leaveout": "yes"},
-        {"avgeffectsby": "bad"},
+        {"leave_out": "yes"},
+        {"residual_averaging": "bad"},
     ],
 )
 def test_new_option_validation(data, kwargs):
     with pytest.raises(ValueError):
-        bjs_stream("y ~ 1", data, **KW, **kwargs)
+        did_bjs("y ~ 1", data, **KW, **kwargs)

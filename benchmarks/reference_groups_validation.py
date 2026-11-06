@@ -15,9 +15,10 @@ from numpy.testing import assert_allclose
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from benchmarks._estimators import fit_estimator, public  # noqa: E402
 from benchmarks._files import digest as file_digest  # noqa: E402
 from benchmarks._files import read_csv  # noqa: E402
-from diff_stream import ReferenceWindowWarning, diff_stream  # noqa: E402
+from diff_stream import ReferenceWindowWarning  # noqa: E402
 
 DATA = ROOT / "tests/data"
 REF = DATA / "reference_groups"
@@ -98,21 +99,21 @@ def main():
                 formula = "y~1" if design == "constant" else "y~x+z"
                 if design == "extra_fe":
                     formula += "|region^time"
-                fit = diff_stream(
+                fit = fit_estimator(
                     formula,
                     d,
                     panel=("id", "time"),
                     cohort="first_treat",
                     estimator=estimator,
-                    control_group=control,
+                    control_group=public("control_group", control),
                     base_period=base,
-                    est_method=method,
+                    adjustment=public("adjustment", method),
                     anticipation=A,
-                    panel_mode=panel,
+                    incomplete_units=public("incomplete_units", panel),
                     weights="w",
                     allow_time_varying_weights=True,
-                    ess_warn_threshold=None,
-                    threads=2,
+                    effective_sample_warning=None,
+                    n_threads=2,
                     batch_units=37,
                     preprocess_mb=4,
                 )

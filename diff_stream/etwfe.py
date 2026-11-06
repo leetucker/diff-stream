@@ -15,8 +15,11 @@ from hdfe_stream.core.influence import ClusterScoreAccumulator
 from hdfe_stream.core.profile import Component, Profile
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
+from . import _docs, _options
 from ._core.nuisance import solve_checked
+from ._core.partition import preprocess_budget_mb
 from ._core.within import center_groups, independent_columns
+from ._present import present, public_profile
 from .results import DIDResult
 from .store import PanelStore, inspect
 
@@ -48,6 +51,12 @@ class ExtendedDesign:
         self.offset = len(self.names)
         self.names += [f"cell::{g}::{t}:{name}" for g, t in self.cells for name in ["1", *xnames]]
         self.time = np.eye(store.periods)[:, 1:]
+        # cell_at[cohort index, time index] = estimated cell number, or -1
+        self.group_array = np.asarray(self.groups)
+        self.cell_at = np.full((len(self.groups), store.periods), -1, dtype=np.int64)
+        t0 = int(store.times[0])
+        for j, (cg, t) in enumerate(self.cells):
+            self.cell_at[self.groups.index(cg), t - t0] = j
 
     def batches(self):
         for g, y, x, w in self.store.batches(
@@ -70,13 +79,15 @@ class ExtendedDesign:
                 D[:, ti, at : at + self.K] = x[:, ti]
                 at += self.K
             one_x = np.concatenate([np.ones((B, T, 1)), x], axis=2)
-            for j, (cg, t) in enumerate(self.cells):
-                ti = t - int(self.store.times[0])
-                mask = g == cg
-                D[
-                    mask, ti, self.offset + j * (self.K + 1) : self.offset + (j + 1) * (self.K + 1)
-                ] = one_x[mask, ti]
-            yield g, np.nan_to_num(y, nan=0), D, w, one_x
+            # Each unit-period belongs to at most one estimated cell; set every
+            # cell's slope block in one scatter instead of a mask per cell.
+            cell = self.cell_at[np.searchsorted(self.group_array, g)]
+            rows, periods = np.nonzero(cell >= 0)
+            index = cell[rows, periods]
+            K1 = self.K + 1
+            columns = self.offset + index[:, None] * K1 + np.arange(K1)
+            D[rows[:, None], periods[:, None], columns] = one_x[rows, periods]
+            yield g, np.nan_to_num(y, nan=0), D, w, one_x, (rows, periods, index)
 
 
 def _fit(model, inference):
@@ -85,18 +96,23 @@ def _fit(model, inference):
     Q, q, norms = np.zeros((P, P)), np.zeros(P), np.zeros(P)
     mass = np.array([store.cell_weights[g][t - int(store.times[0])] for g, t in model.cells])
     means = np.zeros((M, model.K + 1))
-    for g, y, D, w, one_x in model.batches():
-        norms += np.einsum("btp,bt,btp->p", D, w, D, optimize=True)
+    for _g, y, D, w, one_x, (rows, periods, index) in model.batches():
+        ww = w.ravel()
         if model.fixed_effects == "unit":
+            flat = D.reshape(-1, P)
+            norms += (flat * flat).T @ ww
             D, y, _, _ = center_groups(D, y, w)
         flat = D.reshape(-1, P)
-        ww = w.ravel()
-        Q += flat.T @ (ww[:, None] * flat)
-        q += flat.T @ (ww * y.ravel())
-        for j, (cg, t) in enumerate(model.cells):
-            ti = t - int(store.times[0])
-            mask = g == cg
-            means[j] += np.einsum("bk,b->k", one_x[mask, ti], w[mask, ti]) / mass[j]
+        weighted = ww[:, None] * flat
+        Q += flat.T @ weighted
+        q += weighted.T @ y.ravel()
+        contribution = w[rows, periods][:, None] * one_x[rows, periods]
+        for k in range(model.K + 1):
+            means[:, k] += np.bincount(index, weights=contribution[:, k], minlength=M)
+    if model.fixed_effects != "unit":
+        # Without centering, the column norms are the Gram diagonal.
+        norms = np.diag(Q).copy()
+    means /= mass[:, None]
     keep = independent_columns(Q, original_norm=norms)
     if not len(keep):
         raise ValueError("ETWFE regression has no identified columns")
@@ -125,24 +141,24 @@ def _fit(model, inference):
     full_coef = np.zeros(P)
     full_coef[keep] = coef
     acc = ClusterScoreAccumulator()
-    for g, y, D, w, one_x in model.batches():
+    blocks = full_coef[model.offset :].reshape(M, model.K + 1)
+    all_columns = len(keep) == P
+    for g, y, D, w, one_x, (rows, periods, index) in model.batches():
         if model.fixed_effects == "unit":
             D, y, _, _ = center_groups(D, y, w)
-        D = D[:, :, keep]
+        if not all_columns:
+            D = D[:, :, keep]
         e = y - D @ coef
-        score = np.einsum("btp,bt->bp", D, w * e, optimize=True) @ H
+        score = np.matmul((w * e)[:, None, :], D)[:, 0, :] @ H
         if inference == "unconditional":
             share = np.zeros((len(g), M))
-            for j, (cg, t) in enumerate(model.cells):
-                ti = t - int(store.times[0])
-                mask = g == cg
-                # Recover the row-specific margin from the retained coefficient
-                # coding. Its sample average equals the reported cell effect.
-                start = model.offset + j * (model.K + 1)
-                block = full_coef[start : start + model.K + 1]
-                margin = one_x[mask, ti] @ block
-                share[mask, j] = w[mask, ti]
-                score[mask, j] += w[mask, ti] * (margin - beta[j]) / mass[j]
+            # Recover each row's margin from the retained coefficient coding;
+            # its sample average equals the reported cell effect. A unit has
+            # one row per cell, so the (unit, cell) pairs are distinct.
+            margin = np.einsum("rk,rk->r", one_x[rows, periods], blocks[index])
+            row_weight = w[rows, periods]
+            share[rows, index] = row_weight
+            score[rows, index] += row_weight * (margin - beta[index]) / mass[index]
             acc.add_clusters(score, share - mass / store.n_units)
         else:
             acc.add_clusters(score)
@@ -157,12 +173,13 @@ def _fit(model, inference):
     )
 
 
-def etwfe_stream(
+def _extended_twfe(
     fml,
     data,
     *,
     panel,
-    cohort,
+    cohort=None,
+    treatment=None,
     control_group="nevertreated",
     fixed_effects="cohort",
     inference="unconditional",
@@ -171,39 +188,23 @@ def etwfe_stream(
     allow_time_varying_weights=False,
     panel_mode="balanced",
     anticipation=0,
-    batch_units=1024,
+    batch_units=None,
     threads=None,
     memory_gb=None,
-    preprocess_mb=64,
+    memory_reserve=None,
+    preprocess_mb=None,
     workdir=None,
     profile=False,
     max_design_columns=2048,
     reference_group="auto",
 ):
-    """Fit linear ETWFE and return group-time average treatment effects.
+    """Linear extended TWFE from internal option names; see did_extended_twfe.
 
     Saturates covariates with cohort, time and treatment-cell interactions.
-    ``fixed_effects='cohort'`` matches R etwfe's default; ``'unit'`` eliminates
-    unit intercepts locally. ``control_group='notyettreated'`` estimates affected
-    cells only; ``'nevertreated'`` estimates leads too, omitting g-anticipation-1.
-    The library default is never-treated controls; R etwfe defaults to not-yet.
-    reference_group='auto' uses a clean full-window reference if present,
-    otherwise the last-treated cohort and dates strictly before it is affected.
-    'nevertreated' is strict; 'lasttreated' explicitly imposes the clean window.
-    This sample policy is independent of control_group.
-
-    ``inference='unconditional'`` includes covariate-distribution and aggregation
-    share variation, with unit clustering. ``'conditional'`` holds the observed
-    covariates and aggregation shares fixed. CRV1 adds N/(N-1) only. Normal
-    intervals and the common DIDResult aggregation methods are available.
-
-    Positive weights enter WLS and marginal-effect averages; time variation
-    requires explicit opt-in. Panel/budget/thread options follow bjs_stream.
-    Covariates use the bounded 256-column compiler; the expanded saturated
-    design is separately limited by max_design_columns and memory headroom.
-    Additional fixed-effect sections, nonlinear families, subgroup xvar effects,
-    trends, nonbinary treatment and repeated cross sections are unsupported.
-    For nonlinear ETWFE use the existing R etwfe package (e.g. logit/Poisson).
+    Never-treated controls also estimate leads, omitting g-anticipation-1;
+    not-yet-treated controls estimate affected cells only. Unconditional
+    inference includes covariate-distribution and aggregation-share
+    variation; conditional holds both fixed.
     """
     if control_group not in ("nevertreated", "notyettreated"):
         raise ValueError("control_group must be nevertreated or notyettreated")
@@ -224,22 +225,24 @@ def etwfe_stream(
     ):
         raise ValueError("anticipation must be a nonnegative integer within int64 range")
     anticipation = int(anticipation)
-    for value, name in [(batch_units, "batch_units"), (max_design_columns, "max_design_columns")]:
+    checked = [(max_design_columns, "max_design_columns")]
+    if batch_units is not None:
+        checked.append((batch_units, "batch_units"))
+    for value, name in checked:
         if isinstance(value, bool) or not isinstance(value, int) or value < 1:
             raise ValueError(f"{name} must be a positive integer")
     if threads is not None and (
         isinstance(threads, bool) or not isinstance(threads, int) or threads < 1
     ):
-        raise ValueError("threads must be a positive integer")
-    if isinstance(preprocess_mb, bool) or not np.isfinite(preprocess_mb) or preprocess_mb < 1:
-        raise ValueError("preprocess_mb must be finite and at least 1 MB")
+        raise ValueError("n_threads must be a positive integer")
     if not isinstance(allow_time_varying_weights, bool):
         raise ValueError("allow_time_varying_weights must be boolean")
-    budget = MemoryBudget(memory_gb)
+    budget = MemoryBudget(memory_gb, memory_reserve)
+    preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline = current_rss_gb() or 0
     with thread_scope(threads):
         lf, yname, design = inspect(
-            fml, data, panel, cohort, allow_covariates=True, weights=weights
+            fml, data, panel, cohort, treatment=treatment, allow_covariates=True, weights=weights
         )
         if not budget.fits((preprocess_mb * 1e6 + 96e6) / 1e9):
             raise MemoryError(
@@ -251,7 +254,7 @@ def etwfe_stream(
             store = PanelStore(
                 lf,
                 run,
-                batch_units,
+                batch_units or 4096,
                 budget,
                 preprocess_mb,
                 design,
@@ -285,10 +288,19 @@ def etwfe_stream(
                 raise ValueError(
                     f"ETWFE expanded design requires {P} columns, exceeding max_design_columns={max_design_columns}"
                 )
-            B = min(batch_units, store.n_units)
-            numeric = 8 * (
-                12 * P * P + 12 * M * M + 8 * M * P + 10 * B * T * (P + K + T) + 8 * B * M
-            )
+
+            def buffers(B):
+                return 8 * (
+                    12 * P * P + 12 * M * M + 8 * M * P + 10 * B * T * (P + K + T) + 8 * B * M
+                )
+
+            # An automatic batch starts at 4096 units and halves until it fits.
+            B = min(batch_units or 4096, store.n_units)
+            if batch_units is None:
+                while B > 128 and not budget.fits(buffers(B) / 1e9 + 0.128):
+                    B //= 2
+            numeric = buffers(B)
+            store.batch_units = B
             diagnostics = dict(
                 **reference_metadata,
                 control_group=control_group,
@@ -354,7 +366,7 @@ def etwfe_stream(
             beta, V, cross, share_cov, keep, coef = _fit(model, inference)
             factor = store.n_units / (store.n_units - 1) if vcov == "CRV1" else 1
             V = (V + V.T) / 2 * factor
-            return DIDResult(
+            result = DIDResult(
                 fml=fml,
                 depvar=yname,
                 coefnames=[f"ATT::{g}::{t}" for g, t in cells],
@@ -374,8 +386,8 @@ def etwfe_stream(
                 weights=weights,
                 n_clusters={panel[0]: store.n_units},
                 all_vcovs={vcov: (V, store.n_units - 1)},
-                share_cross=cross * factor if cross is not None else None,
-                share_cov=share_cov * factor if share_cov is not None else None,
+                _share_cross=cross * factor if cross is not None else None,
+                _share_cov=share_cov * factor if share_cov is not None else None,
                 diagnostics={
                     **diagnostics,
                     "regression_columns": [model.names[j] for j in keep],
@@ -385,3 +397,79 @@ def etwfe_stream(
                     "regression_coefficients": coef.tolist(),
                 },
             )
+            return present(result, store.period_labels)
+
+
+@_docs.document
+def did_extended_twfe(
+    fml,
+    data,
+    *,
+    panel,
+    cohort=None,
+    treatment=None,
+    control_group="never_treated",
+    fixed_effects="cohort",
+    treat_sample_as_fixed=False,
+    anticipation=0,
+    weights=None,
+    allow_time_varying_weights=False,
+    incomplete_units="error",
+    last_treated_controls="if_needed",
+    vcov="CRV0",
+    max_design_columns=2048,
+    n_threads=None,
+    max_memory_gb=None,
+    memory_reserve=None,
+    workdir=None,
+    profile=False,
+    batch_units=None,
+    preprocess_mb=None,
+):
+    """Wooldridge's extended two-way fixed effects (linear).
+
+    A single regression with a separate treatment effect for every cohort and
+    period, and covariates interacted with cohort, time and treatment, so
+    that the effects can differ with the covariates. The cohort-time effects
+    are averaged over the sample's covariates and aggregated with
+    ``aggregate()``, as in R's etwfe and emfx. Only the linear model is
+    implemented; for logit or Poisson ETWFE use R's etwfe or Stata's jwdid.
+
+    Wooldridge, J. M. (2021). Two-way fixed effects, the two-way Mundlak
+    regression, and difference-in-differences estimators. Working paper,
+    SSRN 3906345.
+
+    Parameters
+    ----------
+    fml : str
+        ``"y ~ 1"`` or ``"y ~ x + z"``. Additional fixed effects are not
+        supported.
+    {DATA}
+    control_group : {"never_treated", "not_yet_treated"}, default "never_treated"
+        The comparison units. With never-treated controls, pre-treatment
+        effects are estimated too (for a pre-trend test). R's etwfe defaults
+        to not-yet-treated.
+    fixed_effects : {"cohort", "unit"}, default "cohort"
+        Cohort intercepts (R etwfe's default) or unit fixed effects.
+    treat_sample_as_fixed : bool, default False
+        Standard errors for the effect in these units, holding the observed
+        covariates and cohort shares fixed (smaller), instead of in the
+        population they were drawn from (R emfx's conditional option).
+    {ANTICIPATION}
+    {WEIGHTS}
+    {INCOMPLETE_UNITS}
+    {LAST_TREATED}
+    {VCOV}
+    max_design_columns : int, default 2048
+        The limit on the expanded design, after interacting the covariates.
+    {RESOURCES}
+
+    Returns
+    -------
+    DIDResult or Profile
+        ``cohort_time()`` lists the cohort-time effects; ``aggregate()``
+        gives an event study, ``aggregate("overall")`` the overall ATT.
+    """
+    options = dict(locals())
+    fml, data = options.pop("fml"), options.pop("data")
+    return public_profile(_extended_twfe(fml, data, **_options.internal(options)))

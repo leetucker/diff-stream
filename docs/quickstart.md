@@ -1,91 +1,87 @@
 # Quickstart
 
-Install from the source checkout:
+## The data
 
-```bash
-uv venv --python 3.12
-uv pip install -e '.[test,docs,benchmark]'
-```
+A panel in long form: one row per unit and period, with an outcome, the
+unit and period identifiers, and the period each unit is first treated (0
+or null for units never treated); a 0/1 treatment column works too
+(`treatment=` instead of `cohort=`). Treatment is absorbing: once treated, a
+unit stays treated. Periods can be every year, every second year, and so on. The data can be a Polars DataFrame or LazyFrame, or Parquet files.
 
-Simulate a panel and estimate all three methods:
+| person | year | first_treated_year | earnings |
+|---|---|---|---|
+| 1 | 2015 | 2018 | 41,200 |
+| 1 | 2016 | 2018 | 42,050 |
+| … | … | … | … |
+| 2 | 2015 | 0 | 38,900 |
+
+`diff_stream.simulate.simulate_panel` draws such a panel with effects that vary
+by cohort and by time since treatment:
 
 ```python
-from diff_stream import bjs_stream, cs_stream, sunab_stream
 from diff_stream.simulate import simulate_panel
 
-data = simulate_panel(2000, 8)
-for estimator in [bjs_stream, sunab_stream, cs_stream]:
-    fit = estimator("y ~ 1", data, panel=("id", "time"), cohort="first_treat")
-    fit.aggregate("simple").summary()
+data = simulate_panel(2000, 8)   # 2,000 units, periods 1-8
+data.head()
 ```
 
-For data on disk, pass a Parquet path/glob or a Polars LazyFrame. Time must be
-consecutive positive integers; first treatment is constant per unit, with 0 for
-never treatment. Used values must be finite and non-missing. Exclude
-always-treated units explicitly. The default requires one row per unit in every
-period. Use `panel_mode="unbalanced"` for observed rows, or `panel_mode="complete"`
-to explicitly drop incomplete units. Duplicate keys remain errors.
-See [unbalanced panels](unbalanced_panels.md) for identification rules,
-R-compatible CS conventions, and BJS temporary-file cleanup.
+## Fit and aggregate
 
-CS accepts covariates, interactions and categorical coding, for example
-`cs_stream("y ~ x + C(region)", data, ..., est_method="dr")`. Choose `reg`,
-`ipw`, or `dr`. See [conditional CS](conditional_cs.md) for baseline covariate
-dates, overlap diagnostics and trimming. BJS/SA still use `y ~ 1`; richer
-fixed-effect specifications remain later work.
+Every estimator takes the same first arguments: a formula, the data, the unit
+and time columns, and the cohort column.
 
-All three estimators accept `anticipation=2` for two potentially affected
-periods before actual treatment. Their clean sample/reference shifts while
-cohort/event-time labels remain unchanged. See [anticipation](anticipation.md)
-for eligibility, future cohorts and aggregation conventions.
+```python
+from diff_stream import did_callaway_santanna
 
-For BJS small-cohort inference, use `leaveout=True`. The default residual groups
-are cohort-time cells; `avgeffectsby="event_time"`, `"cohort"`, or `"all"` pools
-residual averaging more broadly. See [inference conventions](implementations.md)
-for singleton groups and how aggregation recomputes smart weights.
+fit = did_callaway_santanna("y ~ 1", data, panel=("id", "time"), cohort="first_treat")
+```
 
-Use `fit.aggregate("cohort")` or `fit.aggregate("calendar")` for post-treatment
-cohort/calendar effects. `fit.aggregate(balance_e=2)` balances post-treatment
-cohort support; `balance_window=(0, 2)` selects an explicit event window.
-`result.contributions()` shows cell weights and observed/cohort counts;
-`result.composition()` summarizes membership and weight changes.
-See [aggregation and sample composition](aggregation.md).
+The fit holds one effect per cohort and period (`fit.cohort_time()` lists
+them, with their sample sizes). Aggregate them for the summaries you report:
 
-For a constrained job, set the scheduler memory/thread environment before import
-and choose `preprocess_mb` explicitly, for example `preprocess_mb=16, memory_gb=1.0`.
-Smaller partitions require more disk I/O; see [resources](resources.md).
+```python
+fit.aggregate().summary()            # event study: effects by time since treatment
+fit.aggregate("overall").summary()   # one ATT over all treated cells
+fit.aggregate("cohort").tidy()       # by cohort
+fit.aggregate("calendar").tidy()     # by calendar period
+```
 
-For sampling weights, pass `weights="sampling_weight"` to any estimator.
-Weights must be finite, strictly positive and constant within unit by default.
-Set `allow_time_varying_weights=True` to enable date-specific weights. They affect
-fitting, aggregation and inference. Weighted BJS also retains temporary
-aggregation data; call `fit.cleanup()` when finished. See [sampling weights](weights.md).
+Each aggregate is a result of its own, with the methods of hdfe-stream's
+results: `tidy()` (a Polars DataFrame of estimates, standard errors and
+intervals), `confint()`, `wald_test()`, `summary()`, and `etable()` for a table
+of several models. Standard errors are clustered by unit.
 
-SA/BJS accept covariates and additional fixed effects, for example
-`"y ~ x | region^time"`; unit/time intercepts are always included. See
-[richer models](richer_models.md) for the bounded design limit, weighting rules,
-clean-placebo support and examples.
+## Another estimator
 
-For clean pre-trend diagnostics, call `fit.pretrend_test()` on CS/SA results or
-`fit.pretrend_test(level="dynamic")` to test event-time averages. Enable CS
-multiplier bands with `bootstrap_reps=999, bootstrap_seed=42` at fit time and
-call `fit.aggregate().multiplier_confint()`. See [inference](inference.md) for
-exact selection, bootstrap scales and reproducibility.
+The other estimators take the same arguments, so comparing them is a loop:
 
-For a diagnostic of conventional TWFE, use `bacon_decomp("y ~ 1", data, ...)`.
-It reports Goodman–Bacon comparison estimates, weights and contributions on
-balanced panels, including always-treated groups. Pass `weights="column"` for
-positive time-invariant unit sampling weights. A formula such as `"y ~ x + z"`
-adds covariate adjustment with separate within/between timing components. See
-[the decomposition guide](bacon.md) and [extensions](bacon_extensions.md).
+```python
+from diff_stream import did_bjs, did_sun_abraham
 
-Use `twfe_weights("y ~ x", data, panel=("id", "time"), treatment="treated")`
-for the published `feTR` weights on underlying treatment effects and sensitivity
-thresholds. Set `panel_mode="unbalanced"` for observed-cell panels; binary
-treatment can reverse. See [TWFE weights](twfe_weights.md).
+for estimator in [did_callaway_santanna, did_sun_abraham, did_bjs]:
+    fit = estimator("y ~ 1", data, panel=("id", "time"), cohort="first_treat")
+    print(estimator.__name__, fit.aggregate("overall").tidy())
+```
 
-BJS supports a separate clean-placebo regression with `pretrends=L`. For example,
-`bjs_stream("y ~ 1", data, ..., anticipation=2, pretrends=3)` estimates clean
-leads -5, -4 and -3. Inspect `fit.placebos().tidy()` and call
-`fit.pretrend_test()`. Main treatment effects are unchanged. See
-[BJS clean placebos](bjs_placebos.md).
+See [Choosing an estimator](choosing.md) for how they differ, and the
+[examples](examples/index.md) for covariates, weights, unbalanced panels,
+pre-trend tests and the bootstrap.
+
+## Larger data
+
+Pass a Parquet path or glob instead of a DataFrame; the data are read in
+batches and need not fit in memory. On a cluster, limit the memory and threads
+a fit may use (they default to what the job was allocated):
+
+```python
+fit = did_callaway_santanna(
+    "earnings ~ age + C(region)",
+    "panel/*.parquet",
+    panel=("person", "year"),
+    cohort="first_treated_year",
+    n_threads=8,
+    max_memory_gb=32,
+)
+```
+
+See [Memory and threads](resources.md).

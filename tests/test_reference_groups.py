@@ -7,19 +7,22 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
+from benchmarks._estimators import fit_estimator, public
 from benchmarks._files import read_csv
-from diff_stream import ReferenceWindowWarning, diff_stream
+from diff_stream import ReferenceWindowWarning, did_callaway_santanna, did_sun_abraham
 
 DATA = Path(__file__).parent / "data"
 REF = DATA / "reference_groups"
 KW = dict(
     panel=("id", "time"),
     cohort="first_treat",
-    threads=2,
+    n_threads=2,
     preprocess_mb=4,
     batch_units=37,
-    ess_warn_threshold=None,
+    effective_sample_warning=None,
 )
+# Sun-Abraham has no effective-sample warning (a CS option).
+SA_KW = {k: v for k, v in KW.items() if k != "effective_sample_warning"}
 
 
 def data(panel):
@@ -30,7 +33,11 @@ def data(panel):
 
 def compare_r(fit, prefix, kind=None):
     ref = read_csv(REF / (prefix + (".csv" if kind is None else "_" + kind + ".csv")))
-    actual = fit if kind is None else fit.aggregate("cohort" if kind == "group" else kind)
+    actual = (
+        fit
+        if kind is None
+        else fit.aggregate(public("kind", "cohort" if kind == "group" else kind))
+    )
     ix = [ref["term"].to_list().index(n) for n in actual.coefnames]
     V = read_csv(REF / (prefix + ("" if kind is None else "_" + kind) + "_vcov.csv")).to_numpy()
     if kind is None:
@@ -50,18 +57,17 @@ def compare_r(fit, prefix, kind=None):
 def test_cs_last_reference_matches_r(panel, A, design, control, base, method):
     d = data(panel)
     with pytest.warns(ReferenceWindowWarning):
-        fit = diff_stream(
+        fit = did_callaway_santanna(
             "y~1" if design == "constant" else "y~x+z",
             d,
             **KW,
-            estimator="cs",
-            panel_mode=panel,
+            incomplete_units=public("incomplete_units", panel),
             anticipation=A,
             weights="w",
             allow_time_varying_weights=True,
-            control_group=control,
+            control_group=public("control_group", control),
             base_period=base,
-            est_method=method,
+            adjustment=public("adjustment", method),
         )
     prefix = f"cs_{panel}_{A}_{design}_{control}_{base}_{method}"
     compare_r(fit, prefix)
@@ -80,12 +86,11 @@ def test_sa_last_reference_matches_fixest(panel, A, design):
     if design == "extra_fe":
         formula += "|region^time"
     with pytest.warns(ReferenceWindowWarning):
-        fit = diff_stream(
+        fit = did_sun_abraham(
             formula,
             data(panel),
-            **KW,
-            estimator="sunab",
-            panel_mode=panel,
+            **SA_KW,
+            incomplete_units=public("incomplete_units", panel),
             anticipation=A,
             weights="w",
             allow_time_varying_weights=True,
@@ -117,24 +122,30 @@ def test_explicit_restriction_invariance_and_cleanup(estimator, panel, A, tmp_pa
     kwargs = dict(
         **KW,
         estimator=estimator,
-        panel_mode=panel,
+        incomplete_units=public("incomplete_units", panel),
         anticipation=A,
         weights="w",
         allow_time_varying_weights=True,
         workdir=tmp_path,
     )
     with pytest.warns(ReferenceWindowWarning):
-        actual = diff_stream("y~x+z", d, **kwargs)
-    baseline = diff_stream("y~x+z", expected, **kwargs)
+        actual = fit_estimator("y~x+z", d, **kwargs)
+    baseline = fit_estimator("y~x+z", expected, **kwargs)
     assert actual.cells == baseline.cells
     assert_allclose(actual.beta, baseline.beta, atol=2e-9, rtol=0)
     assert_allclose(actual.vcov, baseline.vcov, atol=2e-9, rtol=0)
     for kind in ["dynamic", "simple", "cohort", "calendar"]:
         assert_allclose(
-            actual.aggregate(kind).beta, baseline.aggregate(kind).beta, atol=2e-9, rtol=0
+            actual.aggregate(public("kind", kind)).beta,
+            baseline.aggregate(public("kind", kind)).beta,
+            atol=2e-9,
+            rtol=0,
         )
         assert_allclose(
-            actual.aggregate(kind).vcov, baseline.aggregate(kind).vcov, atol=2e-9, rtol=0
+            actual.aggregate(public("kind", kind)).vcov,
+            baseline.aggregate(public("kind", kind)).vcov,
+            atol=2e-9,
+            rtol=0,
         )
     assert actual.n_obs == len(expected)
     assert not list(tmp_path.iterdir())
@@ -142,19 +153,19 @@ def test_explicit_restriction_invariance_and_cleanup(estimator, panel, A, tmp_pa
 
 def test_reference_choice_complete_drop_and_pooled_controls():
     d = read_csv(DATA / "richer_panel.csv")
-    default = diff_stream("y~1", d, **KW)
-    strict = diff_stream("y~1", d, reference_group="nevertreated", **KW)
+    default = fit_estimator("y~1", d, **KW)
+    strict = fit_estimator("y~1", d, last_treated_controls="never", **KW)
     assert_allclose(default.beta, strict.beta)
-    assert default.diagnostics["reference_group"] == "nevertreated"
+    assert default.diagnostics["reference"] == "never_treated"
     with pytest.warns(ReferenceWindowWarning):
-        last = diff_stream("y~1", d, reference_group="lasttreated", **KW)
+        last = fit_estimator("y~1", d, last_treated_controls="always", **KW)
     assert last.diagnostics["reference_includes_never_treated"]
     assert last.diagnostics["reference_cohort"] == 7
     # Entire latest cohort loses a row: complete-panel selection must choose 6,
     # rather than choose 7 before discovering that it is absent from the fit.
     bad = data("balanced").filter(~((pl.col("first_treat") == 7) & (pl.col("time") == 2)))
     with pytest.warns(ReferenceWindowWarning):
-        fit = diff_stream("y~1", bad, panel_mode="complete", **KW)
+        fit = fit_estimator("y~1", bad, incomplete_units="drop", **KW)
     assert fit.diagnostics["reference_cohort"] == 6
     assert {g for g, t in fit.cells} == {5}
 
@@ -162,18 +173,18 @@ def test_reference_choice_complete_drop_and_pooled_controls():
 def test_strict_reference_errors_and_profile(tmp_path):
     d = data("balanced")
     with pytest.raises(ValueError, match="never-treated"):
-        diff_stream("y~1", d, reference_group="nevertreated", **KW)
+        fit_estimator("y~1", d, last_treated_controls="never", **KW)
     with pytest.raises(ValueError, match="two treated cohorts"):
-        diff_stream(
+        fit_estimator(
             "y~1",
             read_csv(DATA / "richer_panel.csv").filter(pl.col("first_treat").is_in([0, 7])),
-            reference_group="lasttreated",
+            last_treated_controls="always",
             **KW,
         )
-    with pytest.raises(ValueError, match="reference_group"):
-        diff_stream("y~1", d, reference_group="bad", **KW)
+    with pytest.raises(ValueError, match="last_treated_controls"):
+        fit_estimator("y~1", d, last_treated_controls="bad", **KW)
     with pytest.warns(ReferenceWindowWarning):
-        p = diff_stream("y~1", d, profile=True, workdir=tmp_path, **KW)
+        p = fit_estimator("y~1", d, profile=True, workdir=tmp_path, **KW)
     assert p.notes["reference_cohort"] == 7
     assert not list(tmp_path.iterdir())
 

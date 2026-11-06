@@ -80,14 +80,14 @@ def main():
     start = time.perf_counter()
     try:
         with TemporaryDirectory(prefix="diff-memory-") as work:
-            r = api.cs_stream(
+            r = api.did_callaway_santanna(
                 "y ~ 1",
                 args.data,
                 panel=("id", "time"),
                 cohort="first_treat",
-                threads=args.threads,
+                n_threads=args.threads,
                 workdir=work,
-                memory_gb=args.memory_gb,
+                max_memory_gb=args.memory_gb,
                 preprocess_mb=args.preprocess_mb,
             )
     finally:

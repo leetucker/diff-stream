@@ -15,32 +15,36 @@ sys.path.insert(0, str(ROOT))
 from stream_limits.launcher import run_limited  # noqa: E402
 from stream_limits.testing import verify_memory_limit  # noqa: E402
 
+from benchmarks._estimators import public  # noqa: E402
 from benchmarks.gardner_resources import save  # noqa: E402
 
 
 def child(c):
-    from diff_stream import etwfe_stream
+    from diff_stream import did_extended_twfe
 
     start = time.monotonic()
-    fit = etwfe_stream(
+    fit = did_extended_twfe(
         "y~x+z",
         c["path"],
         panel=("id", "time"),
         cohort="first_treat",
-        control_group=c["control_group"],
+        control_group=public("control_group", c["control_group"]),
         fixed_effects=c["fixed_effects"],
-        inference="unconditional",
-        panel_mode="unbalanced",
+        treat_sample_as_fixed=False,
+        incomplete_units="keep",
         weights="w",
         allow_time_varying_weights=True,
-        threads=2,
+        n_threads=2,
         batch_units=c["batch_units"],
         preprocess_mb=c["preprocess_mb"],
-        memory_gb=c["memory_gb"],
+        max_memory_gb=c["memory_gb"],
         workdir=c["workdir"],
     )
     aggregates = {
-        kind: dict(beta=fit.aggregate(kind).beta.tolist(), vcov=fit.aggregate(kind).vcov.tolist())
+        kind: dict(
+            beta=fit.aggregate(public("kind", kind)).beta.tolist(),
+            vcov=fit.aggregate(public("kind", kind)).vcov.tolist(),
+        )
         for kind in ["simple", "dynamic", "cohort", "calendar"]
     }
     print(

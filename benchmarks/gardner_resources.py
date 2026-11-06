@@ -19,6 +19,8 @@ sys.path.insert(0, str(ROOT))
 from stream_limits.launcher import run_limited  # noqa: E402
 from stream_limits.testing import verify_memory_limit  # noqa: E402
 
+from benchmarks._estimators import public  # noqa: E402
+
 
 def save(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n")
@@ -27,20 +29,20 @@ def save(path, value):
 def child(config):
     import polars as pl
 
-    from diff_stream import gardner_stream
+    from diff_stream import did_two_stage
 
     start = time.monotonic()
-    fit = gardner_stream(
+    fit = did_two_stage(
         "y ~ x + I(x**2) | region^time",
         config["path"],
         panel=("id", "time"),
         cohort="first_treat",
-        specification=config["specification"],
-        panel_mode="unbalanced",
+        event_study=public("event_study", config["specification"]),
+        incomplete_units="keep",
         weights="w",
         allow_time_varying_weights=True,
-        threads=2,
-        memory_gb=config["memory_gb"],
+        n_threads=2,
+        max_memory_gb=config["memory_gb"],
         batch_units=config["batch_units"],
         preprocess_mb=config["preprocess_mb"],
         workdir=config["workdir"],

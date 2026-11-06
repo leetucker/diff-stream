@@ -1,0 +1,24 @@
+### l_homicide ~ 1
+vcov: CRV0
+obs: 550
+shape: (1, 5)
+┌─────────────┬──────────┬────────────┬──────────┬──────────┐
+│ Coefficient ┆ Estimate ┆ Std. Error ┆ t value  ┆ Pr(>|t|) │
+│ ---         ┆ ---      ┆ ---        ┆ ---      ┆ ---      │
+│ str         ┆ f64      ┆ f64        ┆ f64      ┆ f64      │
+╞═════════════╪══════════╪════════════╪══════════╪══════════╡
+│ ATT         ┆ 0.0669   ┆ 0.057014   ┆ 1.173383 ┆ 0.240642 │
+└─────────────┴──────────┴────────────┴──────────┴──────────┘
+shape: (5, 5)
+┌─────────────┬───────────┬────────────┬───────────┬──────────┐
+│ Coefficient ┆ Estimate  ┆ Std. Error ┆ t value   ┆ Pr(>|t|) │
+│ ---         ┆ ---       ┆ ---        ┆ ---       ┆ ---      │
+│ str         ┆ f64       ┆ f64        ┆ f64       ┆ f64      │
+╞═════════════╪═══════════╪════════════╪═══════════╪══════════╡
+│ event::-3   ┆ 0.024817  ┆ 0.02788    ┆ 0.890146  ┆ 0.373388 │
+│ event::-2   ┆ -0.030729 ┆ 0.023814   ┆ -1.290409 ┆ 0.196909 │
+│ event::0    ┆ 0.072668  ┆ 0.062878   ┆ 1.15569   ┆ 0.247808 │
+│ event::1    ┆ 0.062703  ┆ 0.070203   ┆ 0.89317   ┆ 0.371766 │
+│ event::2    ┆ 0.082464  ┆ 0.07241    ┆ 1.13884   ┆ 0.25477  │
+└─────────────┴───────────┴────────────┴───────────┴──────────┘
+{'statistic': 1.858128856691258, 'pvalue': 0.39492301636832533, 'df1': 2, 'df2': None, 'distribution': 'chi2', 'level': 'event_time', 'coefficients': ['event::-3', 'event::-2'], 'horizons': [-3, -2], 'cells': [{'cohort': 2006, 'time': 2003}, {'cohort': 2006, 'time': 2004}, {'cohort': 2007, 'time': 2004}, {'cohort': 2007, 'time': 2005}, {'cohort': 2008, 'time': 2005}, {'cohort': 2008, 'time': 2006}, {'cohort': 2009, 'time': 2006}, {'cohort': 2009, 'time': 2007}, {'cohort': 2010, 'time': 2007}, {'cohort': 2010, 'time': 2008}], 'n_restrictions': 2, 'anticipation': 0, 'reference_event_time': -1, 'null': 'all selected clean pre-treatment effects equal zero', 'base_period': 'zero second-stage design for omitted reference and never-treated observations; no intercept'}

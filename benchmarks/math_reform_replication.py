@@ -52,7 +52,7 @@ def dense_twfe(data):
 def compare_replication(data=None):
     d = prepare_data(data)
     fit = bacon_decomp(
-        "incearn_ln ~ 1", d, panel=("state", "class"), cohort="first_treat", threads=2
+        "incearn_ln ~ 1", d, panel=("state", "class"), cohort="first_treat", n_threads=2
     )
     actual = fit.comparisons().sort(["treated_cohort", "control_cohort"])
     reference = read_csv(REF / "comparisons.csv").sort(["treated", "untreated"])

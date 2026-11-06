@@ -13,6 +13,23 @@ import polars as pl
 import pyarrow.parquet as pq
 
 
+def preprocess_budget_mb(preprocess_mb, budget):
+    """The working memory for partitioning and sorting, in decimal MB.
+
+    An explicit value is validated and used as given. None (the default) uses
+    a quarter of the job's current memory headroom, between 16 MB and 32 GB,
+    so a panel that fits in memory is sorted in one piece instead of being
+    hash-partitioned through disk, and a smaller ``max_memory_gb`` gives
+    smaller partitions automatically. A quarter, not more: headroom shrinks
+    while the data are staged, and each leaf is checked against it again.
+    """
+    if preprocess_mb is None:
+        return float(min(32000.0, max(16.0, budget.headroom_gb() * 250)))
+    if isinstance(preprocess_mb, bool) or not np.isfinite(preprocess_mb) or preprocess_mb < 1:
+        raise ValueError("preprocess_mb must be finite and at least 1 MB, or None")
+    return float(preprocess_mb)
+
+
 @dataclass
 class Part:
     path: Path
@@ -49,7 +66,7 @@ class GroupPartitions:
         self.budget = budget
         self.key = key
         self.leaf_bytes = int(preprocess_mb * 1e6 / 4)
-        self.read_rows = max(256, min(32768, self.leaf_bytes // 128))
+        self.read_rows = max(256, min(262144, self.leaf_bytes // 128))
         self.extra_row_bytes = 0
         self.max_leaf_bytes = 0
         self.max_depth = 0

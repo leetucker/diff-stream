@@ -14,6 +14,7 @@ from numpy.testing import assert_allclose
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from benchmarks._estimators import public  # noqa: E402
 from benchmarks._files import digest as file_digest  # noqa: E402
 from benchmarks._files import read_csv  # noqa: E402
 from diff_stream import bacon_decomp  # noqa: E402
@@ -220,9 +221,11 @@ def main():
                     sample(case),
                     panel=("id", "time"),
                     cohort="first_treat",
-                    panel_mode="complete" if case == "complete" else "balanced",
+                    incomplete_units=public(
+                        "incomplete_units", "complete" if case == "complete" else "balanced"
+                    ),
                     weights=weight,
-                    threads=2,
+                    n_threads=2,
                     preprocess_mb=4,
                     batch_units=7,
                 )

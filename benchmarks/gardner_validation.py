@@ -18,9 +18,10 @@ from numpy.testing import assert_allclose
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from benchmarks._estimators import public  # noqa: E402
 from benchmarks._files import digest as file_digest  # noqa: E402
 from benchmarks._files import read_csv  # noqa: E402
-from diff_stream import gardner_stream  # noqa: E402
+from diff_stream import did_two_stage  # noqa: E402
 
 DATA = ROOT / "tests/data"
 REF = DATA / "gardner_reference"
@@ -141,17 +142,17 @@ def main():
             for case in CASES:
                 for specification in ["static", "dynamic"]:
                     formula, weight = configuration(case)
-                    fit = gardner_stream(
+                    fit = did_two_stage(
                         formula,
                         d,
                         panel=("id", "time"),
                         cohort="first_treat",
-                        specification=specification,
+                        event_study=public("event_study", specification),
                         anticipation=A,
                         weights=weight,
                         allow_time_varying_weights=True,
-                        panel_mode=panel,
-                        threads=2,
+                        incomplete_units=public("incomplete_units", panel),
+                        n_threads=2,
                         preprocess_mb=4,
                         batch_units=37,
                     )
@@ -220,18 +221,18 @@ def main():
             )
     for prefix, d, case, spec, A, reference, panel in additional:
         formula, weight = configuration(case)
-        fit = gardner_stream(
+        fit = did_two_stage(
             formula,
             d,
             panel=("id", "time"),
             cohort="first_treat",
-            specification=spec,
+            event_study=public("event_study", spec),
             anticipation=A,
             reference_period=reference if spec == "dynamic" else None,
             weights=weight,
             allow_time_varying_weights=True,
-            panel_mode=panel,
-            threads=2,
+            incomplete_units=public("incomplete_units", panel),
+            n_threads=2,
             preprocess_mb=4,
             batch_units=37,
         )

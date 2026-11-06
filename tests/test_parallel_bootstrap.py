@@ -8,9 +8,11 @@ from concurrent.futures import as_completed
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose
+from stream_limits import current_rss_gb
 from test_refit_bootstrap import KW, small_data
 
-from diff_stream import BootstrapFailureWarning, refit_bootstrap
+from benchmarks._estimators import ESTIMATORS
+from diff_stream import BootstrapFailureWarning, did_callaway_santanna, refit_bootstrap
 from diff_stream._core.process import ProcessBatch
 
 
@@ -21,17 +23,17 @@ def test_parallel_draws_match_serial_and_use_divided_threads(estimator, last, tm
     options = dict(
         weights="w",
         allow_time_varying_weights=True,
-        panel_mode="unbalanced",
+        incomplete_units="keep",
         anticipation=1,
-        memory_gb=3,
-        estimator=estimator,
+        max_memory_gb=3,
+        estimator=ESTIMATORS[estimator],
     )
-    if estimator in ("cs", "bjs"):
-        options["ess_warn_threshold"] = None
-    target = None if estimator == "gardner" else "dynamic"
+    if estimator == "cs":
+        options["effective_sample_warning"] = None
+    target = None if estimator == "gardner" else "event_time"
     args = dict(reps=3, seed=29, aggregate=target, workdir=tmp_path, **KW, **options)
     serial = refit_bootstrap("y~x", data, **args)
-    parallel = refit_bootstrap("y~x", data, workers=2, **args)
+    parallel = refit_bootstrap("y~x", data, n_workers=2, **args)
     assert_allclose(parallel._draws, serial._draws, atol=2e-9, rtol=0)
     assert_allclose(parallel.se, serial.se, atol=2e-9, rtol=0)
     for method in ["percentile", "basic", "normal"]:
@@ -70,16 +72,17 @@ def test_parallel_failed_attempts_match_serial_without_redrawing(tmp_path):
     options = dict(
         reps=8,
         seed=2,
-        aggregate="simple",
-        ess_warn_threshold=None,
-        memory_gb=3,
+        estimator=did_callaway_santanna,
+        aggregate="overall",
+        effective_sample_warning=None,
+        max_memory_gb=3,
         workdir=tmp_path,
         **KW,
     )
     with pytest.warns(BootstrapFailureWarning):
         serial = refit_bootstrap("y~1", data, **options)
     with pytest.warns(BootstrapFailureWarning):
-        parallel = refit_bootstrap("y~1", data, workers=2, **options)
+        parallel = refit_bootstrap("y~1", data, n_workers=2, **options)
     assert 0 < parallel.failures().height < 8
     assert_allclose(parallel._draws, serial._draws, atol=2e-9, rtol=0, equal_nan=True)
     assert parallel.failures().equals(serial.failures())
@@ -91,14 +94,23 @@ def test_parallel_failed_attempts_match_serial_without_redrawing(tmp_path):
 
 def test_parallel_validates_resources_before_starting_workers(tmp_path):
     data = small_data()
-    options = dict(reps=2, aggregate="simple", ess_warn_threshold=None, workdir=tmp_path, **KW)
+    options = dict(
+        reps=2,
+        estimator=did_callaway_santanna,
+        aggregate="overall",
+        effective_sample_warning=None,
+        workdir=tmp_path,
+        **KW,
+    )
     for workers in [0, -1, True, 1.5]:
         with pytest.raises(ValueError, match="workers"):
-            refit_bootstrap("y~1", data, workers=workers, **options)
+            refit_bootstrap("y~1", data, n_workers=workers, **options)
     with pytest.raises(ValueError, match="thread budget"):
-        refit_bootstrap("y~1", data, workers=2, **{**options, "threads": 1})
+        refit_bootstrap("y~1", data, n_workers=2, **{**options, "n_threads": 1})
     with pytest.raises(MemoryError, match="whole-job memory"):
-        refit_bootstrap("y~1", data, workers=2, memory_gb=1, **options)
+        # room for the parent's staging, not for two workers, whatever this process holds
+        limit = (current_rss_gb() or 0) + 0.6
+        refit_bootstrap("y~1", data, n_workers=2, max_memory_gb=limit, **options)
     assert not list(tmp_path.iterdir())
 
 
@@ -121,11 +133,12 @@ def test_remote_errors_propagate_and_clean_scratch(failure, monkeypatch, tmp_pat
         refit_bootstrap(
             "y~1",
             small_data(),
-            workers=2,
+            n_workers=2,
             reps=2,
-            memory_gb=3,
-            aggregate="simple",
-            ess_warn_threshold=None,
+            max_memory_gb=3,
+            estimator=did_callaway_santanna,
+            aggregate="overall",
+            effective_sample_warning=None,
             workdir=tmp_path,
             **KW,
         )
@@ -165,9 +178,9 @@ def test_process_batch_stops_running_sibling_on_failure_or_interrupt(error, tmp_
 
 @pytest.mark.resource
 def test_parallel_bootstrap_constrained(resource_runner, resource_enforcement, tmp_path):
-    code = f"""from diff_stream import refit_bootstrap
+    code = f"""from diff_stream import did_bjs, refit_bootstrap
 from diff_stream.simulate import simulate_panel
-r=refit_bootstrap('y~1',simulate_panel(80,5,seed=17),panel=('id','time'),cohort='first_treat',estimator='bjs',workers=2,reps=3,seed=42,aggregate='simple',ess_warn_threshold=None,threads=2,memory_gb=2.5,preprocess_mb=4,workdir={str(tmp_path / "child")!r})
+r=refit_bootstrap('y~1',simulate_panel(80,5,seed=17),panel=('id','time'),cohort='first_treat',estimator=did_bjs,n_workers=2,reps=3,seed=42,aggregate='overall',n_threads=2,max_memory_gb=2.5,preprocess_mb=4,workdir={str(tmp_path / "child")!r})
 assert r.successful_reps==3
 assert all(w['polars_threads']==1 for w in r.diagnostics['worker_resources'])
 print(r.summary_json())

@@ -1,0 +1,27 @@
+{
+  "reference": "Sun-Abraham: fixest feols with sunab(no_agg = TRUE), clustered by unit with ssc(K.adj = FALSE, G.adj = FALSE) (CRV0). BJS: didimputation with the fixed effects in first_stage, horizon = TRUE and overall (wtr = post-treatment). fixef.tol = 1e-11. didimputation's weighted standard errors use a squared-weight first-stage Gram, so the weighted BJS case checks estimates only. The unimputable case drops rows of never-treated units too, leaving some county-periods without untreated observations; didimputation drops the treated rows there, as diff-stream does with a warning.",
+  "files": {
+    "benchmarks/external/absorbed_panel.py": "3c1a18b0a82db994d98732f5be356401c6d0b71fc3b11a94218d14818b4c4b12",
+    "benchmarks/external/absorbed_reference.R": "9a770e64d1046de901450dec74df68b662b485c20895db23fef97326ee634235",
+    "tests/data/absorbed_panel.csv": "c6e66afddda324221e763052d47009ac2f4ae5c6366b3874f0117aa64a9a458c",
+    "tests/data/absorbed_reference/R_session.txt": "c67efa2c070f2578bd18f046296dd380dd7308c7c3c81948701002b02876e658",
+    "tests/data/absorbed_reference/bjs_anticipation.csv": "2491ef8d219aad6aa685210947b056f65e7316ce70fcd7f9e64ca6a8c451d96b",
+    "tests/data/absorbed_reference/bjs_county.csv": "07aa50509e3c8a8714ab71fa093dcfd353c97a2baa8cefdb88558195d5176695",
+    "tests/data/absorbed_reference/bjs_two_terms.csv": "a0bfc2e4893f25f23c01bd1dadf03f1981e7de6f508372b69d4ee8955193466d",
+    "tests/data/absorbed_reference/bjs_unbalanced.csv": "f4393009e52f9a1d4f99bba10fd3061d33b01f5b8b0ea8509e7f315cbbd4087a",
+    "tests/data/absorbed_reference/bjs_unimputable.csv": "aa70ef18a2d7fc3009251fb4d2e49890ef83625b570522a24f0128f7792d6e77",
+    "tests/data/absorbed_reference/bjs_weighted.csv": "29ab9df7ea0b194e2065f6d23971ed8e26bd45fe7a6ddfa1502bdd3cf36a6eaa",
+    "tests/data/absorbed_reference/sunab_anticipation.csv": "4e0fadb96c7472ab6d0af0b174f7ff9af62b13be59217c77f0153ea29e64469f",
+    "tests/data/absorbed_reference/sunab_anticipation_vcov.csv": "223156a6c2669fd989d67779d24a1ea1b3cd2cb0bdb14bb19f135e00a595982c",
+    "tests/data/absorbed_reference/sunab_county.csv": "b019b0a45e6fd9849fa00fcd9234ce86e8d62f2c2ff5dceccbfd3ecdb5984a88",
+    "tests/data/absorbed_reference/sunab_county_vcov.csv": "d15811ab40906f4e3011224b03351fbe31c3c52955a8d66ef09e769b49117732",
+    "tests/data/absorbed_reference/sunab_two_terms.csv": "7731792c9d83e44881b41dba3a8bbccfaaf94a8f8a819869e8b2eac8f4d7c184",
+    "tests/data/absorbed_reference/sunab_two_terms_vcov.csv": "2a8a987038360e5c936dc5168fbcdd8237c94239c1bd844cea4062fb8ce7b75a",
+    "tests/data/absorbed_reference/sunab_unbalanced.csv": "29d3b8b3334200e5c10272a17c649d1a6f813f715e9574b8ac45030b684fe32c",
+    "tests/data/absorbed_reference/sunab_unbalanced_vcov.csv": "0ae2520ab8d110157b6e27f7363e89e95cd6e7d1031a7c18c7859491fc29b9a7",
+    "tests/data/absorbed_reference/sunab_unimputable.csv": "b915fff1b1299d8490efeb9f108a2fcd72992ec3cd8089fb4b61e5c0a6f59914",
+    "tests/data/absorbed_reference/sunab_unimputable_vcov.csv": "f0df47b947c4ebdc76aaeb273be97d4c47578fdba4abc6db40cadb8c2d48638c",
+    "tests/data/absorbed_reference/sunab_weighted.csv": "9770e3255a706e2d8fc582532edc48e5d1ecbce989ca097b5f32178e1fd66a33",
+    "tests/data/absorbed_reference/sunab_weighted_vcov.csv": "97376120a7c09b59ee3209a1cf9835f168f10f947c50079fe611230de6aaec34"
+  }
+}

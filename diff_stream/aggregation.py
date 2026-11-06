@@ -10,6 +10,8 @@ from numbers import Integral
 import numpy as np
 import polars as pl
 
+from ._present import internal
+
 
 def integer(value):
     return isinstance(value, Integral) and not isinstance(value, (bool, np.bool_))
@@ -31,23 +33,21 @@ class AggregationPlan:
     diagnostics: dict
 
 
-def plan(result, kind, horizons, balance_e, balance_window):
+def plan(result, kind, horizons, balanced_horizon, balance_window):
     if not result.cells:
         raise ValueError("aggregate the original group-time result")
-    kind = "cohort" if kind == "group" else kind
-    if kind not in ("dynamic", "simple", "cohort", "calendar"):
-        raise ValueError("kind must be 'dynamic', 'simple', 'cohort' ('group') or 'calendar'")
-    if balance_e is not None and balance_window is not None:
-        raise ValueError("choose balance_e or balance_window, not both")
-    if (balance_e is not None or balance_window is not None) and kind != "dynamic":
-        raise ValueError("balancing options are available only for dynamic aggregation")
+    if kind not in ("event_time", "overall", "cohort", "calendar"):
+        raise ValueError("kind must be 'event_time', 'overall', 'cohort' or 'calendar'")
+    if balanced_horizon is not None and balance_window is not None:
+        raise ValueError("choose balanced_horizon or balance_window, not both")
+    if (balanced_horizon is not None or balance_window is not None) and kind != "event_time":
+        raise ValueError("balancing options are available only for event-time aggregation")
     g = np.array([g for g, t in result.cells])
     t = np.array([t for g, t in result.cells])
     h = t - g
-    anticipation = result.diagnostics.get("anticipation", 0)
+    anticipation = internal(result).get("anticipation", 0)
     cohorts = sorted(
-        set(g.tolist())
-        | {int(k) for k in result.diagnostics.get("cohort_sizes", {}) if int(k) != 0}
+        set(g.tolist()) | {int(k) for k in internal(result).get("cohort_sizes", {}) if int(k) != 0}
     )
     select = np.ones(len(h), dtype=bool)
     requested = None
@@ -59,20 +59,20 @@ def plan(result, kind, horizons, balance_e, balance_window):
         if not all(integer(e) for e in requested):
             raise ValueError("horizons must contain integer event times")
         requested = sorted(set(int(e) for e in requested))
-    last = result.diagnostics.get("time_max", int(t.max()))
-    first = result.diagnostics.get(
-        "time_min", last - result.diagnostics.get("periods", int(t.max() - t.min() + 1)) + 1
+    last = internal(result).get("time_max", int(t.max()))
+    first = internal(result).get(
+        "time_min", last - internal(result).get("periods", int(t.max() - t.min() + 1)) + 1
     )
     span = last - first
     excluded = []
-    if balance_e is not None:
-        if not integer(balance_e) or balance_e < 0:
-            raise ValueError("balance_e must be a nonnegative integer")
-        balance_e = int(balance_e)
-        if balance_e > span:
+    if balanced_horizon is not None:
+        if not integer(balanced_horizon) or balanced_horizon < 0:
+            raise ValueError("balanced_horizon must be a nonnegative integer")
+        balanced_horizon = int(balanced_horizon)
+        if balanced_horizon > span:
             raise ValueError("no cohorts support the requested balanced window")
-        required = set(range(balance_e + 1))
-        low, high = balance_e - span, balance_e
+        required = set(range(balanced_horizon + 1))
+        low, high = balanced_horizon - span, balanced_horizon
     elif balance_window is not None:
         try:
             bounds = list(balance_window)
@@ -96,9 +96,9 @@ def plan(result, kind, horizons, balance_e, balance_window):
             result.estimator == "sunab"
             or (
                 result.estimator == "etwfe"
-                and result.diagnostics.get("control_group") == "nevertreated"
+                and internal(result).get("control_group") == "nevertreated"
             )
-            or (result.estimator == "cs" and result.diagnostics.get("base_period") == "universal")
+            or (result.estimator == "cs" and internal(result).get("base_period") == "universal")
         ):
             required.discard(-anticipation - 1)
     else:
@@ -120,14 +120,14 @@ def plan(result, kind, horizons, balance_e, balance_window):
         select &= np.isin(g, keep) & (h >= low) & (h <= high)
     if requested is not None:
         select &= np.isin(h, requested)
-    if kind != "dynamic":
+    if kind != "event_time":
         select &= h >= 0
     if not select.any():
         raise ValueError("no supported cells in the requested aggregation")
-    values = {"dynamic": h, "cohort": g, "calendar": t}.get(kind)
+    values = {"event_time": h, "cohort": g, "calendar": t}.get(kind)
     levels = sorted(set(values[select].tolist())) if values is not None else ["ATT"]
-    prefix = {"dynamic": "event", "cohort": "cohort", "calendar": "calendar"}.get(kind)
-    names = ["ATT" if kind == "simple" else f"{prefix}::{v}" for v in levels]
+    prefix = {"event_time": "event", "cohort": "cohort", "calendar": "calendar"}.get(kind)
+    names = ["ATT" if kind == "overall" else f"{prefix}::{v}" for v in levels]
     A = np.zeros((len(levels), len(h)))
     for j, level in enumerate(levels):
         mask = select if values is None else select & (values == level)
@@ -145,7 +145,7 @@ def plan(result, kind, horizons, balance_e, balance_window):
         if result.cohort_counts is not None
         else np.array(
             [
-                result.diagnostics.get("cohort_sizes", {}).get(str(cg), result.counts[j])
+                internal(result).get("cohort_sizes", {}).get(str(cg), result.counts[j])
                 for j, cg in enumerate(g)
             ]
         )
@@ -172,7 +172,7 @@ def plan(result, kind, horizons, balance_e, balance_window):
                 cohort_units=int(sum(populations[next(k for k in ix if g[k] == c)] for c in cg)),
                 observed_unit_periods=int(observed[ix].sum()) if observed is not None else None,
                 target_weight_total=float(
-                    result.counts[ix].sum() * result.diagnostics.get("weight_scale", 1.0)
+                    result.counts[ix].sum() * internal(result).get("weight_scale", 1.0)
                 ),
                 cohorts_changed=changed,
                 cohort_weights_changed=weights_changed,
@@ -195,7 +195,7 @@ def plan(result, kind, horizons, balance_e, balance_window):
                     if observed is not None
                     else int(result.counts[k]),
                     weight_total=float(
-                        result.counts[k] * result.diagnostics.get("weight_scale", 1.0)
+                        result.counts[k] * internal(result).get("weight_scale", 1.0)
                     ),
                     observed_units=int(observed[k]) if observed is not None else None,
                     cohort_units=int(populations[k]),
@@ -205,7 +205,7 @@ def plan(result, kind, horizons, balance_e, balance_window):
     diagnostics = dict(
         aggregation=kind,
         horizons=requested,
-        balance_e=balance_e,
+        balanced_horizon=balanced_horizon,
         balance_window=balance_window,
         contributing_cohorts=contributing,
         excluded_cohorts=excluded,
@@ -216,7 +216,7 @@ def plan(result, kind, horizons, balance_e, balance_window):
             if result.estimator == "cs"
             else "observed cohort-time sampling-weight totals"
         )
-        if result.diagnostics.get("sampling_weights") is not None
+        if internal(result).get("sampling_weights") is not None
         else "retained cohort units"
         if result.estimator == "cs"
         else "observed cohort-time units",

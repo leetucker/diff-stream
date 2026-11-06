@@ -8,24 +8,24 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
+from benchmarks._estimators import fit_estimator, public
 from benchmarks._files import read_csv
 from benchmarks.etwfe_validation import dense_oracle as etwfe_dense
 from benchmarks.reference_population_review import KW, cases, configurations, sample
 from benchmarks.reference_population_validation import compare, options, provenance
 from diff_stream import (
     ReferenceWindowWarning,
-    bjs_stream,
-    diff_stream,
-    etwfe_stream,
-    gardner_stream,
+    did_bjs,
+    did_extended_twfe,
+    did_two_stage,
 )
 
 CASES = list(cases())
-ENTRIES = [("bjs", bjs_stream), ("gardner", gardner_stream), ("etwfe", etwfe_stream)]
+ENTRIES = [("bjs", did_bjs), ("gardner", did_two_stage), ("etwfe", did_extended_twfe)]
 
 
 def extra(name):
-    return dict(ess_warn_threshold=None) if name == "bjs" else {}
+    return {}
 
 
 @pytest.mark.parametrize("c", CASES, ids=lambda c: c["name"])
@@ -38,14 +38,14 @@ def test_native_reference_and_explicit_restriction(c, name):
     with pytest.warns(ReferenceWindowWarning):
         result = entry(data=data, **kwargs, **options(c), **extra(name))
     try:
-        compare(result.aggregate("dynamic") if name == "bjs" else result, c["name"] + "_" + name)
+        compare(result.aggregate("event_time") if name == "bjs" else result, c["name"] + "_" + name)
         with pytest.warns(ReferenceWindowWarning):
             explicit = entry(
-                data=data, reference_group="lasttreated", **kwargs, **options(c), **extra(name)
+                data=data, last_treated_controls="always", **kwargs, **options(c), **extra(name)
             )
         baseline = entry(
             data=sample(c, True),
-            reference_group="nevertreated",
+            last_treated_controls="never",
             **kwargs,
             **options(c),
             **extra(name),
@@ -65,14 +65,14 @@ def test_native_reference_and_explicit_restriction(c, name):
                 assert all(g != 7 and t < 7 - c["A"] for g, t in result.cells)
                 for kind in ["dynamic", "simple", "cohort", "calendar"]:
                     assert_allclose(
-                        result.aggregate(kind).beta,
-                        baseline.aggregate(kind).beta,
+                        result.aggregate(public("kind", kind)).beta,
+                        baseline.aggregate(public("kind", kind)).beta,
                         atol=2e-9,
                         rtol=0,
                     )
                     assert_allclose(
-                        result.aggregate(kind).vcov,
-                        baseline.aggregate(kind).vcov,
+                        result.aggregate(public("kind", kind)).vcov,
+                        baseline.aggregate(public("kind", kind)).vcov,
                         atol=2e-9,
                         rtol=0,
                     )
@@ -89,12 +89,14 @@ def test_bjs_original_onset_placebos_native_and_restricted(c, tmp_path):
     full = sample(c)
     raw = full.filter(pl.col("time") < 7 - c["A"])
     with pytest.warns(ReferenceWindowWarning):
-        result = bjs_stream(
-            fml, full, pretrends=2, ess_warn_threshold=None, workdir=tmp_path, **options(c)
+        result = did_bjs(
+            fml,
+            full,
+            pretrend_leads=2,
+            workdir=tmp_path,
+            **options(c),
         )
-    baseline = bjs_stream(
-        fml, raw, pretrends=2, ess_warn_threshold=None, workdir=tmp_path, **options(c)
-    )
+    baseline = did_bjs(fml, raw, pretrend_leads=2, workdir=tmp_path, **options(c))
     try:
         compare(result.placebos(), c["name"] + "_bjs_placebos")
         assert_allclose(result.placebos().beta, baseline.placebos().beta, atol=2e-9, rtol=0)
@@ -114,12 +116,12 @@ def test_bjs_original_onset_placebos_native_and_restricted(c, tmp_path):
 def test_etwfe_both_control_and_fe_conventions(control, fe, inference, A):
     c = dict(panel="unbalanced", A=A, rich=True)
     with pytest.warns(ReferenceWindowWarning):
-        result = etwfe_stream(
+        result = did_extended_twfe(
             "y~x+z",
             sample(c),
-            control_group=control,
+            control_group=public("control_group", control),
             fixed_effects=fe,
-            inference=inference,
+            treat_sample_as_fixed=public("treat_sample_as_fixed", inference),
             **options(c),
         )
     try:
@@ -135,7 +137,7 @@ def test_etwfe_both_control_and_fe_conventions(control, fe, inference, A):
         assert_allclose(result.beta, b, atol=2e-9, rtol=0)
         assert_allclose(result.vcov, V, atol=2e-9, rtol=0)
         for kind, (bb, vv) in aggregates.items():
-            agg = result.aggregate(kind)
+            agg = result.aggregate(public("kind", kind))
             assert_allclose(agg.beta, bb, atol=2e-9, rtol=0)
             assert_allclose(agg.vcov, vv, atol=2e-9, rtol=0)
     finally:
@@ -164,13 +166,13 @@ def test_explicit_last_pools_existing_controls_and_cleanup(name, entry, A, mode,
         **KW,
         weights="w",
         allow_time_varying_weights=True,
-        panel_mode=mode,
+        incomplete_units=public("incomplete_units", mode),
         anticipation=A,
         workdir=tmp_path,
         **extra(name),
     )
     with pytest.warns(ReferenceWindowWarning):
-        result = entry("y~x+z", data, reference_group="lasttreated", **opt)
+        result = entry("y~x+z", data, last_treated_controls="always", **opt)
     baseline = entry("y~x+z", canonical, **opt)
     try:
         assert result.diagnostics["reference_includes_never_treated"]
@@ -187,7 +189,7 @@ def test_explicit_last_pools_existing_controls_and_cleanup(name, entry, A, mode,
 def test_complete_selection_precedes_reference_choice(name, entry):
     data = sample(CASES[0]).filter(~((pl.col("first_treat") == 7) & (pl.col("time") == 7)))
     with pytest.warns(ReferenceWindowWarning):
-        result = entry("y~1", data, panel_mode="complete", **KW, **extra(name))
+        result = entry("y~1", data, incomplete_units="drop", **KW, **extra(name))
     try:
         assert result.diagnostics["reference_cohort"] == 6
         assert result.diagnostics["time_max"] == 5
@@ -205,20 +207,20 @@ def test_complete_selection_precedes_reference_choice(name, entry):
 def test_policy_guards_profiles_and_default_invariance(name, entry, tmp_path):
     data = sample(CASES[0])
     with pytest.raises(ValueError, match="never-treated"):
-        entry("y~1", data, reference_group="nevertreated", **KW, **extra(name))
-    with pytest.raises(ValueError, match="reference_group"):
-        entry("y~1", data, reference_group="bad", workdir=tmp_path, **KW, **extra(name))
+        entry("y~1", data, last_treated_controls="never", **KW, **extra(name))
+    with pytest.raises(ValueError, match="last_treated_controls"):
+        entry("y~1", data, last_treated_controls="bad", workdir=tmp_path, **KW, **extra(name))
     with pytest.warns(ReferenceWindowWarning):
         prof = entry("y~1", data, profile=True, workdir=tmp_path, **KW, **extra(name))
     assert prof.notes["reference_cohort"] == 7
     assert not list(tmp_path.iterdir())
     never = read_csv(Path(__file__).parent / "data/richer_panel.csv")
     default = entry("y~1", never, **KW, **extra(name))
-    strict = entry("y~1", never, reference_group="nevertreated", **KW, **extra(name))
+    strict = entry("y~1", never, last_treated_controls="never", **KW, **extra(name))
     try:
         assert_allclose(default.beta, strict.beta, atol=1e-12, rtol=0)
         assert_allclose(default.vcov, strict.vcov, atol=1e-12, rtol=0)
-        assert default.diagnostics["reference_group"] == "nevertreated"
+        assert default.diagnostics["reference"] == "never_treated"
     finally:
         default.cleanup()
         strict.cleanup()
@@ -232,11 +234,11 @@ def test_dispatch_and_units_disappearing_from_window(name, entry, tmp_path):
         pl.lit(7).cast(data.schema["time"]).alias("time"),
     )
     data = pl.concat([data, tail])
-    opt = dict(**KW, panel_mode="unbalanced", workdir=tmp_path, **extra(name))
+    opt = dict(**KW, incomplete_units="keep", workdir=tmp_path, **extra(name))
     with pytest.warns(ReferenceWindowWarning):
-        direct = entry("y~1", data, reference_group="lasttreated", **opt)
+        direct = entry("y~1", data, last_treated_controls="always", **opt)
     with pytest.warns(ReferenceWindowWarning):
-        dispatch = diff_stream("y~1", data, estimator=name, reference_group="lasttreated", **opt)
+        dispatch = fit_estimator("y~1", data, estimator=name, last_treated_controls="always", **opt)
     try:
         assert direct.diagnostics["reference_dropped_units"] == 1
         assert_allclose(direct.beta, dispatch.beta, atol=1e-12, rtol=0)
@@ -254,7 +256,7 @@ def test_insufficient_clean_date_support_is_not_extrapolated(name, entry, tmp_pa
         pytest.warns(ReferenceWindowWarning),
         pytest.raises(ValueError, match="unidentified|not identified|singular nuisance"),
     ):
-        entry("y~1", data, panel_mode="unbalanced", workdir=tmp_path, **KW, **extra(name))
+        entry("y~1", data, incomplete_units="keep", workdir=tmp_path, **KW, **extra(name))
     assert not list(tmp_path.iterdir())
 
 
@@ -265,13 +267,13 @@ def test_native_provenance():
 @pytest.mark.resource
 def test_new_reference_windows_constrained(resource_runner, resource_enforcement, tmp_path):
     path = Path(__file__).parent / "data/richer_unbalanced_panel.csv"
-    code = f"""from diff_stream import bjs_stream,gardner_stream,etwfe_stream
+    code = f"""from diff_stream import did_bjs,did_two_stage,did_extended_twfe
 import polars as pl,json
 d=pl.read_csv({str(path)!r}).filter(pl.col('first_treat')!=0)
 out=[]
-for entry in [bjs_stream,gardner_stream,etwfe_stream]:
- kw={{'ess_warn_threshold':None,'pretrends':2}} if entry is bjs_stream else {{}}
- with entry('y~x+z',d,panel=('id','time'),cohort='first_treat',reference_group='lasttreated',panel_mode='unbalanced',anticipation=1,weights='w',allow_time_varying_weights=True,threads=2,batch_units=37,preprocess_mb=4,workdir={str(tmp_path / "child")!r},**kw) as r:
+for entry in [did_bjs,did_two_stage,did_extended_twfe]:
+ kw={{'pretrend_leads':2}} if entry is did_bjs else {{}}
+ with entry('y~x+z',d,panel=('id','time'),cohort='first_treat',last_treated_controls='always',incomplete_units='keep',anticipation=1,weights='w',allow_time_varying_weights=True,n_threads=2,batch_units=37,preprocess_mb=4,workdir={str(tmp_path / "child")!r},**kw) as r:
   assert r.diagnostics['reference_cutoff']==6
   out.append(r.beta.tolist())
 print(json.dumps(out))

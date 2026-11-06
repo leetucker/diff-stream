@@ -13,6 +13,7 @@ from numpy.testing import assert_allclose
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from benchmarks._estimators import public  # noqa: E402
 from benchmarks._files import csv_files, read_csv  # noqa: E402
 from benchmarks._files import digest as file_digest  # noqa: E402
 from benchmarks._files import exists as csv_exists  # noqa: E402
@@ -24,7 +25,7 @@ from benchmarks.reference_population_review import (  # noqa: E402
     configurations,
     sample,
 )
-from diff_stream import ReferenceWindowWarning, bjs_stream  # noqa: E402
+from diff_stream import ReferenceWindowWarning, did_bjs  # noqa: E402
 
 REF = ROOT / "tests/data/reference_population_extensions"
 EXPORTER = ROOT / "benchmarks/external/reference_population_extensions.R"
@@ -61,7 +62,7 @@ def compare(result, prefix):
 def options(c):
     return dict(
         **KW,
-        panel_mode=c["panel"],
+        incomplete_units=public("incomplete_units", c["panel"]),
         anticipation=c["A"],
         weights="w" if c["rich"] else None,
         allow_time_varying_weights=True,
@@ -79,13 +80,12 @@ def audit():
                 warnings.simplefilter("always", ReferenceWindowWarning)
                 with entry(
                     data=sample(c),
-                    reference_group="auto",
+                    last_treated_controls="if_needed",
                     **kwargs,
                     **options(c),
-                    **({"ess_warn_threshold": None} if name == "bjs" else {}),
                 ) as r:
                     assert any(isinstance(w.message, ReferenceWindowWarning) for w in caught)
-                    target = r.aggregate("dynamic") if name == "bjs" else r
+                    target = r.aggregate("event_time") if name == "bjs" else r
                     rows.append(
                         dict(
                             case=c["name"],
@@ -95,9 +95,7 @@ def audit():
                     )
         fml = "y~x+I(x**2)|region^time" if c["rich"] else "y~1"
         with warnings.catch_warnings(record=True):
-            with bjs_stream(
-                fml, sample(c), pretrends=2, ess_warn_threshold=None, **options(c)
-            ) as r:
+            with did_bjs(fml, sample(c), pretrend_leads=2, **options(c)) as r:
                 rows.append(
                     dict(
                         case=c["name"],

@@ -7,15 +7,17 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 from scipy.stats import chi2
+from stream_limits import current_rss_gb
 
+from benchmarks._estimators import public
 from benchmarks._files import read_csv
-from diff_stream import BJSPlaceboResult, bjs_stream, cs_stream
+from diff_stream import BJSPlaceboResult, did_bjs, did_callaway_santanna
 from diff_stream.simulate import simulate_panel
 from diff_stream.store import PanelStore
 
 ROOT = Path(__file__).parent / "data"
 REF = ROOT / "bjs_placebo_reference"
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2)
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2)
 
 
 def sample(mode):
@@ -38,13 +40,13 @@ def sample(mode):
 @pytest.mark.parametrize("L", [1, 2, 3])
 def test_r_dense_fixest_and_package(mode, weighted, A, L, tmp_path):
     d = sample(mode)
-    f = bjs_stream(
+    f = did_bjs(
         "y ~ 1",
         d,
-        panel_mode="balanced" if mode == "future" else mode,
+        incomplete_units=public("incomplete_units", "balanced" if mode == "future" else mode),
         weights="w" if weighted else None,
         anticipation=A,
-        pretrends=L,
+        pretrend_leads=L,
         workdir=tmp_path,
         **KW,
     )
@@ -64,7 +66,7 @@ def test_r_dense_fixest_and_package(mode, weighted, A, L, tmp_path):
         assert_allclose(test["statistic"], reference["statistic"], atol=2e-8)
         assert_allclose(test["pvalue"], reference["pvalue"], atol=2e-9)
         assert test["df1"] == L
-        assert test["level"] == "dynamic"
+        assert test["level"] == "event_time"
         assert test["reference_event_time"] is None
         assert test["fitted_horizons"] == list(range(-A - L, -A))
         assert p.n_obs == reference["clean_rows"]
@@ -76,7 +78,7 @@ def test_r_dense_fixest_and_package(mode, weighted, A, L, tmp_path):
         if mode == "future" and A == 0:
             assert support.filter(pl.col("cohort") == 9).height > 0
             assert all(g != 9 for g, t in f.cells)
-        assert f.aggregate("simple").pretrend_test() == test
+        assert f.aggregate("overall").pretrend_test() == test
         f.cleanup()
         assert f.placebos().pretrend_test() == test
         assert p.confint(joint=True, reps=101, seed=3).height == L
@@ -94,22 +96,22 @@ def test_post_effects_unchanged_and_placebos_ignore_smart_settings(
 ):
     d = sample(mode)
     kw = dict(
-        panel_mode=mode,
+        incomplete_units=public("incomplete_units", mode),
         weights="w" if weighted else None,
         anticipation=2,
-        avgeffectsby=average,
-        leaveout=leaveout,
+        residual_averaging=average,
+        leave_out=leaveout,
         workdir=tmp_path,
         **KW,
     )
-    plain = bjs_stream("y ~ 1", d, **kw)
-    fitted = bjs_stream("y ~ 1", d, pretrends=2, **kw)
+    plain = did_bjs("y ~ 1", d, **kw)
+    fitted = did_bjs("y ~ 1", d, pretrend_leads=2, **kw)
     try:
         assert fitted.cells == plain.cells
         assert_allclose(fitted.beta, plain.beta, atol=1e-10)
         assert_allclose(fitted.vcov, plain.vcov, atol=1e-10)
         for kind in ("dynamic", "simple", "cohort", "calendar"):
-            a, b = fitted.aggregate(kind), plain.aggregate(kind)
+            a, b = fitted.aggregate(public("kind", kind)), plain.aggregate(public("kind", kind))
             assert_allclose(a.beta, b.beta, atol=1e-10)
             assert_allclose(a.vcov, b.vcov, atol=1e-10)
         ref = read_csv(REF / f"{mode}_{int(weighted)}_2_2.csv")
@@ -123,9 +125,9 @@ def test_post_effects_unchanged_and_placebos_ignore_smart_settings(
 
 def test_horizon_selection_crv_scale_batches_and_support(tmp_path):
     d = sample("unbalanced")
-    kw = dict(panel_mode="unbalanced", weights="w", anticipation=2, pretrends=3, **KW)
-    a = bjs_stream("y ~ 1", d, workdir=tmp_path, **kw)
-    b = bjs_stream(
+    kw = dict(incomplete_units="keep", weights="w", anticipation=2, pretrend_leads=3, **KW)
+    a = did_bjs("y ~ 1", d, workdir=tmp_path, **kw)
+    b = did_bjs(
         "y ~ 1",
         d.with_columns(pl.col("w") * 1e120).sample(fraction=1, shuffle=True, seed=19),
         batch_units=13,
@@ -161,7 +163,7 @@ def test_horizon_selection_crv_scale_batches_and_support(tmp_path):
         for bad in [[-2], [-1], [0], [-99], [], [True]]:
             with pytest.raises(ValueError, match="clean|not estimated"):
                 p.pretrend_test(horizons=bad)
-        with pytest.raises(ValueError, match="dynamic"):
+        with pytest.raises(ValueError, match="event-time"):
             a.pretrend_test(level="cell")
     finally:
         a.cleanup()
@@ -175,20 +177,20 @@ def test_invalid_pretrends_before_source(bad, monkeypatch):
         raise AssertionError("executed source")
 
     monkeypatch.setattr(PanelStore, "__init__", no_scan)
-    with pytest.raises(ValueError, match="pretrends"):
-        bjs_stream("y ~ 1", sample("balanced"), pretrends=bad, **KW)
+    with pytest.raises(ValueError, match="pretrend_leads"):
+        did_bjs("y ~ 1", sample("balanced"), pretrend_leads=bad, **KW)
 
 
 def test_not_enabled_or_wrong_estimator():
-    f = bjs_stream("y ~ 1", sample("balanced"), **KW)
-    with pytest.raises(ValueError, match="pretrends"):
+    f = did_bjs("y ~ 1", sample("balanced"), **KW)
+    with pytest.raises(ValueError, match="pretrend_leads"):
         f.placebos()
-    with pytest.raises(ValueError, match="pretrends"):
+    with pytest.raises(ValueError, match="pretrend_leads"):
         f.pretrend_test()
+    with pytest.raises(TypeError, match="pretrend_leads"):
+        did_callaway_santanna("y ~ 1", sample("balanced"), pretrend_leads=2, **KW)
     with pytest.raises(ValueError, match="only for BJS"):
-        cs_stream("y ~ 1", sample("balanced"), pretrends=2, **KW)
-    with pytest.raises(ValueError, match="only for BJS"):
-        cs_stream("y ~ 1", sample("balanced"), **KW).placebos()
+        did_callaway_santanna("y ~ 1", sample("balanced"), **KW).placebos()
 
 
 def test_identification_errors_and_guard_cleanup(tmp_path, monkeypatch):
@@ -196,22 +198,23 @@ def test_identification_errors_and_guard_cleanup(tmp_path, monkeypatch):
         pl.when(pl.col("first_treat") != 0).then(3).otherwise(0).alias("first_treat")
     )
     with pytest.raises(ValueError, match="placebo design is unidentified"):
-        bjs_stream("y ~ 1", d, pretrends=2, workdir=tmp_path, **KW)
+        did_bjs("y ~ 1", d, pretrend_leads=2, workdir=tmp_path, **KW)
     with pytest.raises(ValueError, match="not observed"):
-        bjs_stream("y ~ 1", sample("balanced"), pretrends=20, workdir=tmp_path, **KW)
+        did_bjs("y ~ 1", sample("balanced"), pretrend_leads=20, workdir=tmp_path, **KW)
     with pytest.raises(MemoryError, match="numerical buffers"):
-        bjs_stream(
+        did_bjs(
             "y ~ 1",
             sample("balanced"),
-            pretrends=10**6,
-            memory_gb=1,
+            pretrend_leads=10**6,
+            # room for staging, not for a million leads, whatever this process holds
+            max_memory_gb=(current_rss_gb() or 0) + 0.6,
             preprocess_mb=1,
             workdir=tmp_path,
             **KW,
         )
     d = sample("unbalanced").filter(~((pl.col("id") == 1) & (pl.col("time") < 6)))
     with pytest.raises(ValueError, match="at least one untreated"):
-        bjs_stream("y ~ 1", d, pretrends=2, panel_mode="unbalanced", workdir=tmp_path, **KW)
+        did_bjs("y ~ 1", d, pretrend_leads=2, incomplete_units="keep", workdir=tmp_path, **KW)
     assert not list(tmp_path.iterdir())
     from diff_stream import api
 
@@ -219,8 +222,8 @@ def test_identification_errors_and_guard_cleanup(tmp_path, monkeypatch):
         raise AssertionError("fit while profiling")
 
     monkeypatch.setattr(api, "fit_placebos", no_fit)
-    profile = bjs_stream("y ~ 1", sample("balanced"), pretrends=3, profile=True, **KW)
-    assert profile.notes["pretrends"] == 3
+    profile = did_bjs("y ~ 1", sample("balanced"), pretrend_leads=3, profile=True, **KW)
+    assert profile.notes["pretrend_leads"] == 3
 
 
 def test_deterministic_leads_and_effect_sample_independence():
@@ -237,7 +240,7 @@ def test_deterministic_leads_and_effect_sample_independence():
             + pl.when((pl.col("first_treat") > 0) & (event == -4)).then(-0.4).otherwise(0)
         ).alias("y")
     )
-    a = bjs_stream("y ~ 1", d, pretrends=2, anticipation=2, **KW)
+    a = did_bjs("y ~ 1", d, pretrend_leads=2, anticipation=2, **KW)
     d2 = d.with_columns(
         (
             pl.col("y")
@@ -246,7 +249,7 @@ def test_deterministic_leads_and_effect_sample_independence():
             .otherwise(0)
         ).alias("y")
     )
-    b = bjs_stream("y ~ 1", d2, pretrends=2, anticipation=2, **KW)
+    b = did_bjs("y ~ 1", d2, pretrend_leads=2, anticipation=2, **KW)
     assert_allclose(a.placebos().beta, [-0.4, 0.7], atol=1e-11)
     assert_allclose(a.placebos().beta, b.placebos().beta, atol=1e-11)
     assert_allclose(a.placebos().vcov, b.placebos().vcov, atol=1e-20)
@@ -265,7 +268,7 @@ def test_far_future_event_labels_and_shifted_origin():
             + pl.when((pl.col("first_treat") > 0) & (pl.col("time") == 2)).then(0.9).otherwise(0)
         ).alias("y")
     )
-    a = bjs_stream("y ~ 1", d, pretrends=1, anticipation=97, **KW)
+    a = did_bjs("y ~ 1", d, pretrend_leads=1, anticipation=97, **KW)
     assert a.placebos().coefnames == ["event::-98"]
     assert_allclose(a.placebos().beta, [0.9], atol=1e-11)
     shifted = d.with_columns(
@@ -275,6 +278,6 @@ def test_far_future_event_labels_and_shifted_origin():
         .otherwise(0)
         .alias("first_treat"),
     )
-    b = bjs_stream("y ~ 1", shifted, pretrends=1, anticipation=97, **KW)
+    b = did_bjs("y ~ 1", shifted, pretrend_leads=1, anticipation=97, **KW)
     assert_allclose(a.placebos().beta, b.placebos().beta, atol=1e-11)
     assert_allclose(a.placebos().vcov, b.placebos().vcov, atol=1e-20)

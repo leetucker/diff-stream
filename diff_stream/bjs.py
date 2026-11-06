@@ -84,7 +84,7 @@ class BJSInference:
                     invalid = (w != 0) & (lev >= 1 - 1e-12)
                     if np.any(invalid) and not allow_unidentified:
                         raise ValueError(
-                            "BJS leaveout requires more than one contributing unit in each residual group; use broader avgeffectsby groups"
+                            "BJS leave_out requires more than one contributing unit in each residual group; use a coarser residual_averaging"
                         )
                     unidentified |= invalid
                     raw[:, ti] = np.divide(w, 1 - lev, out=np.zeros_like(w), where=lev < 1 - 1e-12)

@@ -5,18 +5,73 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "diff-stream"
 version = "0.1.0.dev0"
-description = "Disk-backed staggered difference-in-differences estimation"
+description = "Staggered difference-in-differences on data larger than memory: Callaway-Sant'Anna, Sun-Abraham, Borusyak-Jaravel-Spiess imputation, two-stage DiD and extended TWFE, with TWFE diagnostics"
 readme = "README.md"
-requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE.md"]
-authors = [{name = "Lee Tucker"}]
-dependencies = ["hdfe-stream[formula]>=0.8.0", "stream-limits>=0.1.1", "polars>=1.37,!=1.41.*", "numpy>=1.24", "scipy>=1.11", "numba>=0.59", "pyarrow>=14"]
+authors = [{ name = "Lee Tucker" }]
+keywords = ["econometrics", "difference-in-differences", "staggered adoption", "event study",
+            "Callaway-Sant'Anna", "Sun-Abraham", "imputation", "two-way fixed effects",
+            "Goodman-Bacon", "treatment effects", "out-of-core"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+requires-python = ">=3.10"
+dependencies = [
+    # formula compilation, IPW, influence-function accumulation, balance tables,
+    # the profile and the result base classes (hdfe_stream.core's stable names)
+    # 0.9.1: HDFEResult.solve_normal_equations, which BJS with absorbed fixed effects uses
+    "hdfe-stream[formula]>=0.9.1",
+    "stream-limits>=0.2.1",     # thread and memory limits for jobs on a scheduler
+    "polars>=1.37,!=1.41.*",    # 1.41 panics in streaming joins of wide frames
+    # NumPy 2 and the first releases built for it. With NumPy 1.x linear algebra
+    # a nearly collinear propensity design (tests/test_numerical_stress.py,
+    # collinear_border) does not meet the logit convergence test.
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "numba>=0.60",
+    "pyarrow>=16.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/leetucker/diff-stream"
+Source = "https://github.com/leetucker/diff-stream"
+Issues = "https://github.com/leetucker/diff-stream/issues"
+Documentation = "https://leetucker.github.io/diff-stream/"
+Changelog = "https://github.com/leetucker/diff-stream/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-test = ["pytest>=7", "stream-limits[testing]>=0.2.0.dev0"]
-benchmark = ["stream-limits[launcher]>=0.2.0.dev0", "matplotlib>=3.7", "psutil>=5.9", "pandas>=2"]
-docs = ["sphinx>=8", "myst-parser>=4", "furo>=2024.8.6", "sphinx-copybutton>=0.5", "sphinx-design>=0.6"]
+# benchmarks/: the subprocess harness, the figures and the EC2 runner; R and
+# the other Python packages live in environments of their own (see
+# benchmarks/README.md)
+benchmark = [
+    "stream-limits[launcher]>=0.2.1",
+    "matplotlib>=3.7",
+    "psutil>=5.9",
+    "pandas>=2.0",
+]
+# docs/: the documentation site, built with Sphinx (see docs/conf.py)
+docs = [
+    "sphinx>=8.0",
+    "myst-parser>=4.0",
+    "furo>=2024.8.6",
+    "sphinx-copybutton>=0.5",
+    "sphinx-design>=0.6",
+]
+test = [
+    "pytest>=7.0",
+    "stream-limits[testing]>=0.2.1",   # resource_runner, for the memory-limit tests
+]
 
 [tool.setuptools.packages.find]
 include = ["diff_stream*"]
@@ -26,13 +81,19 @@ diff_stream = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# memory-limit tests run fits in subprocesses: run them with `pytest -m resource`
+addopts = "-m 'not resource'"
+markers = ["resource: fits in a subprocess under a memory limit (stream-limits)"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+extend-exclude = ["benchmarks/external/.r"]
+
+[tool.ruff.format]
+# code blocks in the docs keep their hand-aligned comments
+exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 ignore = ["E501"]
-
-

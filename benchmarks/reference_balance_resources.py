@@ -14,33 +14,34 @@ sys.path.insert(0, str(ROOT))
 from stream_limits.launcher import run_limited  # noqa: E402
 from stream_limits.testing import verify_memory_limit  # noqa: E402
 
+from benchmarks._estimators import fit_estimator, public  # noqa: E402
 from benchmarks.gardner_resources import save  # noqa: E402
 
 
 def child(c):
     import polars as pl
 
-    from diff_stream import diff_stream
-
-    fit = diff_stream(
+    fit = fit_estimator(
         "y~x+z",
         pl.scan_parquet(c["path"], low_memory=True).filter(pl.col("first_treat") != 0),
         panel=("id", "time"),
         cohort="first_treat",
         estimator=c["estimator"],
-        panel_mode="unbalanced",
-        control_group="notyettreated" if c["estimator"] == "cs" else "nevertreated",
+        incomplete_units="keep",
+        control_group=public(
+            "control_group", "notyettreated" if c["estimator"] == "cs" else "nevertreated"
+        ),
         weights="w",
         allow_time_varying_weights=True,
-        balance=c["balance"],
-        ess_warn_threshold=None,
-        threads=2,
+        covariate_balance=c["balance"],
+        effective_sample_warning=None,
+        n_threads=2,
         preprocess_mb=8,
         batch_units=256,
-        memory_gb=1.5,
+        max_memory_gb=1.5,
         workdir=c["workdir"],
     )
-    a = fit.aggregate("simple")
+    a = fit.aggregate("overall")
     print(
         json.dumps(
             dict(

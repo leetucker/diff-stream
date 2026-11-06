@@ -1,86 +1,124 @@
 # diff-stream
 
-Disk-backed staggered difference-in-differences: Borusyak–Jaravel–Spiess
-imputation, Sun–Abraham saturated interactions, and covariate-adjusted
-Callaway–Sant'Anna, with unit-clustered inference and a common group-time result. Gardner two-stage DiD adds direct
-static/event-study coefficients with first-stage-adjusted inference. Linear
-ETWFE supplies saturated covariate interactions and conditional/unconditional
-margin inference; see [ETWFE](etwfe.md) for nonlinear alternatives.
-
-**Development milestone, not a public release.** The supported design is a
-balanced or explicitly unbalanced absorbing-treatment panel, with optional positive
-sampling weights and consecutive positive integer times. All five estimators can use a
-[clean last-treated reference window](reference_groups.md) when no never-treated
-cohort is available, with estimator-specific lead conventions. CS supports outcome regression,
-IPW and doubly robust covariate adjustment; SA/BJS support covariates and bounded
-additional fixed-effect designs. Explicit opt-in enables time-varying weights.
-Unsupported designs raise errors; see [richer models](richer_models.md) for scope.
-
-The [release-preparation handoff](release_handoff.md) records completed scope,
-remaining extension decisions and explicit deferrals, including simultaneous
-refit-bootstrap bands.
+Difference-in-differences with staggered treatment timing, on panels larger
+than memory. Six estimators share one interface: Callaway and Sant'Anna's
+group-time effects, Sun and Abraham's interaction-weighted event study,
+Borusyak, Jaravel and Spiess's imputation estimator, Gardner's two-stage DiD,
+Wooldridge's extended two-way fixed effects, and stacked DiD with Wing,
+Freedman and Hollingsworth's corrective weights. Two diagnostics show what a
+conventional two-way fixed effects regression averages: the Goodman-Bacon
+decomposition and de Chaisemartin and D'Haultfoeuille's weights. Results are
+tested against the authors' R and Stata packages.
 
 ```python
-from diff_stream import cs_stream
+from diff_stream import did_callaway_santanna
 
-fit = cs_stream("y ~ 1", "data/*.parquet", panel=("id", "time"), cohort="first_treat")
-fit.aggregate().summary()
+fit = did_callaway_santanna(
+    "earnings ~ age + C(region)",
+    "panel/*.parquet",
+    panel=("person", "year"),
+    cohort="first_treated_year",
+)
+fit.aggregate().summary()           # event study
+fit.aggregate("overall").summary()  # overall ATT
 ```
 
-A separate [Goodman–Bacon diagnostic](bacon.md) decomposes conventional TWFE
-on balanced panels with optional covariates, always-treated groups and unit sampling weights. BJS also supports a separate
-[clean-placebo regression and pre-trend test](bjs_placebos.md).
-The separate [TWFE treatment-effect-weight diagnostic](twfe_weights.md) reports
-negative weights and heterogeneity sensitivity measures for binary treatment,
-including reversing treatment and observed-cell unbalanced panels.
+## When to use this, and when not to
 
-The implementation shares hdfe-stream's result and resource-profile interfaces
-and stream-limits' scheduler-aware thread and memory machinery. It snapshots rows to Parquet, validates and sorts bounded whole-unit
-hash partitions, and reads whole-unit batches for inference. Polars operations explicitly request the streaming engine on Polars 1.x.
+Use diff-stream when the panel is large (tens of millions of rows and up, or
+more than fits in memory) and treatment is staggered and absorbing: units
+start treatment at different times and stay treated. In particular:
+
+- an event study or overall ATT that is robust to effects varying across
+  cohorts and over time, by any of six estimators, with the same results
+  interface and aggregations;
+- covariates, by outcome regression, inverse probability weighting or doubly
+  robust estimation (Callaway-Sant'Anna), or additional fixed effects such as
+  region-by-year (Sun-Abraham, BJS, two-stage), with any number of levels
+  for Sun-Abraham and BJS (county-by-year, absorbed by hdfe-stream);
+- sampling weights, unbalanced panels, anticipation, and panels where every
+  unit is eventually treated;
+- standard errors clustered by unit that include the uncertainty in the cohort
+  shares used to aggregate, simultaneous confidence bands, and a bootstrap
+  that refits the whole estimator;
+- jobs on a cluster scheduler, with memory and thread limits taken from the
+  allocation.
+
+Use something else when:
+
+- **The panel is small.** Below a few million rows, R's
+  [did](https://bcallaway11.github.io/did/),
+  [fixest](https://lrberge.github.io/fixest/) (`sunab`),
+  [didimputation](https://github.com/kylebutts/didimputation),
+  [did2s](https://github.com/kylebutts/did2s) and
+  [etwfe](https://grantmcdermott.com/etwfe/), and Stata's `csdid`,
+  `did_imputation`, `did2s` and `jwdid`, are just as fast, and their
+  ecosystems (plots, sensitivity analysis) are larger.
+- **Treatment switches on and off, or is continuous.** These estimators need
+  absorbing binary treatment. de Chaisemartin and D'Haultfoeuille's
+  `did_multiplegt_dyn` (R, Stata) covers those designs. `twfe_weights()` here
+  accepts switching treatment, as a diagnostic.
+- **The outcome needs a nonlinear model** (logit, Poisson ETWFE): use R's
+  etwfe or Stata's `jwdid`.
+- **You need sensitivity analysis for parallel trends.** Pass the event-study
+  coefficients and covariance (`fit.aggregate().beta`, `.vcov`) to R's
+  [HonestDiD](https://github.com/asheshrambachan/HonestDiD).
+
+See [Choosing an estimator](choosing.md) for how the five differ, and
+[Differences from other packages](implementations.md) for their conventions.
+
+## How it is fast
+
+- **Sorted once.** The panel is sorted by unit in memory when it fits, or in
+  whole-unit pieces on disk when it does not. Every later pass reads whole
+  units in large batches.
+- **Small sufficient statistics.** Without covariates, the estimators reduce
+  to cohort-by-period means plus unit scores, computed in parallel.
+- **Covariance by cohort.** A unit's scores touch only the cells its cohort
+  enters, so the joint covariance of hundreds of effects is accumulated
+  cohort by cohort.
+- **Shared passes.** The propensity and outcome models of all comparisons are
+  fitted together, one pass over the data per Newton step.
+
+See [How it works](how_it_works.md), and [Memory and threads](resources.md)
+for the limits.
+
+## Install
+
+```bash
+pip install diff-stream
+```
+
+(Not on PyPI yet; install from the repository with `pip install -e .`.)
+
+```{toctree}
+:hidden:
+:caption: Getting started
+
+quickstart
+choosing
+```
 
 ```{toctree}
 :hidden:
 :caption: Guide
 
-quickstart
-conditional_cs
-anticipation
-weights
-richer_models
-effective_sample
+data
+estimators/index
+results
 inference
-refit_bootstrap
-bjs_placebos
-mpdta_replication
-math_reform_replication
-castle_replication
-bacon
-bacon_extensions
-twfe_weights
-aggregation
-unbalanced_panels
-reference_groups
-reference_population_review
-release_handoff
-covariate_balance
-examples
-how_it_works
-resources
-resource_checks
-memory_checks
-kernel_memory_checks
-shared_core_review
-numerical_stress
-implementations
-gardner
-etwfe
-stata_validation
+diagnostics
+examples/index
 ```
 
 ```{toctree}
 :hidden:
-:caption: Benchmarks
+:caption: Background
 
+how_it_works
+resources
+implementations
+validation
 benchmarks/index
 ```
 
@@ -89,4 +127,5 @@ benchmarks/index
 :caption: Reference
 
 reference/index
+changelog
 ```

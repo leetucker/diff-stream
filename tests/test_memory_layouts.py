@@ -7,8 +7,8 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
+from benchmarks._estimators import ESTIMATORS, fit_estimator, public
 from benchmarks._files import read_csv
-from diff_stream import diff_stream
 from diff_stream.simulate import simulate_conditional_panel, simulate_panel
 
 
@@ -26,8 +26,8 @@ def test_long_ids_shuffled_single_row_group_and_unused_invalid_values(
         panel=("id", "time"),
         cohort="first_treat",
         estimator="cs" if conditional else estimator,
-        threads=2,
-        panel_mode="unbalanced" if unbalanced else "balanced",
+        n_threads=2,
+        incomplete_units=public("incomplete_units", "unbalanced" if unbalanced else "balanced"),
     )
     # Non-finite unused values must not participate in validation or decoded
     # model width. Long labels and row shuffling force whole-unit repartitioning.
@@ -39,10 +39,10 @@ def test_long_ids_shuffled_single_row_group_and_unused_invalid_values(
     source.write_parquet(path, row_group_size=len(source))
     work = tmp_path / "scratch"
     work.mkdir()
-    baseline = diff_stream(formula, data, **kw)
+    baseline = fit_estimator(formula, data, **kw)
     actual = None
     try:
-        actual = diff_stream(
+        actual = fit_estimator(
             formula, str(path), preprocess_mb=1, batch_units=31, workdir=work, **kw
         )
         assert actual.n_units == baseline.n_units == 5000
@@ -52,8 +52,8 @@ def test_long_ids_shuffled_single_row_group_and_unused_invalid_values(
         assert_allclose(actual.beta, baseline.beta, atol=1e-10, rtol=0)
         assert_allclose(actual.vcov, baseline.vcov, atol=1e-10, rtol=0)
         assert_allclose(
-            actual.aggregate("simple").vcov,
-            baseline.aggregate("simple").vcov,
+            actual.aggregate("overall").vcov,
+            baseline.aggregate("overall").vcov,
             atol=1e-10,
             rtol=0,
         )
@@ -114,15 +114,20 @@ def test_constrained_fit_matches_unconstrained_fit(
 
     root = Path(__file__).resolve().parents[1]
     formula = "y ~ x+z" if estimator == "cs" else "y ~ x + I(x**2) | region^time"
+    extra = {"cs": {"effective_sample_warning": None}, "bjs": {"pretrend_leads": 2}}.get(
+        estimator, {}
+    )
+    function = ESTIMATORS[estimator].__name__
     code = f"""
 import json,polars as pl
-from diff_stream import diff_stream
-r=diff_stream({formula!r},pl.read_csv({str(root / "tests/data/richer_unbalanced_panel.csv")!r}),
- panel=('id','time'),cohort='first_treat',estimator={estimator!r},panel_mode='unbalanced',
- weights='w',allow_time_varying_weights=True,threads=2,preprocess_mb=4,batch_units=37,
- pretrends={2 if estimator == "bjs" else 0},ess_warn_threshold=None,workdir={str(tmp_path / "child")!r})
+from diff_stream import {function}
+
+r={function}({formula!r},pl.read_csv({str(root / "tests/data/richer_unbalanced_panel.csv")!r}),
+ panel=('id','time'),cohort='first_treat',incomplete_units='keep',
+ weights='w',allow_time_varying_weights=True,n_threads=2,preprocess_mb=4,batch_units=37,
+ workdir={str(tmp_path / "child")!r},**{extra!r})
 try:
- a=r.aggregate('simple')
+ a=r.aggregate('overall')
  values=dict(names=r.coefnames,beta=r.beta.tolist(),vcov=r.vcov.tolist(),att=a.beta.tolist())
  if {estimator == "bjs"!r}: values.update(placebo=r.placebos().beta.tolist(),placebo_vcov=r.placebos().vcov.tolist())
  print(json.dumps(values))
@@ -152,28 +157,27 @@ finally:r.cleanup()
     fitted = json.loads(result.stdout)
     # This is a resource test: compare with an unconstrained fit on the SAME
     # platform. The regular numerical suite owns the independent R references.
-    baseline = diff_stream(
+    baseline = fit_estimator(
         formula,
         read_csv(root / "tests/data/richer_unbalanced_panel.csv"),
         panel=("id", "time"),
         cohort="first_treat",
         estimator=estimator,
-        panel_mode="unbalanced",
+        incomplete_units="keep",
         weights="w",
         allow_time_varying_weights=True,
-        threads=2,
+        n_threads=2,
         preprocess_mb=4,
         batch_units=37,
-        pretrends=2 if estimator == "bjs" else 0,
-        ess_warn_threshold=None,
         workdir=tmp_path / "baseline",
+        **extra,
     )
     try:
         assert fitted["names"] == baseline.coefnames
         np.testing.assert_allclose(fitted["beta"], baseline.beta, atol=1e-9, rtol=0)
         np.testing.assert_allclose(fitted["vcov"], baseline.vcov, atol=1e-9, rtol=0)
         np.testing.assert_allclose(
-            fitted["att"], baseline.aggregate("simple").beta, atol=1e-9, rtol=0
+            fitted["att"], baseline.aggregate("overall").beta, atol=1e-9, rtol=0
         )
         if estimator == "bjs":
             np.testing.assert_allclose(

@@ -22,7 +22,7 @@ from hdfe_stream.core.estimator import _StreamingBase  # noqa: E402
 from hdfe_stream.core.formula import pyfixest_formula_api  # noqa: E402
 
 import diff_stream.unbalanced as observed  # noqa: E402
-from diff_stream import sunab_stream  # noqa: E402
+from diff_stream import did_sun_abraham  # noqa: E402
 
 
 def hdfe_reference(store, cells, anticipation=0):
@@ -76,14 +76,14 @@ def main():
     kw = dict(
         panel=("id", "time"),
         cohort="first_treat",
-        panel_mode="unbalanced",
-        threads=2,
+        incomplete_units="keep",
+        n_threads=2,
         preprocess_mb=16,
     )
 
     # A fixed tiny fit loads the JIT and estimator machinery before measuring N.
     with TemporaryDirectory(prefix="diff-memory-warm-") as work:
-        r = sunab_stream(
+        r = did_sun_abraham(
             "y ~ 1", pl.scan_parquet(sys.argv[1], low_memory=True).head(500), workdir=work, **kw
         )
         r.cleanup()
@@ -128,7 +128,7 @@ def main():
     start = time.perf_counter()
     try:
         with TemporaryDirectory(prefix="diff-memory-sa-") as work:
-            r = sunab_stream("y ~ 1", sys.argv[1], workdir=work, **kw)
+            r = did_sun_abraham("y ~ 1", sys.argv[1], workdir=work, **kw)
             report.update(n_units=r.n_units, n_obs=r.n_obs, checksum=float(r.beta.sum()))
             r.cleanup()
     finally:

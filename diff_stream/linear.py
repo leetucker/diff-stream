@@ -7,7 +7,30 @@ model-matrix compiler; numerical state depends on columns and effect cells.
 import numpy as np
 
 from ._core.nuisance import solve_checked
-from ._core.within import center_groups, independent_columns, moments
+from ._core.within import center_groups, independent_columns, moments, row_sums, weighted_squares
+
+
+def fixed_effect_terms(rhs, panel):
+    """(covariates, additional fixed-effect terms as lists of column names)."""
+    pieces = rhs.split("|")
+    if len(pieces) != 2:
+        raise ValueError("use one fixed-effect section; IV formulas are unsupported")
+    covariates, effects = (p.strip() for p in pieces)
+    if not effects:
+        raise ValueError("the fixed-effect section cannot be empty")
+    terms = []
+    for term in effects.split("+"):
+        names = [s.strip() for s in term.strip().split("^")]
+        if any(not s.isidentifier() for s in names):
+            raise ValueError(
+                "additional fixed effects must be column names or name^name interactions"
+            )
+        if len(names) == 1 and names[0] in panel:
+            continue  # Unit/time intercepts are always included.
+        if panel[0] in names:
+            raise ValueError("unit-interacted fixed effects are not supported")
+        terms.append(names)
+    return covariates or "1", terms
 
 
 def regression_formula(rhs, panel):
@@ -27,7 +50,7 @@ def regression_formula(rhs, panel):
         if len(names) == 1 and names[0] in panel:
             continue  # Unit/time intercepts are always included.
         if panel[0] in names:
-            raise ValueError("unit-interacted fixed effects require a higher-dimensional backend")
+            raise ValueError("unit-interacted fixed effects are not supported")
         terms.append(":".join(f"C({name})" for name in names))
     return " + ".join([covariates, *terms])
 
@@ -51,18 +74,33 @@ class RowDesign:
             )
             yield g, y, np.nan_to_num(X, nan=0.0)[:, :, self.keep], w
 
-    def reduce(self):
+    def reduce(self, clean=None):
+        """Select identified columns; optionally also the clean-row moments.
+
+        ``clean(g)`` gives the rows (units by periods) of a second, clean-sample
+        regression. Its within-unit moments are accumulated in the same pass
+        over all columns and returned restricted to the identified ones:
+        centering acts column by column, so restricting afterwards is exact.
+        """
         P = len(self.names)
         Q = np.zeros((P, P))
         norms = np.zeros(P)
-        for _, y, X, w in self.batches():
-            q, _ = moments(X, np.nan_to_num(y, nan=0.0), w)
+        Qc, qc = (np.zeros((P, P)), np.zeros(P)) if clean is not None else (None, None)
+        for g, y, X, w in self.batches():
+            y = np.nan_to_num(y, nan=0.0)
+            q, _ = moments(X, y, w)
             Q += q
-            norms += np.einsum("btk,bt,btk->k", X, w, X)
+            norms += weighted_squares(X, w)
+            if clean is not None:
+                a, b = moments(X, y, w * clean(g))
+                Qc += a
+                qc += b
         self.keep = independent_columns(Q, original_norm=norms)
         self.dropped = [n for j, n in enumerate(self.names) if j not in self.keep]
         if not len(self.keep):
             raise ValueError("the within-unit regression has no identified nuisance columns")
+        if clean is not None:
+            return Qc[np.ix_(self.keep, self.keep)], qc[self.keep]
 
     def residuals(self, g, y, X, w, theta, anticipation, *, label="BJS"):
         observed = np.isfinite(y)
@@ -72,10 +110,10 @@ class RowDesign:
         mass = clean_weight.sum(axis=1)
         if np.any(mass <= 0):
             raise ValueError(f"{label} requires at least one untreated observation per unit")
-        xm = np.einsum("bt,btk->bk", clean_weight, X) / mass[:, None]
+        xm = row_sums(clean_weight, X) / mass[:, None]
         alpha = (clean_weight * raw).sum(axis=1) / mass
         residual = np.where(observed, raw - alpha[:, None], 0)
-        first_score = np.einsum("btk,bt->bk", X - xm[:, None], clean_weight * residual)
+        first_score = row_sums(clean_weight * residual, X - xm[:, None])
         return observed, use, xm, residual, first_score
 
 
@@ -83,14 +121,10 @@ def fit_bjs(store, cells, avgeffectsby, leaveout, workdir, anticipation=0):
     from .unbalanced import ObservedBJSInference
 
     model = RowDesign(store)
-    model.reduce()
+    Q, q = model.reduce(
+        clean=lambda g: (g[:, None] == 0) | (store.times < g[:, None] - anticipation)
+    )
     P, M = len(model.keep), len(cells)
-    Q, q = np.zeros((P, P)), np.zeros(P)
-    for g, y, X, w in model.batches():
-        use = (g[:, None] == 0) | (store.times < g[:, None] - anticipation)
-        a, b = moments(X, np.nan_to_num(y, nan=0.0), w * use)
-        Q += a
-        q += b
     theta = solve_checked(Q, q, "BJS untreated covariate/fixed-effect design is unidentified")
     counts = np.array([store.cell_weights[g][t - store.times[0]] for g, t in cells])
     beta, D = np.zeros(M), np.zeros((M, P))
@@ -160,7 +194,7 @@ def fit_sunab(store, cells, anticipation=0):
     for _, active, X, y, w in batches():
         xc, yc, _, _ = center_groups(X, np.nan_to_num(y, nan=0.0), w)
         residual = yc - xc @ coefficients[active]
-        score = np.einsum("btk,bt->bk", xc, w * residual) @ H[active]
+        score = row_sums(w * residual, xc) @ H[active]
         V += score.T @ score
     counts = np.array([store.cell_weights[g][t - store.times[0]] for g, t in cells])
     return coefficients[K:], counts, (V + V.T) / 2, model
@@ -199,7 +233,9 @@ def fit_placebos(store, pretrends, anticipation, *, fml, depvar, panel, vcov):
                     )
                 )
     if np.any(support == 0):
-        raise ValueError("BJS requested clean placebo horizons are not observed; reduce pretrends")
+        raise ValueError(
+            "BJS requested clean placebo horizons are not observed; reduce pretrend_leads"
+        )
 
     def batches():
         for g, y, X, w in model.batches(actual_cohort=True):
@@ -219,7 +255,7 @@ def fit_placebos(store, pretrends, anticipation, *, fml, depvar, panel, vcov):
         n_obs += int(use.sum())
     keep = independent_columns(Q)
     if not np.isin(np.arange(K, P), keep).all():
-        raise ValueError("BJS clean placebo design is unidentified; reduce pretrends")
+        raise ValueError("BJS clean placebo design is unidentified; reduce pretrend_leads")
     Q = Q[np.ix_(keep, keep)]
     context = "BJS clean placebo covariate/fixed-effect design"
     coefficient = solve_checked(Q, q[keep], context)
@@ -227,7 +263,7 @@ def fit_placebos(store, pretrends, anticipation, *, fml, depvar, panel, vcov):
     V = np.zeros((L, L))
     for X, y, w, _ in batches():
         xc, yc, _, _ = center_groups(X[:, :, keep], y, w)
-        score = np.einsum("btk,bt->bk", xc, w * (yc - xc @ coefficient)) @ H
+        score = row_sums(w * (yc - xc @ coefficient), xc) @ H
         V += score.T @ score
     V *= store.n_units / (store.n_units - 1) if vcov == "CRV1" else 1.0
     all_names = [*(model.names[j] for j in model.keep), *(f"event::{h}" for h in horizons)]
@@ -246,7 +282,7 @@ def fit_placebos(store, pretrends, anticipation, *, fml, depvar, panel, vcov):
         weights=None,
         _support=pl.DataFrame(rows),
         diagnostics=dict(
-            aggregation="dynamic",
+            aggregation="event_time",
             anticipation=anticipation,
             reference_event_time=None,
             fitted_horizons=horizons.tolist(),

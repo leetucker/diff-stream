@@ -9,7 +9,7 @@ bacon = bacon_decomp(
     data,
     panel=("id", "time"),
     cohort="first_treat",
-    threads=2,
+    n_threads=2,
 )
 print("TWFE:", bacon.twfe_estimate)
 print("Reconstructed:", bacon.decomposed_estimate)

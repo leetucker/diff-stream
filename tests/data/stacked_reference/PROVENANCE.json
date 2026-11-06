@@ -1,0 +1,16 @@
+{
+  "reference": "fixest feols on the stacked data with corrective weights (Wing, Freedman and Hollingsworth 2024), clustered by unit, ssc(adj=FALSE, cluster.adj=FALSE)",
+  "files": {
+    "benchmarks/external/stacked_reference.R": "d57bbb3aaf04b383c1afdca3fa9df664ee9631eed9bd56d9c84d498af54bd706",
+    "tests/data/stacked_panel.csv": "e49130fe444aca52f149717ecdf4e4b7a745e93b8a12b445a4920223e3cf7079",
+    "tests/data/stacked_reference/anticipation.csv": "8c75c8cf2c9b6513d10a50f2ac94825d813970fa05b0cefd71dbd1a948af47c2",
+    "tests/data/stacked_reference/anticipation_vcov.csv": "edbfdd45408b32ea37dc6934cc8c7c18398331b757007e223557a05da93fef34",
+    "tests/data/stacked_reference/balanced.csv": "83135eb20fbc53a2ec21d5bc52615f4f4f84787306741dc81fb94b5307d9e252",
+    "tests/data/stacked_reference/balanced_vcov.csv": "5d9f757faa29b745e1431cb2ba2e592a3c5a302a48d171504ee6c0baffb54536",
+    "tests/data/stacked_reference/unbalanced.csv": "43725990058f3004fba6e2144a82055475bc0ddbb6bedbaeb4b68cc9006e8a79",
+    "tests/data/stacked_reference/unbalanced_vcov.csv": "cbacb33705dee6bc4cf7071d39f3db8dcb3ac4eca8baa74b492a185c18eb432b",
+    "tests/data/stacked_reference/weighted.csv": "86e83332f81d971d7fd075889a62d04740b1d4cd41b15f8f0e5bdd286cfc7f45",
+    "tests/data/stacked_reference/weighted_vcov.csv": "ca2bacdb3575a8b771d91f46affbf409d4031c7e1103ac2b7b889fa3b7aa1e10",
+    "tests/data/stacked_reference/R_session.txt": "5b796ef2bc5bf2d946ae626603b5e9e69d62147578aba7d0c632af1a277eeb28"
+  }
+}

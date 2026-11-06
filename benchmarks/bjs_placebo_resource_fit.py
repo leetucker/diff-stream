@@ -9,23 +9,24 @@ import numpy as np
 import polars as pl
 from resource_checks import highwater_mib
 
-from diff_stream import bjs_stream
+from benchmarks._estimators import public
+from diff_stream import did_bjs
 
 c = json.loads(Path(sys.argv[1]).read_text())
 d = pl.scan_parquet(c["path"]).filter(pl.col("id") < c["n_units"])
-f = bjs_stream(
+f = did_bjs(
     "y ~ 1",
     d,
     panel=("id", "time"),
     cohort="first_treat",
     weights="w",
-    panel_mode=c["panel_mode"],
+    incomplete_units=public("incomplete_units", c["panel_mode"]),
     anticipation=c["anticipation"],
-    pretrends=3,
-    avgeffectsby="all",
-    leaveout=True,
-    threads=2,
-    memory_gb=1,
+    pretrend_leads=3,
+    residual_averaging="all",
+    leave_out=True,
+    n_threads=2,
+    max_memory_gb=1,
     preprocess_mb=8,
     batch_units=512,
     workdir=c["workdir"],
@@ -34,7 +35,7 @@ try:
     p = f.placebos()
     test = f.pretrend_test()
     assert np.isfinite(p.beta).all() and np.isfinite(p.vcov).all()
-    a = f.aggregate("simple")
+    a = f.aggregate("overall")
     assert np.isfinite(a.vcov).all()
     f.cleanup()
     assert f.pretrend_test() == test

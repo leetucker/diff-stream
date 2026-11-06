@@ -9,22 +9,22 @@ import numpy as np
 import polars as pl
 from resource_checks import highwater_mib
 
-from diff_stream import cs_stream
+from diff_stream import did_callaway_santanna
 
 c = json.loads(Path(sys.argv[1]).read_text())
 source = pl.scan_parquet(c["path"]).filter(pl.col("id") < c["n_units"])
-r = cs_stream(
+r = did_callaway_santanna(
     "y ~ x + z",
     source,
     panel=("id", "time"),
     cohort="first_treat",
     weights="w",
     anticipation=2,
-    panel_mode="unbalanced",
-    bootstrap_reps=c["reps"],
-    bootstrap_seed=431,
-    threads=2,
-    memory_gb=1.0,
+    incomplete_units="keep",
+    multiplier_bootstrap_reps=c["reps"],
+    multiplier_bootstrap_seed=431,
+    n_threads=2,
+    max_memory_gb=1.0,
     preprocess_mb=8,
     batch_units=512,
     workdir=c["workdir"],

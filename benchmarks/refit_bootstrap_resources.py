@@ -13,6 +13,8 @@ sys.path.insert(0, str(ROOT))
 from stream_limits.launcher import run_limited  # noqa: E402
 from stream_limits.testing import verify_memory_limit  # noqa: E402
 
+from benchmarks._estimators import ESTIMATORS  # noqa: E402
+
 
 def child(c):
     from diff_stream import refit_bootstrap
@@ -23,17 +25,17 @@ def child(c):
         simulate_conditional_panel(c["n"], 5, seed=17),
         panel=("id", "time"),
         cohort="first_treat",
-        estimator=c["estimator"],
+        estimator=ESTIMATORS[c["estimator"]],
         reps=c["reps"],
-        workers=c["workers"],
+        n_workers=c["workers"],
         seed=29,
         aggregate=None if c["estimator"] == "gardner" else "simple",
         **({"specification": "static"} if c["estimator"] == "gardner" else {}),
-        ess_warn_threshold=None,
-        memory_gb=c["memory_gb"],
+        effective_sample_warning=None,
+        max_memory_gb=c["memory_gb"],
         preprocess_mb=4,
         batch_units=256,
-        threads=2,
+        n_threads=2,
         workdir=c["workdir"],
     )
     assert r.successful_reps == c["reps"]

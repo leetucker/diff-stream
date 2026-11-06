@@ -8,6 +8,7 @@ import pyarrow.parquet as pq
 
 from ._core.partition import GroupPartitions, Part
 from ._core.weights import validate_weights
+from .periods import PeriodLabels, cohorts_from_treatment
 
 
 def source(data):
@@ -20,31 +21,79 @@ def source(data):
     raise TypeError("data must be a Polars frame or a Parquet path/glob")
 
 
-def inspect(fml, data, panel, cohort, *, allow_covariates=False, weights=None, allow_fe=False):
-    """Compile the projection and check its schema without scanning rows."""
+# "auto" absorbs additional fixed effects iteratively above this many design
+# columns (levels plus covariates). The dense design's time grows with the number
+# of levels, the iterative solver's does not: on 50,000 to 200,000 units over 8
+# periods the two met between 16 and 32 levels, and dense was 5 to 13 times
+# slower at 240. Explicit fixed_effect_solver="dense" still goes to 256 columns.
+DENSE_MAX_LEVELS = 24
+
+
+def inspect(
+    fml,
+    data,
+    panel,
+    cohort=None,
+    *,
+    allow_covariates=False,
+    weights=None,
+    allow_fe=False,
+    treatment=None,
+    fe_solver=None,
+    keep_fe_columns=False,
+):
+    """Compile the projection and check its schema without scanning rows.
+
+    Exactly one of ``cohort`` (the first treated period, 0 or null for never
+    treated) and ``treatment`` (a 0/1 column, absorbing) names the timing. A
+    treatment column is projected as ``d``; the store derives each unit's
+    cohort from it, a whole unit at a time.
+    """
+    if (cohort is None) == (treatment is None):
+        raise ValueError("give exactly one of cohort= (first treated period) or treatment= (0/1)")
+    timing = cohort if cohort is not None else treatment
     if not isinstance(fml, str) or fml.count("~") != 1:
         raise ValueError("use a single outcome formula: 'y ~ 1'")
     y, rhs = [s.strip() for s in fml.split("~")]
+    absorbed, terms = None, []
     if "|" in rhs and allow_fe:
-        from .linear import regression_formula
+        from .linear import fixed_effect_terms, regression_formula
 
-        rhs = regression_formula(rhs, panel)
+        covariates, terms = fixed_effect_terms(rhs, panel)
+        if terms and fe_solver in ("auto", "iterative"):
+            levels = 0
+            if fe_solver == "auto":
+                # One streaming pass counts the dummies a dense design would need.
+                counts = source(data).select(
+                    [pl.struct(t).n_unique().alias(str(j)) for j, t in enumerate(terms)]
+                )
+                levels = sum(counts.collect(engine="streaming").row(0))
+                levels += 0 if covariates == "1" else covariates.count("+") + 1
+            if fe_solver == "iterative" or levels > DENSE_MAX_LEVELS:
+                absorbed = terms
+                rhs = covariates
+        if absorbed is None:
+            rhs = regression_formula(rhs, panel)
     if not y.isidentifier() or "|" in rhs or (rhs != "1" and not allow_covariates):
         raise NotImplementedError("the first milestone supports column-name outcomes and '~ 1'")
-    if len(panel) != 2 or len(set([y, *panel, cohort])) != 4:
-        raise ValueError("outcome, unit, time and cohort must be distinct column names")
+    if len(panel) != 2 or len(set([y, *panel, timing])) != 4:
+        raise ValueError("outcome, unit, time and cohort/treatment must be distinct column names")
     unit, time = panel
     src = source(data)
     if weights is not None:
         if not isinstance(weights, str) or not weights:
             raise ValueError("weights must be a sampling-weight column name or None")
-        if weights in (y, unit, time, cohort):
+        if weights in (y, unit, time, timing):
             raise ValueError(
                 "sampling weights must be distinct from outcome, unit, time and cohort"
             )
         ws = src.collect_schema()[weights]
         if not ws.is_numeric() or ws == pl.Boolean:
             raise ValueError("sampling weights must be numeric")
+    # Absorbed terms keep their raw columns (the unit and time are id and t),
+    # and so do dense ones when asked (BJS checks their levels can be imputed).
+    carried = absorbed if absorbed is not None else (terms if keep_fe_columns else [])
+    fe_columns = sorted({c for t in carried for c in t} - set(panel))
     plan = None
     if rhs != "1":
         from ._core.design import CovariatePlan
@@ -53,7 +102,11 @@ def inspect(fml, data, panel, cohort, *, allow_covariates=False, weights=None, a
     lf = src.select(
         pl.col(unit).alias("id"),
         pl.col(time).alias("t"),
-        pl.col(cohort).alias("g"),
+        *(
+            [pl.col(cohort).fill_null(0).alias("g")]
+            if cohort is not None
+            else [pl.lit(0, dtype=pl.Int64).alias("g"), pl.col(treatment).alias("d")]
+        ),
         pl.col(y).cast(pl.Float64).alias("y"),
         *([] if weights is None else [pl.col(weights).cast(pl.Float64).alias("w")]),
         *(
@@ -61,13 +114,36 @@ def inspect(fml, data, panel, cohort, *, allow_covariates=False, weights=None, a
             if plan is None
             else [pl.col(c).alias(f"__raw{j}") for j, c in enumerate(plan.required)]
         ),
+        *([pl.col(c).alias(f"__fe{j}") for j, c in enumerate(fe_columns)]),
     )
     schema = lf.collect_schema()
     if not schema["t"].is_integer() or not schema["g"].is_integer():
-        raise ValueError("time and cohort must be integers; 0 denotes never treated")
+        raise ValueError("time and cohort must be integers; 0 or null denotes never treated")
+    if treatment is not None:
+        if not (schema["d"].is_integer() or schema["d"] == pl.Boolean):
+            raise ValueError("treatment must be a 0/1 integer or Boolean column")
+        lf = lf.with_columns(pl.col("d").cast(pl.Int8))
     if not (schema["id"].is_integer() or schema["id"].is_float() or schema["id"] == pl.String):
         raise ValueError("unit IDs must be numeric or strings")
-    return lf.with_columns(pl.col("t").cast(pl.Int64), pl.col("g").cast(pl.Int64)), y, plan
+    lf = lf.with_columns(pl.col("t").cast(pl.Int64), pl.col("g").cast(pl.Int64))
+    if fe_solver is None:
+        return lf, y, plan
+    internal = {c: f"__fe{j}" for j, c in enumerate(fe_columns)} | {panel[1]: "t"}
+    # (internal term over the staged columns, the term as written)
+    staged_terms = [("^".join(internal.get(c, c) for c in t), "^".join(t)) for t in carried]
+    return lf, y, plan, staged_terms or None, absorbed is not None
+
+
+def _width(dtype):
+    """Bytes per value of a fixed-width column (8 for anything wider or unknown)."""
+    for kinds, width in [
+        ((pl.Int8, pl.UInt8, pl.Boolean), 1),
+        ((pl.Int16, pl.UInt16), 2),
+        ((pl.Int32, pl.UInt32, pl.Float32, pl.Date), 4),
+    ]:
+        if dtype in kinds:
+            return width
+    return 8
 
 
 class PanelStore(GroupPartitions):
@@ -134,31 +210,24 @@ class PanelStore(GroupPartitions):
         lf.sink_parquet(raw, engine="streaming", row_group_size=self.read_rows)
         times = set()
         size = 0
-        with pq.ParquetFile(raw, pre_buffer=False) as pf:
-            self.n_rows = pf.metadata.num_rows
-            for b in pf.iter_batches(batch_size=self.read_rows):
-                self._guard(16e6)
-                d = pl.from_arrow(b)
-                if sum(d.null_count().row(0)) or not d["y"].is_finite().all():
-                    raise ValueError(
-                        "missing or non-finite values are not supported; clean the panel explicitly"
-                    )
-                if d.schema["id"].is_float() and not d["id"].is_finite().all():
-                    raise ValueError("unit IDs must be finite")
-                if self.weighted:
-                    w = d["w"].to_numpy()
-                    validate_weights(w)
-                    self.weight_scale = max(self.weight_scale, float(w.max()))
-                times.update(d["t"].unique().to_list())
-                # Prevent an invalid long time grid from growing unchecked.
-                self._guard(len(times) * 128 + 16e6)
-                size += b.nbytes
-                if self.design is not None:
-                    self.design.discover(d)
-        self.times = np.array(sorted(times), dtype=np.int64)
-        self.periods = len(times)
-        if self.periods < 2 or self.times[0] <= 0 or np.any(np.diff(self.times) != 1):
-            raise ValueError("at least two consecutive positive integer periods are required")
+        if self.design is None:
+            times, size = self._validate_query(raw)
+        else:
+            times, size = self._validate_batches(raw)
+        labels = np.array(sorted(times), dtype=np.int64)
+        self.periods = len(labels)
+        if self.periods < 2 or labels[0] <= 0:
+            raise ValueError("at least two positive integer periods are required")
+        steps = np.diff(labels)
+        if np.any(steps != steps[0]):
+            raise ValueError(
+                "periods must be evenly spaced (every year, every second year, ...); "
+                f"the panel has gaps of {sorted(set(steps.tolist()))}"
+            )
+        # Spaced periods are numbered consecutively inside (t0, t0+1, ...), so
+        # every estimator counts periods; results show the original labels.
+        self.period_labels = PeriodLabels(int(labels[0]), int(steps[0]))
+        self.times = labels[0] + np.arange(self.periods, dtype=np.int64)
         if self.design is not None:
             self.design.compile()
             self.extra_row_bytes = len(self.design.names) * 8
@@ -194,6 +263,76 @@ class PanelStore(GroupPartitions):
         )
         del self.sums
 
+    def _validate_batches(self, raw):
+        """Check values and time support, and discover covariate levels, by batch."""
+        times, size = set(), 0
+        with pq.ParquetFile(raw, pre_buffer=False) as pf:
+            self.n_rows = pf.metadata.num_rows
+            for b in pf.iter_batches(batch_size=self.read_rows):
+                self._guard(16e6)
+                d = pl.from_arrow(b)
+                self._check_values(
+                    sum(d.null_count().row(0)) + int((~d["y"].is_finite()).sum()),
+                    d.schema["id"].is_float() and not d["id"].is_finite().all(),
+                )
+                if self.weighted:
+                    w = d["w"].to_numpy()
+                    validate_weights(w)
+                    self.weight_scale = max(self.weight_scale, float(w.max()))
+                times.update(d["t"].unique().to_list())
+                # Prevent an invalid long time grid from growing unchecked.
+                self._guard(len(times) * 128 + 16e6)
+                size += b.nbytes
+                self.design.discover(d)
+        return times, size
+
+    def _validate_query(self, raw):
+        """The same checks as one streaming query (no covariate levels to find)."""
+        scan = pl.scan_parquet(raw)
+        schema = scan.collect_schema()
+        exprs = [
+            pl.sum_horizontal([pl.col(c).null_count() for c in schema.names()]).alias("nulls"),
+            (~pl.col("y").is_finite()).sum().alias("nonfinite"),
+            pl.col("t").n_unique().alias("periods"),
+        ]
+        if schema["id"].is_float():
+            exprs.append((~pl.col("id").is_finite()).sum().alias("bad_ids"))
+        if self.weighted:
+            exprs += [
+                ((~pl.col("w").is_finite()) | (pl.col("w") <= 0)).sum().alias("bad_weights"),
+                pl.col("w").max().alias("weight_max"),
+            ]
+        # Decoded (Arrow) size, which decides whether the panel is split: fixed
+        # widths, plus the bytes and offsets of string columns.
+        strings = [c for c, dtype in schema.items() if dtype == pl.String]
+        exprs += [
+            (pl.col(c).str.len_bytes().sum() + 4 * pl.len()).alias(f"bytes_{c}") for c in strings
+        ]
+        exprs.append(pl.len().alias("rows"))
+        stats = scan.select(exprs).collect(engine="streaming").row(0, named=True)
+        self._check_values(stats["nulls"] + stats["nonfinite"], stats.get("bad_ids", 0) > 0)
+        if self.weighted:
+            if stats["bad_weights"]:
+                raise ValueError("sampling weights must be finite and strictly positive")
+            self.weight_scale = float(stats["weight_max"])
+        # An invalid long time grid is refused before it is collected.
+        self._guard(stats["periods"] * 128 + 16e6)
+        times = set(scan.select(pl.col("t").unique()).collect(engine="streaming")["t"].to_list())
+        self.n_rows = stats["rows"]
+        size = sum(stats[f"bytes_{c}"] for c in strings) + self.n_rows * sum(
+            _width(dtype) for c, dtype in schema.items() if c not in strings
+        )
+        return times, size
+
+    @staticmethod
+    def _check_values(bad_values, bad_ids):
+        if bad_values:
+            raise ValueError(
+                "missing or non-finite values are not supported; clean the panel explicitly"
+            )
+        if bad_ids:
+            raise ValueError("unit IDs must be finite")
+
     def _oversized_group(self, part):
         if self.panel_mode == "balanced" and part.rows != self.periods:
             raise ValueError("balanced panels with unique unit-time keys are required")
@@ -215,6 +354,11 @@ class PanelStore(GroupPartitions):
             raise ValueError(
                 "balanced panels with unique unit-time keys are required; duplicate unit-time key"
             )
+        if "d" in d.columns:
+            g = cohorts_from_treatment(d["d"].to_numpy(), t, ids, starts, unit)
+        if self.period_labels.step != 1:
+            t = self.period_labels.internal(t)
+            g = self.period_labels.internal_cohorts(g, int(self.times[-1]))
         if np.any(g != g[starts][unit]):
             raise ValueError("cohort must be constant within unit")
         if self.weighted:
@@ -246,7 +390,7 @@ class PanelStore(GroupPartitions):
         complete = lengths == self.periods
         if self.panel_mode == "balanced" and not complete.all():
             raise ValueError(
-                "balanced panels with unique unit-time keys are required; select panel_mode='unbalanced' or 'complete'"
+                "balanced panels with unique unit-time keys are required; set incomplete_units='keep' or 'drop'"
             )
         if self.panel_mode == "complete":
             keep = complete[unit]
@@ -269,33 +413,38 @@ class PanelStore(GroupPartitions):
         self.weights_time_invariant &= bool(np.all(w == w[first][unit]))
         mean_weight = np.bincount(unit, weights=w, minlength=len(cohort)) / lengths
         ti = t - self.times[0]
-        for k in np.unique(cohort):
-            selected = cohort == k
-            rows = selected[unit]
-            self.gc[int(k)] = self.gc.get(int(k), 0) + int(selected.sum())
-            self.gw[int(k)] = self.gw.get(int(k), 0.0) + float(w[first][selected].sum())
-            self.gw_observed_mean[int(k)] = self.gw_observed_mean.get(int(k), 0.0) + float(
-                mean_weight[selected].sum()
-            )
-            sums = np.bincount(ti[rows], weights=y[rows] * w[rows], minlength=self.periods)
-            mass = np.bincount(ti[rows], weights=w[rows], minlength=self.periods)
-            self.cell_weights[int(k)] = self.cell_weights.get(int(k), np.zeros(self.periods)) + mass
-            counts = np.bincount(ti[rows], minlength=self.periods)
-            self.sums[int(k)] = self.sums.get(int(k), np.zeros(self.periods)) + sums
-            self.cell_counts[int(k)] = (
-                self.cell_counts.get(int(k), np.zeros(self.periods, dtype=int)) + counts
-            )
+        T = self.periods
+        # Cohort-period sums in one bincount over (cohort index, period), not
+        # a full-length mask per cohort.
+        labels, code = np.unique(cohort, return_inverse=True)
+        row = code[unit] * T + ti
+        n = len(labels) * T
+        sums = np.bincount(row, weights=y * w, minlength=n).reshape(-1, T)
+        mass = np.bincount(row, weights=w, minlength=n).reshape(-1, T)
+        counts = np.bincount(row, minlength=n).reshape(-1, T)
+        units = np.bincount(code, minlength=len(labels))
+        first_weight = np.bincount(code, weights=w[first], minlength=len(labels))
+        mean_by = np.bincount(code, weights=mean_weight, minlength=len(labels))
+        for i, k in enumerate(labels.tolist()):
+            self.gc[k] = self.gc.get(k, 0) + int(units[i])
+            self.gw[k] = self.gw.get(k, 0.0) + float(first_weight[i])
+            self.gw_observed_mean[k] = self.gw_observed_mean.get(k, 0.0) + float(mean_by[i])
+            self.cell_weights[k] = self.cell_weights.get(k, np.zeros(T)) + mass[i]
+            self.sums[k] = self.sums.get(k, np.zeros(T)) + sums[i]
+            self.cell_counts[k] = self.cell_counts.get(k, np.zeros(T, dtype=int)) + counts[i]
         if actual is not None:
-            for k in np.unique(actual):
-                selected = actual == k
-                rows = selected[unit]
-                self.actual_gc[int(k)] = self.actual_gc.get(int(k), 0) + int(selected.sum())
-                self.actual_cell_counts[int(k)] = self.actual_cell_counts.get(
-                    int(k), np.zeros(self.periods, dtype=int)
-                ) + np.bincount(ti[rows], minlength=self.periods)
-                self.actual_cell_weights[int(k)] = self.actual_cell_weights.get(
-                    int(k), np.zeros(self.periods)
-                ) + np.bincount(ti[rows], weights=w[rows], minlength=self.periods)
+            labels, code = np.unique(actual, return_inverse=True)
+            row = code[unit] * T + ti
+            n = len(labels) * T
+            counts = np.bincount(row, minlength=n).reshape(-1, T)
+            mass = np.bincount(row, weights=w, minlength=n).reshape(-1, T)
+            units = np.bincount(code, minlength=len(labels))
+            for i, k in enumerate(labels.tolist()):
+                self.actual_gc[k] = self.actual_gc.get(k, 0) + int(units[i])
+                self.actual_cell_counts[k] = (
+                    self.actual_cell_counts.get(k, np.zeros(T, dtype=int)) + counts[i]
+                )
+                self.actual_cell_weights[k] = self.actual_cell_weights.get(k, np.zeros(T)) + mass[i]
         self._guard(32e6 + 32 * (len(self.gc) + len(self.actual_gc)) * self.periods)
         path = self._name("units")
         output = pl.DataFrame({"u": unit + self.n_units, "t": t, "g": cohort[unit], "y": y})
@@ -303,6 +452,9 @@ class PanelStore(GroupPartitions):
             output = output.with_columns(pl.Series("g_actual", actual[unit]))
         if self.weighted:
             output = output.with_columns(pl.Series("w", w))
+        carried = [c for c in d.columns if c.startswith("__fe")]
+        if carried:
+            output = output.hstack(d.select(carried))
         self.n_units += len(cohort)
         self.n_rows_used += len(y)
         if self.design is not None:

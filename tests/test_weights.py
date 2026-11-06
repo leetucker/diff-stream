@@ -7,12 +7,13 @@ import polars as pl
 import pytest
 from numpy.testing import assert_allclose
 
+from benchmarks._estimators import fit_estimator, public
 from benchmarks._files import read_csv
-from diff_stream import diff_stream
+from diff_stream import did_bjs, did_callaway_santanna, did_sun_abraham
 
 ROOT = Path(__file__).parent / "data"
 REF = ROOT / "weights_reference"
-KW = dict(panel=("id", "time"), cohort="first_treat", threads=2, weights="w")
+KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2, weights="w")
 
 
 @pytest.fixture(scope="module", params=["balanced", "unbalanced"])
@@ -33,14 +34,14 @@ def sample(request):
 @pytest.mark.parametrize("base", ["varying", "universal"])
 def test_r_cs_anticipation(sample, A, design, method, control, base):
     label, p = sample
-    r = diff_stream(
+    r = fit_estimator(
         "y ~ 1" if design == "constant" else "y ~ x + z",
         p,
         anticipation=A,
-        est_method=method,
-        control_group=control,
+        adjustment=public("adjustment", method),
+        control_group=public("control_group", control),
         base_period=base,
-        panel_mode=label,
+        incomplete_units=public("incomplete_units", label),
         **KW,
     )
     prefix = f"{label}_{A}_{design}_{control}_{base}_{method}"
@@ -58,20 +59,22 @@ def test_r_cs_anticipation(sample, A, design, method, control, base):
     assert_allclose(a.se, z["se"], atol=2e-8)
     if base == "universal":
         for kind in ["simple", "cohort", "calendar"]:
-            a = r.aggregate(kind)
+            a = r.aggregate(public("kind", kind))
             suffix = "group" if kind == "cohort" else kind
             z = read_csv(REF / (prefix + "_" + suffix + ".csv"), null_values="NA")
             assert_allclose(a.beta, z["att"], atol=2e-8)
             assert_allclose(a.se, z["se"], atol=2e-8)
     assert r.diagnostics["reference_event_time"] == -A - 1
     if A:
-        assert "anticipation" in r.group_time()["period_type"]
+        assert "anticipation" in r.cohort_time()["period_type"]
 
 
 @pytest.mark.parametrize("A", [0, 2])
 def test_fixest_shifted_reference(sample, A):
     label, p = sample
-    r = diff_stream("y ~ 1", p, estimator="sunab", anticipation=A, panel_mode=label, **KW)
+    r = did_sun_abraham(
+        "y ~ 1", p, anticipation=A, incomplete_units=public("incomplete_units", label), **KW
+    )
     ref = read_csv(REF / f"{label}_{A}_sunab.csv")
     keys = []
     for term in ref["term"]:
@@ -92,14 +95,13 @@ def test_fixest_shifted_reference(sample, A):
 @pytest.mark.parametrize("leaveout", [False, True])
 def test_bjs_smart_anticipation(sample, A, average, leaveout, tmp_path):
     label, p = sample
-    r = diff_stream(
+    r = did_bjs(
         "y ~ 1",
         p,
-        estimator="bjs",
         anticipation=A,
-        panel_mode=label,
-        avgeffectsby=average,
-        leaveout=leaveout,
+        incomplete_units=public("incomplete_units", label),
+        residual_averaging=average,
+        leave_out=leaveout,
         workdir=tmp_path,
         **KW,
     )
@@ -107,14 +109,14 @@ def test_bjs_smart_anticipation(sample, A, average, leaveout, tmp_path):
         for kind in ["cells", "dynamic", "simple"]:
             name = f"bjs_{average}_{'leaveout' if leaveout else 'plugin'}_{kind}"
             folder = REF / f"bjs_{label}_{A}"
-            a = r if kind == "cells" else r.aggregate(kind)
+            a = r if kind == "cells" else r.aggregate(public("kind", kind))
             ref = read_csv(folder / (name + ".csv"))
             assert a.coefnames == ref["term"].to_list()
             assert_allclose(a.beta, ref["estimate"], atol=1e-9)
             assert_allclose(a.vcov, read_csv(folder / (name + "_vcov.csv")).to_numpy(), atol=1e-9)
         if average == "cohort_time" and not leaveout:
             for kind in ["dynamic", "simple"] if A else ["simple"]:
-                a = r.aggregate(kind)
+                a = r.aggregate(public("kind", kind))
                 ref = read_csv(folder / f"bjs_package_{kind}.csv")
                 if kind == "dynamic":
                     ref = ref.with_columns(pl.col("term").cast(pl.Int64)).sort("term")
@@ -122,7 +124,7 @@ def test_bjs_smart_anticipation(sample, A, average, leaveout, tmp_path):
                 # Package weighted variance is not the WLS influence oracle.
                 # The independent dense R covariance above checks inference.
         assert min(t - g for g, t in r.cells) == -A
-        assert (r.aggregate("simple").contributions()["event_time"] >= 0).all()
+        assert (r.aggregate("overall").contributions()["event_time"] >= 0).all()
     finally:
         r.cleanup()
     assert not list(tmp_path.iterdir())
@@ -139,21 +141,21 @@ def test_equal_weights_and_complete_sample(sample, estimator, fml, tmp_path):
         panel=("id", "time"),
         cohort="first_treat",
         estimator=estimator,
-        panel_mode=label,
+        incomplete_units=public("incomplete_units", label),
         anticipation=2,
-        threads=2,
+        n_threads=2,
         workdir=tmp_path,
     )
-    a = diff_stream(fml, d, **kw)
-    b = diff_stream(fml, d, weights="w", **kw)
+    a = fit_estimator(fml, d, **kw)
+    b = fit_estimator(fml, d, weights="w", **kw)
     try:
         assert_allclose(a.beta, b.beta, atol=1e-10)
         assert_allclose(a.vcov, b.vcov, atol=1e-10)
         for kind in ["dynamic", "cohort", "calendar", "simple"]:
-            aa, bb = a.aggregate(kind), b.aggregate(kind)
+            aa, bb = a.aggregate(public("kind", kind)), b.aggregate(public("kind", kind))
             assert_allclose(aa.beta, bb.beta, atol=1e-10)
             assert_allclose(aa.vcov, bb.vcov, atol=1e-10)
-        assert_allclose(b.group_time()["weight_total"], 7 * b.group_time()["weight_units"])
+        assert_allclose(b.cohort_time()["weight_total"], 7 * b.cohort_time()["weight_units"])
     finally:
         a.cleanup()
         b.cleanup()
@@ -163,11 +165,17 @@ def test_equal_weights_and_complete_sample(sample, estimator, fml, tmp_path):
 @pytest.mark.parametrize("estimator,fml", CASES)
 def test_scale_batch_partition_crv_and_counts(sample, estimator, fml, tmp_path):
     label, d = sample
-    kw = dict(estimator=estimator, panel_mode=label, anticipation=2, workdir=tmp_path, **KW)
-    a = diff_stream(fml, d, **kw)
+    kw = dict(
+        estimator=estimator,
+        incomplete_units=public("incomplete_units", label),
+        anticipation=2,
+        workdir=tmp_path,
+        **KW,
+    )
+    a = fit_estimator(fml, d, **kw)
     try:
         for scale in [1e-200, 1e200]:
-            b = diff_stream(
+            b = fit_estimator(
                 fml,
                 d.with_columns(pl.col("w") * scale).sample(fraction=1, shuffle=True, seed=28),
                 batch_units=13,
@@ -181,13 +189,13 @@ def test_scale_batch_partition_crv_and_counts(sample, estimator, fml, tmp_path):
                 assert_allclose(a.vcov * factor, b.vcov, atol=1e-9)
                 assert_allclose(a.with_vcov("CRV1").aggregate().vcov, b.aggregate().vcov, atol=1e-9)
                 assert_allclose(
-                    a.group_time()["weight_total"] * scale,
-                    b.group_time()["weight_total"],
+                    a.cohort_time()["weight_total"] * scale,
+                    b.cohort_time()["weight_total"],
                     rtol=1e-12,
                 )
             finally:
                 b.cleanup()
-        table = a.group_time()
+        table = a.cohort_time()
         for row in table.iter_rows(named=True):
             rows = d.filter(pl.col("first_treat") == row["cohort"])
             if estimator == "cs":
@@ -197,8 +205,10 @@ def test_scale_batch_partition_crv_and_counts(sample, estimator, fml, tmp_path):
             assert row["weight_units"] == len(rows)
             assert_allclose(row["weight_total"], rows["w"].sum(), rtol=1e-12)
         for kind in ["simple", "dynamic"]:
-            c = a.contributions(kind)
-            assert_allclose(c["weighted_estimate"].sum(), a.aggregate(kind).beta.sum())
+            c = a.contributions(public("kind", kind))
+            assert_allclose(
+                c["weighted_estimate"].sum(), a.aggregate(public("kind", kind)).beta.sum()
+            )
         assert a.diagnostics["sampling_weights"] == "w"
         assert a.aggregate().diagnostics["weight_basis"].endswith("sampling-weight totals")
     finally:
@@ -212,8 +222,8 @@ def test_complete_panel_weights(estimator, fml, tmp_path):
         (0.2 + pl.col("id") % 9).alias("w")
     )
     complete = d.filter(pl.col("time").count().over("id") == 8)
-    a = diff_stream(fml, d, estimator=estimator, panel_mode="complete", workdir=tmp_path, **KW)
-    b = diff_stream(fml, complete, estimator=estimator, workdir=tmp_path, **KW)
+    a = fit_estimator(fml, d, estimator=estimator, incomplete_units="drop", workdir=tmp_path, **KW)
+    b = fit_estimator(fml, complete, estimator=estimator, workdir=tmp_path, **KW)
     try:
         assert_allclose(a.beta, b.beta, atol=1e-10)
         assert_allclose(a.aggregate().vcov, b.aggregate().vcov, atol=1e-10)
@@ -230,7 +240,7 @@ def test_invalid_values_clean_workspace(bad, tmp_path):
         pl.lit(bad, dtype=pl.Float64).alias("w")
     )
     with pytest.raises(ValueError, match="positive|missing|finite"):
-        diff_stream("y ~ 1", d, workdir=tmp_path, **KW)
+        fit_estimator("y ~ 1", d, workdir=tmp_path, **KW)
     assert not list(tmp_path.iterdir())
 
 
@@ -238,11 +248,13 @@ def test_varying_weights_and_invalid_schema(tmp_path):
     d = read_csv(ROOT / "anticipation_panel.csv")
     varying = d.with_columns(pl.col("time").cast(pl.Float64).alias("w"))
     with pytest.raises(ValueError, match="constant within unit"):
-        diff_stream("y ~ 1", varying, workdir=tmp_path, **KW)
+        fit_estimator("y ~ 1", varying, workdir=tmp_path, **KW)
     for expression in [pl.lit("1").alias("w"), pl.lit(True).alias("w")]:
         with pytest.raises(ValueError, match="numeric"):
-            diff_stream("y ~ 1", d.with_columns(expression), **KW)
+            fit_estimator("y ~ 1", d.with_columns(expression), **KW)
     for bad in [True, 12, [], "", "time"]:
         with pytest.raises(ValueError, match="column name|distinct"):
-            diff_stream("y ~ 1", d, panel=("id", "time"), cohort="first_treat", weights=bad)
+            did_callaway_santanna(
+                "y ~ 1", d, panel=("id", "time"), cohort="first_treat", weights=bad
+            )
     assert not list(tmp_path.iterdir())

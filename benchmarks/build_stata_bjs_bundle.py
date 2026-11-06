@@ -11,9 +11,10 @@ from pathlib import Path
 import polars as pl
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from benchmarks._estimators import public
 from benchmarks._files import read_csv  # noqa: E402
 from benchmarks.stata_bjs_review import AVERAGES, ROOT, sha256
-from diff_stream import bjs_stream
+from diff_stream import did_bjs
 
 
 def build(destination, *, preflight=True):
@@ -63,22 +64,22 @@ def build(destination, *, preflight=True):
         )
         if preflight:
             for avg, leaveout in product(AVERAGES, (False, True)):
-                fit = bjs_stream(
+                fit = did_bjs(
                     "y ~ 1",
                     read_csv(destination / case["python_input"]),
                     panel=("id", "time"),
                     cohort="first_treat",
-                    panel_mode=case["panel_mode"],
+                    incomplete_units=public("incomplete_units", case["panel_mode"]),
                     weights="sampling_weight" if weighted else None,
                     anticipation=anticipation,
-                    pretrends=case["pretrends"],
-                    avgeffectsby=avg,
-                    leaveout=leaveout,
-                    threads=2,
+                    pretrend_leads=case["pretrends"],
+                    residual_averaging=avg,
+                    leave_out=leaveout,
+                    n_threads=2,
                 )
                 try:
                     for kind in ("dynamic", "simple"):
-                        result = fit.aggregate(kind)
+                        result = fit.aggregate(public("kind", kind))
                         expected.append(
                             dict(
                                 case=name,

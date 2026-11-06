@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    env:
+      # pyfixest (through hdfe-stream[formula]) has no 3.15 wheels, and the PyO3
+      # it builds with predates 3.15: this lets the source build go ahead on the
+      # stable ABI. Drop it once pyfixest publishes 3.15 wheels.
+      PYO3_USE_ABI3_FORWARD_COMPATIBILITY: ${{ matrix.python == '3.15' && '1' || '' }}
+      STREAM_LIMITS_MAX_THREADS: "2"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.10", "3.12", "3.14", "3.15"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install ".[test]"
+      - run: python -m pytest -q
+
+  # the fits under a memory limit (stream-limits' watchdog; a delegated cgroup
+  # is not available on hosted runners, so the kernel-enforced test skips)
+  resources:
+    name: memory limits / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    env:
+      STREAM_LIMITS_MAX_THREADS: "2"
+      POLARS_MAX_THREADS: "2"
+      OPENBLAS_NUM_THREADS: "2"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install ".[test]"
+      - run: python -m pytest -m resource -q
+
+  minimum-versions:
+    name: lowest supported dependencies
+    runs-on: ubuntu-latest
+    env:
+      STREAM_LIMITS_MAX_THREADS: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.10
+      - run: uv pip install --resolution lowest-direct ".[test]"
+      - run: .venv/bin/python -m pytest -q
+
+  polars-64:
+    name: polars 64-bit runtime
+    runs-on: ubuntu-latest
+    env:
+      STREAM_LIMITS_MAX_THREADS: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      # polars uses UInt64 row indices when this runtime is installed
+      - run: python -m pip install ".[test]" polars-runtime-64
+      - run: python -m pytest -q
+
+  lint:
+    name: ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+      - run: ruff format --check .
+
+  package:
+    name: build and check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      # the wheel alone, outside the checkout: imports, a fit, parallel refits
+      - run: |
+          python -m venv /tmp/wheel-env
+          /tmp/wheel-env/bin/python -m pip install dist/*.whl
+          cd /tmp
+          /tmp/wheel-env/bin/python - <<'PY'
+          from diff_stream import did_callaway_santanna, did_bjs, refit_bootstrap
+          from diff_stream.simulate import simulate_panel
+          d = simulate_panel(200, 5, seed=1)
+          kw = dict(panel=("id", "time"), cohort="first_treat", n_threads=2)
+          print(did_callaway_santanna("y ~ 1", d, **kw).aggregate("overall").tidy())
+          r = refit_bootstrap("y ~ 1", d, estimator=did_bjs, reps=4, seed=1, n_workers=2, **kw)
+          assert r.successful_reps == 4
+          PY

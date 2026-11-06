@@ -11,25 +11,26 @@ from _harness import measure, run_child
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT.parent))
-from diff_stream import diff_stream  # noqa: E402
+
+from benchmarks._estimators import fit_estimator  # noqa: E402
 from diff_stream.simulate import simulate_panel  # noqa: E402
 
 
 def runner(config, n, path, workdir):
     start = time.perf_counter()
-    r = diff_stream(
+    r = fit_estimator(
         "y ~ 1",
         path,
         panel=("id", "time"),
         cohort="first_treat",
         estimator=config,
-        panel_mode="unbalanced",
-        threads=2,
+        incomplete_units="keep",
+        n_threads=2,
         preprocess_mb=16,
         workdir=workdir,
     )
     try:
-        a = r.aggregate("simple")
+        a = r.aggregate("overall")
         return dict(
             wall_s=time.perf_counter() - start,
             n_obs=r.n_obs,

@@ -18,8 +18,8 @@ try:
         panel=("id", "time"),
         cohort="first_treat",
         weights=c.get("weights"),
-        threads=2,
-        memory_gb=1,
+        n_threads=2,
+        max_memory_gb=1,
         preprocess_mb=8,
         workdir=c["workdir"],
     )

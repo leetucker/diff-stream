@@ -1,4 +1,4 @@
-"""Gardner two-stage DiD with bounded unit elimination and adjusted inference."""
+"""Gardner's two-stage DiD with bounded unit elimination and adjusted inference."""
 
 from copy import copy
 from dataclasses import dataclass, field
@@ -14,14 +14,17 @@ from hdfe_stream.core.profile import Component, Profile
 from hdfe_stream.core.results_base import RegressionResult
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
+from . import _docs, _options
 from ._core.nuisance import solve_checked
-from ._core.within import moments
+from ._core.partition import preprocess_budget_mb
+from ._core.within import row_sums
+from ._present import internal, label_frame, labels_of, present, public_profile
 from .linear import RowDesign
 from .store import PanelStore, inspect
 
 
 @dataclass(kw_only=True)
-class GardnerResult(RegressionResult):
+class TwoStageResult(RegressionResult):
     """Direct second-stage coefficients, rather than cohort-time estimates.
 
     Selection returns fitted coefficients without changing either regression.
@@ -30,22 +33,24 @@ class GardnerResult(RegressionResult):
 
     n_units: int
     _support: pl.DataFrame = field(repr=False)
+    _internal: dict | None = field(default=None, repr=False)
+    _periods: object = field(default=None, repr=False)
     estimator = "gardner"
     cells = ()
     _normal_inference = True
 
     def support(self):
         """Observed cohort/date counts and original-scale weights per coefficient."""
-        return self._support.clone()
+        return label_frame(self._support, labels_of(self))
 
     def contributions(self):
         """Support table used by the common pre-treatment Wald helper."""
         return self.support()
 
     def select(self, horizons):
-        """Select fitted dynamic horizons, retaining their full joint covariance."""
-        if self.diagnostics["specification"] != "dynamic":
-            raise ValueError("horizon selection requires a dynamic Gardner fit")
+        """Select fitted event-time coefficients, keeping their joint covariance."""
+        if internal(self)["specification"] != "dynamic":
+            raise ValueError("horizon selection requires an event-study fit (event_study=True)")
         try:
             requested = list(horizons)
         except TypeError as exc:
@@ -91,7 +96,9 @@ class GardnerResult(RegressionResult):
 
 def _fit(store, specification, reference, anticipation):
     model = RowDesign(store)
-    model.reduce()
+    Q, q = model.reduce(
+        clean=lambda g: (g[:, None] == 0) | (store.times < g[:, None] - anticipation)
+    )
     support = []
     scale = store.weight_scale / store.weight_normalizer
     for g, counts in sorted(store.cell_counts.items()):
@@ -118,12 +125,6 @@ def _fit(store, specification, reference, anticipation):
     horizons = sorted({r["event_time"] for r in support}) if specification == "dynamic" else []
     names = [f"event::{h}" for h in horizons] if specification == "dynamic" else ["ATT"]
     P, M = len(model.keep), len(names)
-    Q, q = np.zeros((P, P)), np.zeros(P)
-    for g, y, X, w in model.batches():
-        clean = (g[:, None] == 0) | (store.times < g[:, None] - anticipation)
-        a, b = moments(X, np.nan_to_num(y, nan=0.0), w * clean)
-        Q += a
-        q += b
     theta = solve_checked(Q, q, "Gardner untreated covariate/fixed-effect design is unidentified")
 
     def batches():
@@ -136,7 +137,7 @@ def _fit(store, specification, reference, anticipation):
                 Z = ((g[:, None] != 0) & (event >= -anticipation))[:, :, None]
             else:
                 Z = (g[:, None, None] != 0) & (event[:, :, None] == np.asarray(horizons))
-            Z = Z & obs[:, :, None]
+            Z = (Z & obs[:, :, None]).astype(np.float64)
             yield X - xm[:, None], Z, w, u1, score1
 
     # Unit first-stage scores vanish exactly after clean-sample elimination.
@@ -144,9 +145,10 @@ def _fit(store, specification, reference, anticipation):
     # even though the second-stage regression itself does not demean Z.
     mass, rhs, C = np.zeros(M), np.zeros(M), np.zeros((M, P))
     for xc, Z, w, u1, _ in batches():
-        mass += np.einsum("btm,bt->m", Z, w)
-        rhs += np.einsum("btm,bt->m", Z, w * u1)
-        C += np.einsum("btm,bt,btk->mk", Z, w, xc, optimize=True)
+        flat = Z.reshape(-1, M)
+        mass += flat.T @ w.ravel()
+        rhs += flat.T @ (w * u1).ravel()
+        C += flat.T @ (w.reshape(-1, 1) * xc.reshape(-1, xc.shape[2]))
     if np.any(mass <= 0):
         raise ValueError("Gardner second-stage design is unidentified")
     beta = rhs / mass  # Supported indicators are mutually exclusive; no intercept.
@@ -154,56 +156,42 @@ def _fit(store, specification, reference, anticipation):
     accumulator = ClusterScoreAccumulator()
     for _, Z, w, u1, score1 in batches():
         u2 = u1 - Z @ beta
-        score2 = np.einsum("btm,bt->bm", Z, w * u2)
+        score2 = row_sums(w * u2, Z)
         accumulator.add_clusters((score2 - score1 @ H) / mass)
     return beta, accumulator.sums, names, pl.DataFrame(support), model
 
 
-def gardner_stream(
+def _two_stage(
     fml,
     data,
     *,
     panel,
-    cohort,
+    cohort=None,
+    treatment=None,
     specification="dynamic",
     reference_period=None,
     vcov="CRV0",
     batch_units=4096,
     threads=None,
     memory_gb=None,
+    memory_reserve=None,
     workdir=None,
     profile=False,
-    preprocess_mb=64,
+    preprocess_mb=None,
     panel_mode="balanced",
     anticipation=0,
     weights=None,
     allow_time_varying_weights=False,
     reference_group="auto",
 ):
-    """Estimate Gardner's two-stage DiD using clean-sample unit/time WLS.
+    """Two-stage DiD from internal option names; see did_two_stage.
 
-    ``fml`` specifies the outcome and first-stage covariates/additional fixed
-    effects, using the same bounded (256 added columns) design as BJS/SA.
-    Unit/time intercepts are automatic. ``specification='static'`` estimates
-    one indicator for affected observations (t >= g-anticipation). ``'dynamic'``
-    fits every observed treated-cohort event time except ``reference_period``
-    (default -anticipation-1). There is no second-stage intercept; omitted
-    reference and never-treated rows have a zero second-stage design.
-
-    A reference must be a clean integer event time. Use result.select(horizons)
-    to report a window without changing either stage. Event times retain actual
-    adoption dates. Static ATT includes anticipation periods when requested.
-    Covariance uses unit-clustered scores corrected for the estimated first
-    stage. CRV1 multiplies CRV0 by N/(N-1) only; normal inference is used.
-
-    Panel, weights, thread/budget and partition options follow bjs_stream.
-    reference_group='auto' uses a clean full-window reference if present,
-    otherwise retains dates strictly before the last cohort is affected and
-    assigns that cohort zero second-stage design, including its leads.
-    'nevertreated' is strict; 'lasttreated' explicitly selects that window.
-    Requires at least one clean observation per unit and an identified clean
-    first-stage design. Returns GardnerResult, or a
-    heuristic Profile with profile=True. No refit bootstrap is implemented.
+    Static fits estimate one indicator for affected observations (t >=
+    g-anticipation); dynamic fits every observed event time except the
+    reference. There is no second-stage intercept: the omitted reference,
+    never-treated rows and a last-treated reference cohort (with its leads)
+    have a zero second-stage design. The covariance clusters unit scores
+    corrected for the estimated first stage.
     """
     if specification not in ("static", "dynamic"):
         raise ValueError("specification must be 'static' or 'dynamic'")
@@ -222,28 +210,36 @@ def gardner_stream(
         or not isinstance(reference_period, Integral)
         or not -np.iinfo(np.int64).max <= reference_period < -anticipation
     ):
-        raise ValueError("reference_period must be a clean integer event time for a dynamic fit")
+        raise ValueError(
+            "reference_period must be a clean integer event time, with event_study=True"
+        )
     reference = -anticipation - 1 if reference_period is None else int(reference_period)
     if vcov not in ("CRV0", "CRV1"):
         raise ValueError("vcov must be 'CRV0' or 'CRV1'")
     if panel_mode not in ("balanced", "complete", "unbalanced"):
         raise ValueError("panel_mode must be 'balanced', 'complete' or 'unbalanced'")
-    for value, name in [(batch_units, "batch_units"), (threads, "threads")]:
+    for value, name in [(batch_units, "batch_units"), (threads, "n_threads")]:
         if value is not None and (
             isinstance(value, bool) or not isinstance(value, int) or value < 1
         ):
             raise ValueError(f"{name} must be a positive integer")
     if batch_units is None:
         raise ValueError("batch_units must be a positive integer")
-    if isinstance(preprocess_mb, bool) or not np.isfinite(preprocess_mb) or preprocess_mb < 1:
-        raise ValueError("preprocess_mb must be finite and at least 1 MB")
     if not isinstance(allow_time_varying_weights, bool):
         raise ValueError("allow_time_varying_weights must be boolean")
-    budget = MemoryBudget(memory_gb)
+    budget = MemoryBudget(memory_gb, memory_reserve)
+    preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline = current_rss_gb() or 0
     with thread_scope(threads):
         lf, yname, design = inspect(
-            fml, data, panel, cohort, allow_covariates=True, weights=weights, allow_fe=True
+            fml,
+            data,
+            panel,
+            cohort,
+            treatment=treatment,
+            allow_covariates=True,
+            weights=weights,
+            allow_fe=True,
         )
         if not budget.fits((preprocess_mb * 1e6 + 96e6) / 1e9):
             raise MemoryError(
@@ -284,7 +280,7 @@ def gardner_stream(
             diagnostics = dict(
                 **reference_metadata,
                 specification=specification,
-                aggregation="dynamic" if specification == "dynamic" else "static",
+                aggregation="event_time" if specification == "dynamic" else "static",
                 anticipation=anticipation,
                 reference_event_time=reference if specification == "dynamic" else None,
                 reference_second_stage="zero for designated reference cohorts, including their leads",
@@ -345,7 +341,7 @@ def gardner_stream(
             beta, V, names, support, model = _fit(store, specification, reference, anticipation)
             V *= store.n_units / (store.n_units - 1) if vcov == "CRV1" else 1
             V = (V + V.T) / 2
-            return GardnerResult(
+            result = TwoStageResult(
                 fml=fml,
                 depvar=yname,
                 coefnames=names,
@@ -366,3 +362,76 @@ def gardner_stream(
                     "warnings": [],
                 },
             )
+            return present(result, store.period_labels)
+
+
+@_docs.document
+def did_two_stage(
+    fml,
+    data,
+    *,
+    panel,
+    cohort=None,
+    treatment=None,
+    event_study=True,
+    reference_period=None,
+    anticipation=0,
+    weights=None,
+    allow_time_varying_weights=False,
+    incomplete_units="error",
+    last_treated_controls="if_needed",
+    vcov="CRV0",
+    n_threads=None,
+    max_memory_gb=None,
+    memory_reserve=None,
+    workdir=None,
+    profile=False,
+    batch_units=4096,
+    preprocess_mb=None,
+):
+    """Gardner's two-stage difference-in-differences.
+
+    The first stage fits unit and time fixed effects (and any covariates) on
+    the untreated observations only; the second stage regresses the
+    first-stage residuals of all observations on treatment indicators. The
+    standard errors account for the estimated first stage. The point
+    estimates match BJS imputation in many designs; the inference differs.
+
+    Gardner, J. (2022). Two-stage differences in differences. arXiv:2207.05943.
+
+    Butts, K. and Gardner, J. (2022). did2s: two-stage
+    difference-in-differences. *The R Journal* 14(3), 162-173.
+
+    Parameters
+    ----------
+    fml : str
+        ``"y ~ 1"``; first-stage covariates ``"y ~ x"``; additional fixed
+        effects after a bar, ``"y ~ x | region^time"``. Unit and time fixed
+        effects are always included. The added design is limited to 256
+        columns; for fixed effects with more levels (county-by-year), use
+        `did_bjs`, which has the same effect estimates and absorbs them
+        iteratively.
+    {DATA}
+    event_study : bool, default True
+        Estimate one coefficient per event time (an event study). False
+        estimates a single overall effect of treatment.
+    reference_period : int, optional
+        With ``event_study``, the omitted pre-treatment event time. Default:
+        the last clean period, ``-anticipation - 1``.
+    {ANTICIPATION}
+    {WEIGHTS}
+    {INCOMPLETE_UNITS}
+    {LAST_TREATED}
+    {VCOV}
+    {RESOURCES}
+
+    Returns
+    -------
+    TwoStageResult or Profile
+        The second-stage coefficients (``event::h`` or ``ATT``) and their
+        joint covariance. ``select(horizons)`` reports a subset of event
+        times without refitting.
+    """
+    options = dict(locals())
+    fml, data = options.pop("fml"), options.pop("data")
+    return public_profile(_two_stage(fml, data, **_options.internal(options)))

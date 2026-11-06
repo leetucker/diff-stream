@@ -17,9 +17,10 @@ import polars as pl
 from numpy.testing import assert_allclose
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from benchmarks._estimators import public
 from benchmarks._files import digest as file_digest  # noqa: E402
 from benchmarks._files import read_csv  # noqa: E402
-from diff_stream import sunab_stream
+from diff_stream import did_sun_abraham
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "tests/data/castle.csv"
@@ -90,13 +91,13 @@ def compare_replication(shift=0, weighted=False, data=None, *, dense=True, **opt
     verify_provenance()
     d = prepare_data(data, shift)
     prefix = f"shift{shift}_{'popwt' if weighted else 'unweighted'}"
-    fit = sunab_stream(
+    fit = did_sun_abraham(
         "l_homicide ~ 1",
         d,
         panel=("state", "year"),
         cohort="first_treat",
         weights="popwt" if weighted else None,
-        threads=2,
+        n_threads=2,
         **options,
     )
     differences = {}
@@ -126,9 +127,9 @@ def compare_replication(shift=0, weighted=False, data=None, *, dense=True, **opt
             check("Python_dummy_vcov", fit.vcov, dv[np.ix_(di, di)])
         for kind in ("dynamic", "simple", "cohort", "calendar", "balanced_dynamic"):
             a = (
-                fit.aggregate(balance_e=2, horizons=[0, 1, 2])
+                fit.aggregate(balanced_horizon=2, horizons=[0, 1, 2])
                 if kind == "balanced_dynamic"
-                else fit.aggregate(kind)
+                else fit.aggregate(public("kind", kind))
             )
             r = read_csv(REF / f"{prefix}_{kind}.csv")
             labels = (
@@ -141,7 +142,7 @@ def compare_replication(shift=0, weighted=False, data=None, *, dense=True, **opt
             check(kind + "_vcov", a.vcov, rv[np.ix_(order, order)])
             assert np.linalg.eigvalsh(a.vcov).min() >= -1e-12
         ref_test = read_csv(REF / f"{prefix}_pretrend.csv").row(0, named=True)
-        test = fit.pretrend_test(level="dynamic", horizons=[-4, -3, -2])
+        test = fit.pretrend_test(level="event_time", horizons=[-4, -3, -2])
         check("pretrend_statistic", test["statistic"], ref_test["statistic"], atol=1e-8)
         check("pretrend_pvalue", test["pvalue"], ref_test["pvalue"])
         return fit, differences
@@ -290,12 +291,12 @@ def main():
         fit, differences = compare_replication(shift, weighted)
         try:
             prefix = f"shift{shift}_{'popwt' if weighted else 'unweighted'}"
-            fit.group_time().write_csv(OUT / f"{prefix}_cells.csv")
+            fit.cohort_time().write_csv(OUT / f"{prefix}_cells.csv")
             for kind in ("dynamic", "simple", "cohort", "calendar"):
-                a = fit.aggregate(kind)
+                a = fit.aggregate(public("kind", kind))
                 a.tidy().write_csv(OUT / f"{prefix}_{kind}.csv")
                 a.contributions().write_csv(OUT / f"{prefix}_{kind}_contributions.csv")
-            simple = fit.aggregate("simple")
+            simple = fit.aggregate("overall")
             reports.append(
                 dict(
                     case=prefix,
@@ -303,7 +304,7 @@ def main():
                     sampling_weights="popwt" if weighted else None,
                     att=float(simple.beta[0]),
                     se=float(simple.se[0]),
-                    pretrend_test=fit.pretrend_test(level="dynamic", horizons=[-4, -3, -2]),
+                    pretrend_test=fit.pretrend_test(level="event_time", horizons=[-4, -3, -2]),
                     max_abs_difference=differences,
                 )
             )

@@ -13,7 +13,7 @@ from benchmarks.castle_replication import (
     prepare_data,
     verify_provenance,
 )
-from diff_stream import sunab_stream
+from diff_stream import did_sun_abraham
 
 
 def test_frozen_sample_and_both_explicit_treatment_conventions():
@@ -63,13 +63,13 @@ def test_layout_batch_and_crv_switching(tmp_path, weighted):
     d.write_parquet(tmp_path / "castle.parquet", row_group_size=13)
     try:
         for source in (d.lazy(), str(tmp_path / "castle.parquet")):
-            fit = sunab_stream(
+            fit = did_sun_abraham(
                 "l_homicide ~ 1",
                 source,
                 panel=("state", "year"),
                 cohort="first_treat",
                 weights="popwt" if weighted else None,
-                threads=2,
+                n_threads=2,
                 vcov="CRV1",
                 batch_units=7,
                 preprocess_mb=1,
@@ -83,8 +83,8 @@ def test_layout_batch_and_crv_switching(tmp_path, weighted):
                     fit.aggregate().vcov, baseline.aggregate().vcov * 50 / 49, atol=1e-10
                 )
                 assert_allclose(
-                    fit.with_vcov("CRV0").aggregate("simple").se,
-                    baseline.aggregate("simple").se,
+                    fit.with_vcov("CRV0").aggregate("overall").se,
+                    baseline.aggregate("overall").se,
                     atol=1e-10,
                 )
             finally:
@@ -110,7 +110,7 @@ def test_reporting_window_preserves_saturation_and_exposes_thin_support():
             assert rows["weight_units"].sum() == 1
             assert_allclose(rows["weight"].sum(), 1, atol=1e-12)
         assert (
-            fit.aggregate(balance_e=2, horizons=[0, 1, 2])
+            fit.aggregate(balanced_horizon=2, horizons=[0, 1, 2])
             .composition()["cohorts_changed"]
             .not_()
             .all()

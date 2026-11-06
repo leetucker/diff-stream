@@ -2,11 +2,12 @@
 
     python benchmarks/plot_benchmarks.py
 
-Adapted from dpd-stream. Reads benchmarks/results/local_scale.csv and writes figures of
-wall time, peak memory and peak disk against units, one line per configuration,
-in a light and a dark version:
+Adapted from dpd-stream. Reads benchmarks/results/{scale,covariates,absorbed}.csv and
+writes, for each scenario (benchmarks/_designs.py), figures of wall time, peak memory
+and peak disk against units, a panel per estimator and a line per configuration, in a
+light and a dark version:
 
-    docs/figures/local_scale_{time,memory,disk}.{light,dark}.svg
+    docs/figures/<suite>_<scenario>_{time,memory,disk}.{light,dark}.svg
 
 The sibling packages' palette and distinct markers distinguish configurations
 in both themes. Points that failed, ran out of memory or timed out are left out and
@@ -71,17 +72,6 @@ SERIES = {
     "R reference (4 threads)": ("blue", "o", "-"),
 }
 FIGS = {
-    "local_scale": {
-        "csv": "local_scale",
-        "xlabel": "Units (8 periods each)",
-        "panels": [
-            ("Callaway–Sant'Anna", "cs"),
-            ("Sun–Abraham", "sunab"),
-            ("BJS imputation", "bjs"),
-        ],
-        "series": SERIES,
-        "note": "Local development checks; not publication benchmarks.",
-    },
     "local_cs_memory": {
         "csv": "local_cs_memory",
         "xlabel": "Units (8 periods each)",
@@ -106,6 +96,86 @@ FIGS["conditional"] = {
     "series": SERIES,
     "note": "Local development only; numeric, time-varying covariates. Parquet vs CSV input; two repeats.",
 }
+
+
+def suite_figures():
+    """One figure per scenario of the three suites: a panel per estimator (per
+    adjustment in G), the lines the scenario's configurations, coloured by their role."""
+    import sys
+
+    sys.path.insert(0, str(HERE))
+    from _designs import DESIGNS
+    from _suites import DS, configs, parse
+
+    suite_of = {
+        **dict.fromkeys("ABCDEF", "scale"),
+        **dict.fromkeys("GH", "covariates"),
+        **dict.fromkeys("IJ", "absorbed"),
+    }
+    titles = {
+        "cs": "Callaway–Sant'Anna",
+        "sunab": "Sun–Abraham",
+        "bjs": "BJS imputation",
+        "gardner": "Two-stage (Gardner)",
+        "etwfe": "Extended TWFE",
+        "stacked": "Stacked DiD",
+        "bacon": "Goodman-Bacon decomposition",
+        "twfe_weights": "TWFE weights",
+    }
+    adjustments = {"reg": "regression", "ipw": "IPW", "dr": "doubly robust"}
+    what = {
+        "A": "8 periods, 3 cohorts",
+        "B": "8 periods, 7 cohorts",
+        "C": "30 periods, 3 cohorts",
+        "D": "30 periods, 29 cohorts",
+        "E": "8 periods, 7 cohorts, 10% of rows missing",
+        "F": "8 periods, 7 cohorts",
+        "G": "8 periods, two covariates",
+        "H": "8 periods, region-by-period effects (240 levels) and a covariate",
+        "I": "8 periods, county-by-period effects (n/40 counties)",
+        "J": "8 periods, county- and industry-by-period effects, a covariate",
+    }
+    # a line's style by its role: diff-stream's variants, then the other libraries
+    ours = [("violet", "^", "-"), ("magenta", "v", "-"), ("aqua", "s", "--"), ("green", "h", "--")]
+    others = [("blue", "o", "-"), ("orange", "D", "-"), ("yellow", "P", "-"), ("red", "X", "-")]
+    out = {}
+    for scenario in DESIGNS:
+        cfg = configs(scenario)
+        groups = {}
+        for label, kind in cfg.items():
+            _s, library, fit, options = parse(kind)
+            groups.setdefault(
+                (fit, options.get("adjustment") if scenario == "G" else None), []
+            ).append((label, library))
+        panels, per_panel, series = [], [], {}
+        for (fit, adjustment), members in groups.items():
+            title = titles[fit] + (f", {adjustments[adjustment]}" if adjustment else "")
+            panels.append((title, scenario))
+            labels = [label for label, _ in members]
+            per_panel.append(labels)
+            n_ours = n_other = 0
+            for label, library in members:
+                if library == "ds":
+                    series[label] = ours[min(n_ours, len(ours) - 1)]
+                    n_ours += 1
+                else:
+                    series[label] = others[min(n_other, len(others) - 1)]
+                    n_other += 1
+        suite = suite_of[scenario]
+        out[f"{suite}_{scenario}"] = {
+            "csv": suite,
+            "xlabel": f"Units ({DESIGNS[scenario].periods} periods each)",
+            "panels": panels,
+            "panel_series": per_panel,
+            "series": series,
+            "legend": "panel",
+            "columns": min(3, len(panels)),
+            "note": f"Scenario {scenario}: {what[scenario]}. The event study, read from Parquet; "
+            f"{DS} on all cores unless marked.",
+        }
+    return out
+
+
 METRICS = {
     "time": ("wall_s", "Wall time (seconds)", 1.0),
     "memory": ("peak_memory_mb", "Peak memory (GiB)", 1 / 1024),
@@ -161,15 +231,19 @@ def figure(name, metric, theme):
     col, ylabel, scale = METRICS[metric]
     t = THEMES[theme]
     panels, series = spec["panels"], spec["series"]
-    width = max(4.2 * len(panels) + 0.6, 7.0)
+    ncols = spec.get("columns", len(panels))
+    nrows = -(-len(panels) // ncols)
+    width = max(4.2 * ncols + 0.6, 7.0)
     # panels of one model on one scale (the mixed logit's two)
     fig, axes = plt.subplots(
-        1, len(panels), figsize=(width, 4.0), squeeze=False, sharey=bool(spec.get("sharey"))
+        nrows, ncols, figsize=(width, 4.0 * nrows), squeeze=False, sharey=bool(spec.get("sharey"))
     )
+    for ax in axes.ravel()[len(panels) :]:
+        ax.set_visible(False)
     fig.patch.set_facecolor(t["surface"])
     failed, handles = [], {}
     per_panel = spec.get("panel_series") or [list(series)] * len(panels)
-    for ax, (title, model), labels in zip(axes[0], panels, per_panel, strict=True):
+    for ax, (title, model), labels in zip(axes.ravel(), panels, per_panel, strict=False):
         ax.set_facecolor(t["surface"])
         mrows = [r for r in rows if r.get("model", model) == model]
         local = {}
@@ -232,7 +306,8 @@ def figure(name, metric, theme):
             ax.spines[s].set_visible(False)
         for s in ("left", "bottom"):
             ax.spines[s].set_color(t["axis"])
-    axes[0][0].set_ylabel(ylabel, color=t["muted"], fontsize=9)
+    for ax in axes[:, 0]:
+        ax.set_ylabel(ylabel, color=t["muted"], fontsize=9)
     order = [lb for lb in series if lb in handles]
     # the note of what is not shown at the bottom, the legend above it
     note = ""
@@ -265,6 +340,7 @@ def figure(name, metric, theme):
 
 def main():
     FIGURES.mkdir(parents=True, exist_ok=True)
+    FIGS.update(suite_figures())
     for name, spec in FIGS.items():
         for metric in spec.get("metrics", METRICS):
             for theme in THEMES:

@@ -1,11 +1,49 @@
-"""Subprocess resource measurement, adapted from dpd-stream (MIT).
+"""Shared machinery for the benchmarks: one configuration per subprocess, peak
+memory and disk measured the same way for every library, results to CSV.
 
-Wall time includes reading the source. Peak RSS is the process high-water mark;
-peak allocated scratch disk is sampled, so short-lived files can be missed.
+Adapted from match-stream's benchmarks/_harness.py (itself from dpd-stream's and
+hdfe-stream's). Each configuration runs in its own subprocess because peak
+memory is a per-process high-water mark. The child measures
+
+  * wall-clock seconds, split into reading the data and the estimation
+    (diff-stream streams the data inside its fit, so its read time is zero and
+    its fit time includes the reading);
+  * peak resident set size (``VmHWM``) of the whole process, and the baseline
+    after imports, before the data are read;
+  * peak disk, by polling the allocated size of the configuration's own work
+    directory (zero for libraries that do not write to disk).
+
+The parent writes one CSV row per (model, size, configuration) as soon as it
+has it, replacing an earlier row with the same key, so an interrupted run keeps
+what it measured. "model" is the scenario (A to J, see _designs.py).
+
+**R and Python comparators.** R packages run from benchmarks/external/did_fit.R,
+pyfixest from external/pyfixest_fit.py and diff-diff from external/diff_diff_fit.py,
+each in an environment of its own (their pins on pandas and numpy are theirs,
+not the benchmarks'): each is given what to fit as JSON, measures itself as the
+Python child does (VmHWM for peak memory) and prints the same RESULT line.
+None is a dependency: where one is not installed, its configurations are
+skipped, and nothing is written for them (benchmarks/README.md says how to
+install them).
+
+**Resuming.** When the environment variable DIFF_BENCH_LEDGER names a file
+(the EC2 runner sets it), every row written is also recorded there with a
+digest, and `is_done` reports a configuration as finished only if its row is
+still in the CSV exactly as the ledger recorded it. Without the variable,
+nothing is skipped and nothing extra is written.
+
+**Failures carry over.** A configuration that timed out or ran out of memory
+at one size is not run at larger sizes (`failed_smaller`), whether the smaller
+size was measured in this process or an earlier one.
 """
 
+from __future__ import annotations
+
+import csv
+import hashlib
 import json
 import os
+import platform
 import resource
 import shutil
 import subprocess
@@ -13,6 +51,17 @@ import sys
 import threading
 import time
 from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+DATA_DIR = HERE / "data"
+# where the CSVs go: benchmarks/results, or DIFF_BENCH_RESULTS (for a trial
+# run that should not touch the published numbers)
+RESULTS_DIR = Path(os.environ.get("DIFF_BENCH_RESULTS", HERE / "results"))
+# the simulated data: benchmarks/data, or DIFF_BENCH_DATA (the EC2 runner points
+# it at the instance store)
+DATA_DIR = Path(os.environ.get("DIFF_BENCH_DATA", DATA_DIR))
+EXTERNAL_DIR = HERE / "external"
+KEY = ("model", "n", "configuration")
 
 
 def peak_rss_mb():
@@ -128,3 +177,400 @@ def measure(script, config, n, path, workdir, timeout=None, command=None, env=No
             rep["process_s"] = elapsed
             return rep
     return {"status": "failed: no result line"}
+
+
+# --------------------------------------------------------------------------
+# R, pyfixest and diff-diff
+# --------------------------------------------------------------------------
+
+EXTERNAL = {
+    # kind -> (what, executable, its environment variable, its environment, script)
+    "R": ("R", "Rscript", "DIFF_BENCH_RSCRIPT", ".r", "did_fit.R"),
+    "pyfixest": (
+        "pyfixest",
+        "python",
+        "DIFF_BENCH_PYFIXEST_PYTHON",
+        ".pyfixest",
+        "pyfixest_fit.py",
+    ),
+    "diff-diff": (
+        "diff-diff",
+        "python",
+        "DIFF_BENCH_DIFF_DIFF_PYTHON",
+        ".diff_diff",
+        "diff_diff_fit.py",
+    ),
+}
+
+
+def external_executable(kind):
+    """Rscript, or the Python of pyfixest's or diff-diff's environment: from its
+    environment variable if set, else benchmarks/external/.r, .pyfixest or
+    .diff_diff (benchmarks/README.md), else (Rscript only) PATH. None if not
+    installed."""
+    _what, name, variable, local, _script = EXTERNAL[kind]
+    if os.environ.get(variable):
+        return os.environ[variable]
+    path = EXTERNAL_DIR / local / "bin" / name
+    if path.exists():
+        return str(path)
+    return shutil.which(name) if kind == "R" else None
+
+
+def external_command(kind, **spec):
+    """The command that runs one fit in R (``kind="R"``, `spec["fit"]` one of
+    did_fit.R's), pyfixest or diff-diff, or None if that is not installed."""
+    executable = external_executable(kind)
+    if executable is None:
+        return None
+    spec = {"threads": os.cpu_count(), **spec}
+    for k, v in spec.items():
+        if isinstance(v, Path):
+            spec[k] = str(v)
+    return [executable, str(EXTERNAL_DIR / EXTERNAL[kind][4]), json.dumps(spec)]
+
+
+def external_missing(kind):
+    what, _name, variable, local, _script = EXTERNAL[kind]
+    return f"skipped: {what} is not installed (no benchmarks/external/{local}, or set {variable})"
+
+
+def external_versions():
+    """R and its packages, pyfixest and diff-diff, where installed."""
+    out = {}
+    rscript = external_executable("R")
+    if rscript:
+        code = (
+            'pk <- c("did", "DRDID", "fixest", "didimputation", "did2s", "etwfe", '
+            '"bacondecomp", "TwoWayFEWeights", "arrow"); v <- sapply(pk, '
+            "function(p) tryCatch(as.character(packageVersion(p)), error = function(e) NA)); "
+            "cat(jsonlite::toJSON(c(R = paste(R.version$major, R.version$minor, "
+            'sep = "."), as.list(v)), auto_unbox = TRUE))'
+        )
+        try:
+            text = subprocess.run(
+                [rscript, "-e", code], capture_output=True, text=True, timeout=300
+            ).stdout
+            out.update({f"r:{k}": v for k, v in json.loads(text).items()})
+        except (OSError, subprocess.SubprocessError, ValueError):
+            pass
+    for kind, dists in (("pyfixest", ["pyfixest", "pandas"]), ("diff-diff", ["diff-diff"])):
+        python = external_executable(kind)
+        if not python:
+            continue
+        code = (
+            "import importlib.metadata as m, json; print(json.dumps({d: m.version(d) "
+            f"for d in {dists!r}}}))"
+        )
+        try:
+            text = subprocess.run(
+                [python, "-c", code], capture_output=True, text=True, timeout=300
+            ).stdout
+            out.update({f"{kind}:{k}": v for k, v in json.loads(text).items()})
+        except (OSError, subprocess.SubprocessError, ValueError):
+            pass
+    return out
+
+
+# --------------------------------------------------------------------------
+# results
+# --------------------------------------------------------------------------
+
+LEDGER_ENV = "DIFF_BENCH_LEDGER"
+# labels to leave out of this run, as a JSON list; nothing is written for them,
+# so a later run measures them
+SKIP_ENV = "DIFF_BENCH_SKIP"
+SKIP = frozenset(json.loads(os.environ.get(SKIP_ENV) or "[]"))
+
+
+def selected(label, only):
+    """Whether `label` is wanted: no filter, or one of `only` (exactly, or a
+    prefix when the entry ends in *)."""
+    return not only or any(
+        label == o or (o.endswith("*") and label.startswith(o[:-1])) for o in only
+    )
+
+
+# a row with one of these statuses is a result, to be kept rather than
+# measured again; a failure may be the process being stopped, so it is not
+_FINAL = ("ok", "timeout", "killed (out of memory)", "out of memory")
+# and with one of these, the configuration is not run at larger sizes
+_FATAL = ("timeout", "killed (out of memory)", "out of memory")
+
+
+def _digest(row):
+    """Identify a row by its non-empty values, as text, so that the row as
+    written and as read back from the CSV give the same digest."""
+    items = sorted((k, str(v)) for k, v in row.items() if v not in (None, ""))
+    return hashlib.sha1(json.dumps(items).encode()).hexdigest()
+
+
+def _ledger():
+    name = os.environ.get(LEDGER_ENV)
+    if not name:
+        return None, {}
+    path = Path(name)
+    try:
+        return path, json.loads(path.read_text())
+    except (OSError, ValueError):
+        return path, {}
+
+
+def _entry(path, row, key):
+    return Path(path).name, "|".join(str(row[k]) for k in key)
+
+
+def _atomic_write(path, write):
+    """Write through `write(handle)` to a temporary file, then rename it, so
+    that a process stopped part-way never leaves half a file."""
+    path = Path(path)
+    temporary = path.with_name(path.name + ".part")
+    with open(temporary, "w", newline="") as handle:
+        write(handle)
+    os.replace(temporary, path)
+
+
+def _rows(path):
+    if not Path(path).exists():
+        return []
+    with open(path, newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def is_done(path, values, key=KEY):
+    """Whether the configuration with these key `values` (a dict) was already
+    measured by this run: its row is in the CSV at `path`, unchanged since it
+    was written, with a final status. Always False unless the ledger is on."""
+    ledger_path, ledger = _ledger()
+    if ledger_path is None:
+        return False
+    name, entry = _entry(path, values, key)
+    for row in _rows(path):
+        if "|".join(str(row[k]) for k in key) == entry:
+            return row["status"].startswith(_FINAL) and ledger.get(name, {}).get(entry) == _digest(
+                row
+            )
+    return False
+
+
+def failed_smaller(path, model, configuration, n):
+    """The status of this configuration at a smaller size where it timed out
+    or ran out of memory, if any (then it is not run at `n`)."""
+    for row in _rows(path):
+        if (
+            row.get("model") == model
+            and row["configuration"] == configuration
+            and int(row["n"]) < int(n)
+            and row["status"].startswith(_FATAL)
+        ):
+            return f"{row['status']} at {int(row['n']):,}"
+    return None
+
+
+def upsert_csv(path, rows, key=KEY):
+    """Write `rows` into the CSV at `path`, replacing rows with the same key."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    existing = _rows(path)
+    new = {tuple(str(r[k]) for k in key) for r in rows}
+    merged = [r for r in existing if tuple(str(r[k]) for k in key) not in new] + list(rows)
+    fields = list(dict.fromkeys(f for r in merged for f in r))
+    merged.sort(key=lambda r: (str(r.get("model", "")), int(r["n"]), int(r.get("order") or 0)))
+
+    def write(handle):
+        w = csv.DictWriter(handle, fieldnames=fields)
+        w.writeheader()
+        w.writerows(merged)
+
+    _atomic_write(path, write)
+    ledger_path, ledger = _ledger()
+    if ledger_path is not None:
+        for r in rows:
+            name, entry = _entry(path, r, key)
+            ledger.setdefault(name, {})[entry] = _digest({k: v for k, v in r.items()})
+        _atomic_write(ledger_path, lambda handle: handle.write(json.dumps(ledger)))
+
+
+def coef_diff(coefs, ref, absolute=()):
+    """The largest absolute difference between two {name: value} dicts on
+    their common names (`absolute`: compared as absolute values, for standard
+    deviations whose sign is not identified); "" if none are common."""
+    common = [c for c in coefs if c in ref]
+    if not common:
+        return ""
+    return max(
+        abs(abs(coefs[c]) - abs(ref[c])) if c in absolute else abs(coefs[c] - ref[c])
+        for c in common
+    )
+
+
+def run_configs(
+    script,
+    out,
+    model,
+    n,
+    path,
+    configs,
+    *,
+    command=None,
+    timeout=None,
+    reference="diff-stream",
+    absolute=(),
+    only=None,
+    extra=None,
+    env=None,
+):
+    """Measure each of `configs` ({label: kind}) at size `n` and write its row:
+    skip what this run measured already (`is_done`) and what failed at a
+    smaller size (`failed_smaller`). `command(label, kind)` gives an external
+    command, None for the script's own child, or a string, a reason to skip
+    (R, pyfixest or diff-diff not installed). `reference` is the label whose
+    coefficients the others are compared with (max_abs_diff), or a dict
+    {label: its reference} for the labels compared with another (a fit of the
+    same model, measured before them; None: not compared); `extra(label)`
+    adds columns to the row; `env(label)` sets environment variables for the
+    child; `timeout` is seconds, or a function of the label. `only` entries are
+    labels, or prefixes with a trailing *."""
+    # the fits measured before at this size (a reference for a configuration
+    # run alone, with --only), then this call's
+    measured = {
+        r["configuration"]: json.loads(r["coefs"])
+        for r in _rows(out)
+        if r.get("model") == model
+        and str(r["n"]) == str(n)
+        and r["status"] == "ok"
+        and r.get("coefs")
+    }
+
+    def ref_of(label):
+        if isinstance(reference, dict) and label in reference:
+            return reference[label]
+        return reference if isinstance(reference, str) else reference.get("*")
+
+    for order, (label, kind) in enumerate(configs.items()):
+        if not selected(label, only):
+            continue
+        row = {
+            "model": model,
+            "n": n,
+            "configuration": label,
+            "order": order,
+            **((extra or (lambda _l: {}))(label)),
+        }
+        name = f"{model:6s} n={n:>12,}  {label:34s}"
+        if is_done(out, row):
+            print(f"{name} measured before, kept", flush=True)
+            kept = next(
+                (
+                    json.loads(r["coefs"])
+                    for r in _rows(out)
+                    if all(str(r[k]) == str(row[k]) for k in KEY) and r.get("coefs")
+                ),
+                None,
+            )
+            if kept is not None:
+                measured[label] = kept
+            continue
+        if label in SKIP:
+            print(f"{name} skipped for now ({SKIP_ENV})", flush=True)
+            continue
+        failed = failed_smaller(out, model, label, n)
+        if failed:
+            print(f"{name} not run ({failed})", flush=True)
+            continue
+        cmd = command(label, kind) if command else None
+        if isinstance(cmd, str):
+            print(f"{name} {cmd}", flush=True)
+            continue
+        print(name, end=" ", flush=True)
+        limit = timeout(label) if callable(timeout) else timeout
+        rep = measure(
+            script,
+            kind,
+            n,
+            path,
+            RESULTS_DIR / "work" / kind.replace(":", "_"),
+            timeout=limit,
+            command=cmd,
+            env=env(label) if env else None,
+        )
+        row["status"] = rep.pop("status")
+        if row["status"] != "ok":
+            print(row["status"], flush=True)
+            upsert_csv(out, [row])
+            continue
+        coefs = rep.pop("coefs", {})
+        rep.pop("se", None)
+        row.update(rep)
+        row["wall_s"] = rep["t_read"] + rep["t_fit"]
+        row["coefs"] = json.dumps(coefs)
+        measured[label] = coefs
+        ref = measured.get(ref_of(label))
+        if ref is not None and coefs and ref_of(label) != label:
+            row["max_abs_diff"] = coef_diff(coefs, ref, absolute)
+        conv = (
+            "" if str(row.get("converged", True)).lower() in ("true", "1") else " (NOT converged)"
+        )
+        print(
+            f"{row['wall_s']:9.2f} s  {row['peak_memory_mb'] / 1e3:6.2f} GB  "
+            f"disk {row['peak_disk_mb'] / 1e3:6.2f} GB  "
+            f"diff {row.get('max_abs_diff', '')}{conv}",
+            flush=True,
+        )
+        upsert_csv(out, [row])
+
+
+def machine_info():
+    import importlib.metadata as md
+
+    def version(name):
+        try:
+            return md.version(name)
+        except md.PackageNotFoundError:
+            return None
+
+    cpu = platform.processor()
+    try:
+        with open("/proc/cpuinfo") as handle:
+            for line in handle:
+                if line.startswith("model name"):
+                    cpu = line.split(":", 1)[1].strip()
+                    break
+    except OSError:
+        pass
+    mem_gb = None
+    try:
+        with open("/proc/meminfo") as handle:
+            for line in handle:
+                if line.startswith("MemTotal:"):
+                    mem_gb = round(int(line.split()[1]) / 1024**2, 1)
+    except OSError:
+        pass
+    return {
+        "cpu": cpu,
+        "logical_cpus": os.cpu_count(),
+        "memory_gb": mem_gb,
+        "platform": platform.platform(),
+        "python": platform.python_version(),
+        **{
+            name: version(name)
+            for name in (
+                "diff-stream",
+                "hdfe-stream",
+                "stream-limits",
+                "polars",
+                "numpy",
+                "numba",
+                "scipy",
+                "pyarrow",
+            )
+        },
+        **external_versions(),
+        "measured": time.strftime("%Y-%m-%d"),
+    }
+
+
+def write_machine_info(path):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(machine_info(), indent=1) + "\n")

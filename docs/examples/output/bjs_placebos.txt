@@ -1,0 +1,31 @@
+shape: (1, 5)
+┌─────────────┬───────────┬────────────┬───────────┬──────────┐
+│ Coefficient ┆ Estimate  ┆ Std. Error ┆ t value   ┆ Pr(>|t|) │
+│ ---         ┆ ---       ┆ ---        ┆ ---       ┆ ---      │
+│ str         ┆ f64       ┆ f64        ┆ f64       ┆ f64      │
+╞═════════════╪═══════════╪════════════╪═══════════╪══════════╡
+│ event::-1   ┆ -0.043097 ┆ 0.04476    ┆ -0.962855 ┆ 0.33562  │
+└─────────────┴───────────┴────────────┴───────────┴──────────┘
+{'statistic': 0.9270891584502691, 'pvalue': 0.3356204494554865, 'df1': 1, 'df2': None, 'distribution': 'chi2', 'level': 'event_time', 'coefficients': ['event::-1'], 'horizons': [-1], 'cells': [{'cohort': 2, 'time': 1}, {'cohort': 3, 'time': 2}, {'cohort': 4, 'time': 3}, {'cohort': 5, 'time': 4}, {'cohort': 6, 'time': 5}, {'cohort': 7, 'time': 6}, {'cohort': 8, 'time': 7}], 'n_restrictions': 1, 'anticipation': 0, 'reference_event_time': None, 'null': 'all selected clean pre-treatment effects equal zero', 'base_period': 'all other clean observations; no fixed event-time reference', 'fitted_horizons': [-1], 'sample': 'separate clean-sample lead regression'}
+shape: (1, 5)
+┌─────────────┬──────────┬────────────┬───────────┬─────────────┐
+│ Coefficient ┆ Estimate ┆ Std. Error ┆ t value   ┆ Pr(>|t|)    │
+│ ---         ┆ ---      ┆ ---        ┆ ---       ┆ ---         │
+│ str         ┆ f64      ┆ f64        ┆ f64       ┆ f64         │
+╞═════════════╪══════════╪════════════╪═══════════╪═════════════╡
+│ ATT         ┆ 1.576663 ┆ 0.052375   ┆ 30.103557 ┆ 4.3528e-199 │
+└─────────────┴──────────┴────────────┴───────────┴─────────────┘
+shape: (7, 6)
+┌───────────┬────────┬──────┬────────────┬────────────────┬──────────────┐
+│ aggregate ┆ cohort ┆ time ┆ event_time ┆ observed_units ┆ weight_total │
+│ ---       ┆ ---    ┆ ---  ┆ ---        ┆ ---            ┆ ---          │
+│ str       ┆ i64    ┆ i64  ┆ i64        ┆ i64            ┆ f64          │
+╞═══════════╪════════╪══════╪════════════╪════════════════╪══════════════╡
+│ event::-1 ┆ 2      ┆ 1    ┆ -1         ┆ 139            ┆ 139.0        │
+│ event::-1 ┆ 3      ┆ 2    ┆ -1         ┆ 160            ┆ 160.0        │
+│ event::-1 ┆ 4      ┆ 3    ┆ -1         ┆ 149            ┆ 149.0        │
+│ event::-1 ┆ 5      ┆ 4    ┆ -1         ┆ 149            ┆ 149.0        │
+│ event::-1 ┆ 6      ┆ 5    ┆ -1         ┆ 145            ┆ 145.0        │
+│ event::-1 ┆ 7      ┆ 6    ┆ -1         ┆ 165            ┆ 165.0        │
+│ event::-1 ┆ 8      ┆ 7    ┆ -1         ┆ 133            ┆ 133.0        │
+└───────────┴────────┴──────┴────────────┴────────────────┴──────────────┘

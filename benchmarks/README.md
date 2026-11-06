@@ -46,57 +46,61 @@ root, after installing its listed commands. The bundle produces a text log and
 saved estimates; no local Stata run is claimed. The commands use their own
 variance corrections, so inspect those conventions before comparing SEs.
 
-## Local small/medium runs
+## Benchmark suites
+
+Three suites measure the event study of each estimator against the other
+implementations, as time and peak memory against the number of units:
+
+| Suite | Scenarios | Compares |
+|---|---|---|
+| `scale_benchmark.py` | A-E: 8 or 30 periods, few or many cohorts, one unbalanced; F: diagnostics | the six estimators with no covariates, and Goodman-Bacon and TWFE weights |
+| `covariates_benchmark.py` | G: two covariates; H: region-by-period effects (240 levels) | Callaway-Sant'Anna by regression, IPW and doubly robust; Sun-Abraham, BJS and two-stage, dense and iterative solvers |
+| `absorbed_benchmark.py` | I: county-by-period effects; J: and industry-by-period, with a covariate | Sun-Abraham and BJS with fixed effects of millions of levels |
+
+`_designs.py` defines the panels (simulated in chunks of units, so a panel of 300
+million rows never has to fit in memory) and `_suites.py` the configurations of
+each scenario. Every library fits the same task (the event study, with its
+standard errors) from the same Parquet file, and each comparator's estimates
+are compared with diff-stream's fit of the same estimator (`max_abs_diff`).
 
 ```bash
-python benchmarks/scale_benchmark.py --sizes 1000 10000 --threads 1 4 --repeats 3
-python benchmarks/plot_benchmarks.py
+python benchmarks/scale_benchmark.py 10000 100000 --scenario B   # units; one scenario
+python benchmarks/covariates_benchmark.py 100000 --only "diff-stream*"
+python benchmarks/plot_benchmarks.py                                # figures from the CSVs
 ```
 
-Each fit runs in a fresh subprocess. CSVs retain all repeats, timeout/failure
-statuses, total wall time (including source reads), baseline RSS, total peak
-RSS and sampled peak allocated scratch disk. Figure scripts adapted from
-dpd-stream use its accessible palette, distinct markers, and light/dark SVGs;
-repeated successful measurements are summarized by their median. Python uses
-Parquet; R uses CSV. Compare these as end-to-end pipelines and record that input
-format difference. R wall timing excludes package loading, as Python timing
-excludes imports. Python's first fit includes JIT cache load/compilation; warm
-the cache first if measuring repeated-use performance and record that choice.
+Each configuration runs in a fresh subprocess. The CSVs (`results/scale.csv`,
+`covariates.csv`, `absorbed.csv`) have one row per scenario, size and
+configuration with the status (a timeout or an out-of-memory kill is a result,
+and the configuration is not run at larger sizes), wall time split into reading
+and estimation, baseline and peak resident memory, and sampled peak scratch disk.
+diff-stream streams the data inside its fit, so its read time is zero. R and
+Python imports are excluded from the timing, as diff-stream's are; its compiled
+kernels are cached on disk. Sampled disk can miss very short-lived files, and
+process peak memory includes the runtime's own memory.
 
-The standard configuration labels support 1 and 4 thread curves. The CLI accepts
-other thread counts, retained in CSVs; add them to plot SERIES to display them.
-Disk excludes source files, Python/R installations and pre-existing JIT caches.
-R reports zero scratch disk for these in-memory reference fits. Sampled disk can
-miss very short-lived files; process peak memory includes import/runtime memory.
-The harness is adapted from dpd-stream, preserving resource measurement methods.
+**The other libraries** run from their own environments, under
+`benchmarks/external/` or the interpreter named by an environment variable;
+where one is missing its configurations are skipped, and nothing is written for
+them:
 
-## Later EC2 matrix
+| | Environment | Variable | Packages |
+|---|---|---|---|
+| R | `.r` | `DIFF_BENCH_RSCRIPT` | did, DRDID, fixest, didimputation, did2s, etwfe, bacondecomp, TwoWayFEWeights, arrow |
+| pyfixest | `.pyfixest` | `DIFF_BENCH_PYFIXEST_PYTHON` | pyfixest 0.60.0 |
+| diff-diff | `.diff_diff` | `DIFF_BENCH_DIFF_DIFF_PYTHON` | diff-diff 4.0.0 |
 
-Use CPU-optimized instances and identical data and resource limits per library.
-Vary units (10k–10m), periods (8, 20, 50), cohort count (sparse/dense adoption),
-thread count (1 through allocated cores), and treatment-effect heterogeneity.
-Include R did/fixest/didimputation and investigate csa-py/diff-diff as additional
-Python references. Separate cold/warm runs, retain all failures, publish machine
-and package versions, and include a real example such as mpdta after irregular
-time grids are supported. Add scheduler/EC2 orchestration before publishing;
-this milestone provides the local reproducible subprocess harness only.
+`remote/setup_external.sh` (under `ec2/`) builds all three, with the R packages
+from the CRAN snapshot of 2026-10-15. did2s lists HonestDiD and staggered as
+imports, and they need a chain of compiled optimization packages; it is
+installed without them (`external/install_did2s.R`), which does not touch
+`did2s()`. pyfixest's `did2s` fails on these panels in 0.60, so pyfixest is
+compared for Sun-Abraham only (its saturated event study).
 
-## Targeted memory follow-up
-
-`results/local_cs_memory.csv` extends the CS curves to one million units/eight
-million rows, one repeat at the largest size. `results/local_cs_phases.json`
-records a separate sampled phase profile. Reproduce with:
-
-```bash
-python benchmarks/scale_benchmark.py --models cs --sizes 1000000 --threads 1 4 --repeats 1 --timeout 60 --output benchmarks/results/local_cs_memory.csv
-STREAM_LIMITS_MAX_THREADS=4 python benchmarks/memory_probe.py benchmarks/data/sim_1000000.parquet --threads 4
-```
-
-The committed memory curve also includes the CS rows from `local_scale.csv`.
-The larger check reverses the small-sample memory ordering; preprocessing is
-the largest Python phase. The Sphinx benchmark page explains the measured
-limits. Local result sections/figures should be replaced by EC2 measurements
-before publishing performance claims.
+`ec2/bench_ec2.py` runs the suites on an EC2 instance (see `ec2/README.md`;
+that folder is not in the repository). Results of the earlier local checks
+(`results/local_*.csv`) are development runs and are not comparable with the
+suites'. Run the suites on the large machine before quoting any figure.
 
 ## BJS inference hardening
 
@@ -126,7 +130,7 @@ The reviewer can combine both runs into a passing validation summary, verifying
 identical data, specifications and installed command source hashes.
 `python benchmarks/build_stata_bjs_precision_bundle.py` builds a focused
 48-fit double-storage confirmation ZIP from the preserved original bundle.
-See [Stata validation](../docs/stata_validation.md) for transfer and review steps.
+See [Stata validation](../docs/validation.md) for transfer and review steps.
 
 ## Bounded preprocessing and a monitored memory ceiling
 
@@ -198,7 +202,7 @@ and first-use initialization belong to measured process RSS, while generation
 occurs in a separate process and is excluded from fit timing.
 
 `python benchmarks/resource_report.py` renders the retained measurements to
-`docs/resource_checks.md` and light/dark figures. The report records the numerical
+`docs/validation.md` and light/dark figures. The report records the numerical
 logit-stability fix found by the matrix. Larger designs, scheduler-enforced
 limits and EC2 remain separate release checks; no paid resources are launched.
 
@@ -211,7 +215,7 @@ source/configuration hashes, timeouts, an RSS watchdog and selected Linux
 address-space limits. The resource sweep retains two explained boundary failures
 and exits nonzero; see the report before interpreting this as a regression.
 `stress_report.py` rebuilds the compact JSON summary and complete resource CSV.
-See [the numerical stress review](../docs/numerical_stress.md) for findings,
+See [the numerical stress review](../docs/validation.md) for findings,
 reproduction commands, fixes, limits and the source of all 47 added tests.
 
 ## Castle Doctrine Sun–Abraham reanalysis
@@ -222,7 +226,7 @@ timing and sampling-weight sensitivities, and pre-trend tests. Add `--plot` for
 standalone light/dark SVGs and PDF/PNG exports; `--regenerate --rscript ...`
 refreshes references using installed fixest and the pinned source R data object.
 No network or package installation occurs during regeneration.
-See [the empirical worked example](../docs/castle_replication.md) for explicit
+See [the empirical worked example](../docs/validation.md) for explicit
 adoption-year/following-year treatment coding, sample provenance and limits.
 
 ## Stronger local memory checks
@@ -236,7 +240,7 @@ allowances and scratch cleanup. Boundary probes report clean headroom refusals
 separately from completed fits. No R installation or network is needed.
 
 `python benchmarks/memory_report.py` rebuilds
-[the report](../docs/memory_checks.md). Add `--only CASE...` to select cases,
+[the report](../docs/validation.md). Add `--only CASE...` to select cases,
 including their baseline first. Changed source/configuration hashes archive
 earlier results. Logs, measurements and initial failures live in
 `results/memory_checks`; generated inputs live in ignored `data/memory_checks`.
@@ -247,7 +251,7 @@ The runner requires a successful control/cap-detection test and a kernel OOM
 self-check, then records per-fit kernel events and peak charged memory.
 It never changes system-wide controller settings. The v1 route has now passed
 selected fits on this WSL host outside the sandbox after administrator delegation;
-see [the kernel report](../docs/kernel_memory_checks.md) and the reviewable
+see [the kernel report](../docs/validation.md) and the reviewable
 `setup_memory_cgroup.py` command. `STREAM_LIMITS_TEST_CGROUP_PARENT` enables the
 real-kernel integration test; ordinary tests skip it explicitly. V2 remains
 available for separate host validation. `kernel_memory_report.py` regenerates
@@ -270,7 +274,7 @@ cleanup, retains input manifests/source hashes, and archives changed runs.
 Use `--only CASE...` to select cases. Numerical/source passes and phase peaks
 live in `results/richer_resources`, and the numerical audit in
 `results/richer_validation`. Generated Parquet is under ignored `data/richer_resources`.
-See [the guide](../docs/richer_models.md) for the explicit weighting opt-in,
+See [the guide](../docs/validation.md) for the explicit weighting opt-in,
 256-column added-design limit and remaining unrestricted-FE backend scope.
 
 ### Shared-core/reader follow-up
@@ -281,7 +285,7 @@ AST-level equivalence review are in `ast_review.json`; before/after resource and
 numerical comparisons are in `resource_comparison.json`. Full fits, controller
 counters and successful-control/deliberate-OOM proof are in `kernel/`. These
 results supplement rather than overwrite the earlier kernel matrix. See
-`docs/shared_core_review.md` for the migration and dependency-release caveats.
+`docs/validation.md` for the migration and dependency-release caveats.
 
 ### Gardner two-stage DiD
 
@@ -298,7 +302,7 @@ through the shared launcher, using existing richer-model datasets. Its default
 is a portable process-tree RSS watchdog; `--cgroup-parent` explicitly selects a
 verified Linux hard cap. Outputs include source/data hashes, kernel counters,
 cleanup assertions and a tight-batch covariance-invariance comparison. See
-`docs/gardner.md` for the model and public-data example.
+`docs/validation.md` for the model and public-data example.
 
 ### Linear ETWFE
 
@@ -316,7 +320,7 @@ specifications, and tight-buffer invariance. The shared launcher's portable
 watchdog is the default; an explicit `--cgroup-parent` selects verified Linux
 kernel enforcement. Raw data/source hashes, kernel counters and cleanup checks
 are retained in `results/etwfe_resources`. Nonlinear implementations are linked
-from `docs/etwfe.md` and remain outside this implementation.
+from `docs/validation.md` and remain outside this implementation.
 
 ### Last-treated references and CS balance
 
@@ -325,7 +329,7 @@ specifications; `--regenerate` runs native R settings and a precision confirmati
 with only the in-process propensity stopping tolerance/iteration limit changed.
 Both output sets and their hashes are retained. The explicit clean last-treated
 window and anticipation-label conventions are described in
-`docs/reference_groups.md`. No installed R package file is modified.
+`docs/data.md`. No installed R package file is modified.
 
 `python benchmarks/reference_balance_resources.py` probes all-treated CS/SA
 samples with varying weights, including two opt-in balance cases. Like the other
@@ -333,5 +337,5 @@ new probes, it uses the shared launcher, a portable watchdog by default and
 verified Linux enforcement with `--cgroup-parent`. It reuses cached richer-model
 inputs. Its `source_generated_units` count includes units removed by the
 all-treated filter; actual estimation counts are reported separately.
-`docs/covariate_balance.md` explains before/after weights, fixed SMD scales,
+`docs/estimators/callaway_santanna.md` explains before/after weights, fixed SMD scales,
 observed-date strata and eCDF costs. Normal numerical tests remain in process.

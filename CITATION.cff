@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software in your research, please cite it as below."
+type: software
+title: "diff-stream"
+abstract: "Out-of-core difference-in-differences with staggered treatment timing: Callaway-Sant'Anna, Sun-Abraham, Borusyak-Jaravel-Spiess imputation, Gardner's two-stage estimator, Wooldridge's extended two-way fixed effects and stacked DiD, with the Goodman-Bacon decomposition and TWFE weights as diagnostics. Standard errors are clustered by unit and include the uncertainty in aggregation shares; fixed effects with many levels are absorbed with hdfe-stream. Results are tested against the authors' R and Stata packages."
+authors:
+  - family-names: Tucker
+    given-names: Lee
+    email: lee.c.tucker@census.gov
+license: MIT
+repository-code: "https://github.com/leetucker/diff-stream"
+url: "https://github.com/leetucker/diff-stream"
+keywords:
+  - econometrics
+  - difference-in-differences
+  - staggered adoption
+  - event study
+  - treatment effects
+  - two-way fixed effects
+  - out-of-core

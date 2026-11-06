@@ -14,16 +14,16 @@ sys.path.insert(0, str(ROOT))
 from stream_limits.launcher import run_limited  # noqa: E402
 from stream_limits.testing import verify_memory_limit  # noqa: E402
 
+from benchmarks._estimators import fit_estimator, public  # noqa: E402
 from benchmarks.gardner_resources import save  # noqa: E402
 
 
 def child(c):
     # Apply scheduler defaults before loading Polars in the child.
-    from diff_stream import diff_stream  # noqa: I001
 
     import polars as pl
 
-    fit = diff_stream(
+    fit = fit_estimator(
         "y~x+z" if c["estimator"] == "etwfe" else "y~x+z|region^time",
         pl.scan_parquet(c["path"], low_memory=True)
         .filter(pl.col("first_treat") != 0)
@@ -31,23 +31,25 @@ def child(c):
         panel=("id", "time"),
         cohort="first_treat",
         estimator=c["estimator"],
-        panel_mode="unbalanced",
-        control_group="notyettreated" if c["estimator"] == "etwfe" else "nevertreated",
-        reference_group="auto",
+        incomplete_units="keep",
+        control_group=public(
+            "control_group", "notyettreated" if c["estimator"] == "etwfe" else "nevertreated"
+        ),
+        last_treated_controls="if_needed",
         anticipation=1,
         weights="w",
         allow_time_varying_weights=True,
-        specification="static" if c["estimator"] == "gardner" else "dynamic",
-        pretrends=2 if c["estimator"] == "bjs" else 0,
-        ess_warn_threshold=None,
-        threads=2,
+        event_study=public("event_study", "static" if c["estimator"] == "gardner" else "dynamic"),
+        pretrend_leads=2 if c["estimator"] == "bjs" else 0,
+        effective_sample_warning=None,
+        n_threads=2,
         preprocess_mb=8,
         batch_units=256,
-        memory_gb=1.5,
+        max_memory_gb=1.5,
         workdir=c["workdir"],
     )
     try:
-        a = fit if c["estimator"] == "gardner" else fit.aggregate("simple")
+        a = fit if c["estimator"] == "gardner" else fit.aggregate("overall")
         result = dict(
             n_units=fit.n_units,
             n_obs=fit.n_obs,

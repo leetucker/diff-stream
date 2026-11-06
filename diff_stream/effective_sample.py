@@ -64,10 +64,10 @@ def finish_result(result, warn_threshold, suppress_threshold):
         message = (
             f"Low effective sample size: {int(bad.sum())} CS coefficients have a required "
             f"treated/control stratum below {warn_threshold:g} (minimum {minima.min():.3g}). "
-            "Inspect effective_sample_size(); suppress(min_effective_n=...) masks coefficients without changing aggregation weights."
+            "Inspect effective_sample_size(); suppress(min_effective_sample=...) masks coefficients without changing aggregation weights."
         )
         result.diagnostics["warnings"] = [*result.diagnostics.get("warnings", []), message]
         warnings.warn(message, LowEffectiveSampleWarning, stacklevel=3)
     if suppress_threshold is not None:
-        return result.suppress(min_effective_n=suppress_threshold)
+        return result.suppress(min_effective_sample=suppress_threshold)
     return result

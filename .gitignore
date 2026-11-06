@@ -19,6 +19,8 @@ benchmarks/data/
 benchmarks/work/
 benchmarks/results/work/
 benchmarks/external/.r/
+benchmarks/external/.pyfixest/
+benchmarks/external/.diff_diff/
 
 # run logs, captured output and per-run histories carry the paths and state of
 # the machine they ran on (Stata's logs included, as in the sibling packages)
@@ -50,3 +52,10 @@ NEXT.md
 DESIGN_NOTES.md
 SHARED_INFRASTRUCTURE.md
 TWFE_WEIGHTS_PLAN.md
+
+# superseded documentation pages, kept locally for reference
+notes/
+
+# third-party Stata command files that the .do scripts copy into returned
+# results; only their hashes and version headers are kept (command_sources.json)
+benchmarks/results/**/*.ado

@@ -8,6 +8,14 @@ import polars as pl
 from hdfe_stream.core.results_base import RegressionResult, _select_coefs
 
 from ._core.multiplier import multiplier_band
+from ._present import (
+    PUBLIC_ESTIMATORS,
+    internal,
+    label_frame,
+    label_name,
+    labels_of,
+    present_plan,
+)
 from .aggregation import period_type, plan
 from .bjs import BJSInference
 from .bjs_placebo import BJSPlaceboResult
@@ -27,9 +35,9 @@ class DIDResult(RegressionResult):
     cells: list
     counts: np.ndarray
     n_units: int
-    share_cross: np.ndarray | None = field(default=None, repr=False)
-    share_cov: np.ndarray | None = field(default=None, repr=False)
-    bjs_inference: BJSInference | None = field(default=None, repr=False)
+    _share_cross: np.ndarray | None = field(default=None, repr=False)
+    _share_cov: np.ndarray | None = field(default=None, repr=False)
+    _bjs_inference: BJSInference | None = field(default=None, repr=False)
     observed_counts: np.ndarray | None = field(default=None, repr=False)
     cohort_counts: np.ndarray | None = field(default=None, repr=False)
     _contributor_table: pl.DataFrame | None = field(default=None, repr=False)
@@ -41,6 +49,8 @@ class DIDResult(RegressionResult):
     _ess_table: pl.DataFrame | None = field(default=None, repr=False)
     _suppression_mask: np.ndarray | None = field(default=None, repr=False)
     _suppression_source: object = field(default=None, repr=False)
+    _internal: dict | None = field(default=None, repr=False)
+    _periods: object = field(default=None, repr=False)
     _normal_inference = True
 
     def covariate_balance(self, *, cohort=None, time=None):
@@ -53,8 +63,8 @@ class DIDResult(RegressionResult):
         diagnostics, not tests of parallel trends or a DR identification check.
         """
         if self._balance_table is None:
-            raise ValueError("fit CS with balance=True to save covariate balance diagnostics")
-        table = self._balance_table
+            raise ValueError("fit with covariate_balance=True to save covariate balance tables")
+        table = label_frame(self._balance_table, labels_of(self))
         if cohort is not None:
             table = table.filter(pl.col("cohort") == cohort)
         if time is not None:
@@ -80,7 +90,7 @@ class DIDResult(RegressionResult):
         values = dict(table.iter_rows())
         return np.array([values[name] for name in self.coefnames])
 
-    def suppress(self, min_effective_n=30):
+    def suppress(self, min_effective_sample=30):
         """Copy with low-support CS coefficients and covariance rows/columns as NaN.
 
         Uses the minimum Kish ESS among each coefficient's required component
@@ -91,7 +101,7 @@ class DIDResult(RegressionResult):
         """
         from .effective_sample import threshold
 
-        limit = threshold(min_effective_n, "min_effective_n", optional=False)
+        limit = threshold(min_effective_sample, "min_effective_sample", optional=False)
         return self._apply_suppression(self._minimum_ess() < limit, limit)
 
     def _apply_suppression(self, mask, limit):
@@ -178,11 +188,12 @@ class DIDResult(RegressionResult):
     def pretrend_test(self, *, level="auto", horizons=None):
         """Joint chi-squared Wald test of clean pre-treatment effects.
 
-        By default test group-time cells on an original CS/SA fit, or horizons
-        on a dynamic aggregate. level='dynamic' aggregates an original fit
-        first. Anticipation periods and omitted references are excluded.
+        By default test cohort-time cells on an original CS/SA fit, or horizons
+        on an event-time aggregate. level="event_time" aggregates an original
+        fit first. Anticipation periods and omitted references are excluded.
         Singular covariance raises. BJS tests its separate clean-lead fit,
-        requested at fit time with pretrends=L; only pooled dynamic tests apply.
+        requested at fit time with pretrend_leads=L; only pooled event-time
+        tests apply.
         The returned dictionary lists the exact coefficients, cells and horizons.
         """
         from .pretrend import pretrend_test
@@ -190,7 +201,7 @@ class DIDResult(RegressionResult):
         return pretrend_test(self, level=level, horizons=horizons)
 
     def placebos(self):
-        """Separate BJS clean-lead regression result, fitted with pretrends=L.
+        """Separate BJS clean-lead regression result, fitted with pretrend_leads=L.
 
         Available after cleanup and on treatment-effect aggregates. Lead
         coefficients are pooled WLS regression effects, not group-time ATTs.
@@ -199,7 +210,7 @@ class DIDResult(RegressionResult):
         if self.estimator != "bjs":
             raise ValueError("placebos() is available only for BJS")
         if self._bjs_placebos is None:
-            raise ValueError("fit BJS with pretrends=L to estimate clean placebo leads")
+            raise ValueError("fit did_bjs with pretrend_leads=L to estimate pre-trend leads")
         return self._bjs_placebos
 
     def multiplier_draws(self, *, keep=None, drop=None, exact_match=False):
@@ -209,7 +220,9 @@ class DIDResult(RegressionResult):
         aggregation and the selected CRV0/CRV1 scaling; no data are reread.
         """
         if self._multiplier_draws is None:
-            raise ValueError("fit CS with bootstrap_reps>=2 to retain unit multiplier draws")
+            raise ValueError(
+                "fit with multiplier_bootstrap_reps >= 2 to keep multiplier bootstrap draws"
+            )
         ix = _select_coefs(self.coefnames, keep, drop, exact_match)
         factor = np.sqrt(self.n_units / (self.n_units - 1)) if self.vcov_type == "CRV1" else 1.0
         return self._multiplier_draws[:, ix] * factor
@@ -264,8 +277,8 @@ class DIDResult(RegressionResult):
         Further BJS aggregation requires refitting. Shallow copies made by
         with_vcov share ownership of these files.
         """
-        if self.bjs_inference is not None and hasattr(self.bjs_inference, "cleanup"):
-            self.bjs_inference.cleanup()
+        if self._bjs_inference is not None and hasattr(self._bjs_inference, "cleanup"):
+            self._bjs_inference.cleanup()
 
     def with_vcov(self, vcov):
         """Copy using CRV0 or CRV1 (the latter applies N/(N-1) only)."""
@@ -277,101 +290,115 @@ class DIDResult(RegressionResult):
         out.vcov = self.vcov * ratio
         out.vcov_type = vcov
         out.all_vcovs = {vcov: (out.vcov, out.df_t)}
-        if self.share_cross is not None:
-            out.share_cross = self.share_cross * ratio
-            out.share_cov = self.share_cov * ratio
+        if self._share_cross is not None:
+            out._share_cross = self._share_cross * ratio
+            out._share_cov = self._share_cov * ratio
         if self._bjs_placebos is not None:
             out._bjs_placebos = self._bjs_placebos.with_vcov(vcov)
         return out
 
-    def group_time(self):
+    def cohort_time(self):
         """Coefficient table with cohort/time and weighting/observed/cohort counts."""
         if not self.cells:
-            raise ValueError("group_time is available on unaggregated results")
+            raise ValueError("cohort_time is available on unaggregated results")
         units = self.cohort_counts if self.estimator == "cs" else self.observed_counts
         units = self.counts if units is None else units
-        return self.tidy().with_columns(
-            *(
-                [
-                    pl.Series("min_effective_n", self._minimum_ess()),
-                    pl.Series(
-                        "suppressed",
-                        self._suppression_mask
-                        if self._suppression_mask is not None
-                        else np.zeros(len(self.beta), dtype=bool),
-                    ),
-                ]
-                if self._ess_table is not None
-                else []
-            ),
-            pl.Series("cohort", [c[0] for c in self.cells]),
-            pl.Series("time", [c[1] for c in self.cells]),
-            pl.Series("event_time", [c[1] - c[0] for c in self.cells]),
-            pl.Series(
-                "period_type",
-                [
-                    period_type(t - g, self.diagnostics.get("anticipation", 0))
-                    for g, t in self.cells
-                ],
-            ),
-            pl.Series("n_units", units.astype(int)),
-            pl.Series("weight_units", units.astype(int)),
-            pl.Series("weight_total", self.counts * self.diagnostics.get("weight_scale", 1.0)),
-            pl.Series(
-                "observed_units",
-                self.observed_counts.astype(int)
-                if self.observed_counts is not None
-                else [None] * len(self.cells),
-                dtype=pl.Int64,
-            ),
-            pl.Series(
-                "cohort_units",
-                self.cohort_counts.astype(int)
-                if self.cohort_counts is not None
-                else [None] * len(self.cells),
-                dtype=pl.Int64,
-            ),
+        return (
+            self.tidy()
+            .with_columns(
+                *(
+                    [
+                        pl.Series("min_effective_sample", self._minimum_ess()),
+                        pl.Series(
+                            "suppressed",
+                            self._suppression_mask
+                            if self._suppression_mask is not None
+                            else np.zeros(len(self.beta), dtype=bool),
+                        ),
+                    ]
+                    if self._ess_table is not None
+                    else []
+                ),
+                pl.Series("cohort", [c[0] for c in self.cells]),
+                pl.Series("time", [c[1] for c in self.cells]),
+                pl.Series("event_time", [c[1] - c[0] for c in self.cells]),
+                pl.Series(
+                    "period_type",
+                    [
+                        period_type(t - g, self.diagnostics.get("anticipation", 0))
+                        for g, t in self.cells
+                    ],
+                ),
+                pl.Series("n_units", units.astype(int)),
+                pl.Series("weight_units", units.astype(int)),
+                pl.Series("weight_total", self.counts * self.diagnostics.get("weight_scale", 1.0)),
+                pl.Series(
+                    "observed_units",
+                    self.observed_counts.astype(int)
+                    if self.observed_counts is not None
+                    else [None] * len(self.cells),
+                    dtype=pl.Int64,
+                ),
+                pl.Series(
+                    "cohort_units",
+                    self.cohort_counts.astype(int)
+                    if self.cohort_counts is not None
+                    else [None] * len(self.cells),
+                    dtype=pl.Int64,
+                ),
+            )
+            .pipe(label_frame, labels_of(self))
         )
 
-    def contributions(self, kind=None, *, horizons=None, balance_e=None, balance_window=None):
+    def contributions(
+        self, kind=None, *, horizons=None, balanced_horizon=None, balance_window=None
+    ):
         """Cell weights, estimates and sample counts for each aggregate.
 
         On an original result, arguments match aggregate(). On an aggregate,
         call without arguments to inspect its saved contributors. Inspection
         does not reread BJS aggregation files and works after cleanup().
         """
-        return self._composition_view(False, kind, horizons, balance_e, balance_window)
+        return self._composition_view(False, kind, horizons, balanced_horizon, balance_window)
 
-    def composition(self, kind=None, *, horizons=None, balance_e=None, balance_window=None):
+    def composition(self, kind=None, *, horizons=None, balanced_horizon=None, balance_window=None):
         """Cohort membership, cohort weights and sample totals per aggregate.
 
         observed_unit_periods sums target-cell observations; it is not a count
         of unique units across dates, nor a treated/control comparison sample.
         """
-        return self._composition_view(True, kind, horizons, balance_e, balance_window)
+        return self._composition_view(True, kind, horizons, balanced_horizon, balance_window)
 
-    def _composition_view(self, summary, kind, horizons, balance_e, balance_window):
+    def _composition_view(self, summary, kind, horizons, balanced_horizon, balance_window):
         if self.cells:
-            p = plan(self, "dynamic" if kind is None else kind, horizons, balance_e, balance_window)
-            return p.composition if summary else p.contributors
-        if any(x is not None for x in (kind, horizons, balance_e, balance_window)):
+            p = plan(
+                self,
+                "event_time" if kind is None else kind,
+                horizons,
+                balanced_horizon,
+                balance_window,
+            )
+            return label_frame(p.composition if summary else p.contributors, labels_of(self))
+        if any(x is not None for x in (kind, horizons, balanced_horizon, balance_window)):
             raise ValueError("inspect an aggregated result without aggregation arguments")
         table = self._composition_table if summary else self._contributor_table
         if table is None:
             raise ValueError("no aggregation contributors are available")
-        return table.clone()
+        return label_frame(table, labels_of(self))
 
-    def aggregate(self, kind="dynamic", *, horizons=None, balance_e=None, balance_window=None):
-        """Aggregate by event time, post-treatment cohort, calendar time or ATT.
+    def aggregate(
+        self, kind="event_time", *, horizons=None, balanced_horizon=None, balance_window=None
+    ):
+        """Aggregate by event time, post-treatment cohort, calendar time or overall ATT.
 
-        kind is dynamic (default), cohort (alias group), calendar, or simple.
-        horizons selects event times for every kind; non-dynamic kinds use only
-        post-treatment cells. CS weights by retained cohort mass; SA/BJS by
+        kind is "event_time" (default, an event study), "cohort", "calendar" or
+        "overall" (one post-treatment ATT). horizons selects event times for
+        every kind; kinds other than "event_time" use only post-treatment cells. CS weights by retained cohort mass; SA/BJS by
         observed cell mass (unit counts without sampling weights).
         CS propagates estimated-share uncertainty, and BJS
         recomputes contrast-specific smart residual/leave-out inference.
 
-        Dynamic balance_e=E requires supported events 0..E and retains R did's
+        Event-time balanced_horizon=E requires supported events 0..E and retains R did's
         event-time range [E-(Tmax-Tmin), E]. balance_window=(lo,hi) requires every
         estimated event in that window in each retained cohort; omitted reference
         events -(anticipation+1) are exempt. These restrictions balance cohorts, not the
@@ -381,36 +408,41 @@ class DIDResult(RegressionResult):
             source = self._suppression_source
             if source.vcov_type != self.vcov_type:
                 source = source.with_vcov(self.vcov_type)
-            p = plan(source, kind, horizons, balance_e, balance_window)
+            p = plan(source, kind, horizons, balanced_horizon, balance_window)
             out = source.aggregate(
-                kind, horizons=horizons, balance_e=balance_e, balance_window=balance_window
+                kind,
+                horizons=horizons,
+                balanced_horizon=balanced_horizon,
+                balance_window=balance_window,
             )
             mask = np.any((p.weights != 0) & self._suppression_mask[None, :], axis=1)
             return out._apply_suppression(mask, self.diagnostics["suppression_threshold"])
-        p = plan(self, kind, horizons, balance_e, balance_window)
+        p = plan(self, kind, horizons, balanced_horizon, balance_window)
         A = p.weights
         B = np.zeros_like(A)
         for j in range(len(p.names)):
             ix = A[j] != 0
             B[j, ix] = (self.beta[ix] - A[j] @ self.beta) / self.counts[ix].sum()
-        if self.bjs_inference is not None:
-            V = self.bjs_inference.covariance(A)
+        if self._bjs_inference is not None:
+            V = self._bjs_inference.covariance(A)
             if self.vcov_type == "CRV1":
                 V *= self.n_units / (self.n_units - 1)
         else:
             V = A @ self.vcov @ A.T
-        if self.share_cross is not None:
-            cross = A @ self.share_cross @ B.T
-            V += cross + cross.T + B @ self.share_cov @ B.T
+        if self._share_cross is not None:
+            cross = A @ self._share_cross @ B.T
+            V += cross + cross.T + B @ self._share_cov @ B.T
         draws = None
         if self._multiplier_draws is not None:
             draws = self._multiplier_draws @ A.T
             if self._multiplier_shares is not None:
                 draws += self._multiplier_shares @ B.T
+        labels = labels_of(self)
+        public_plan = present_plan(p.diagnostics, labels)
         return DIDResult(
             fml=self.fml,
             depvar=self.depvar,
-            coefnames=p.names,
+            coefnames=[label_name(n, labels) for n in p.names] if labels.step != 1 else p.names,
             beta=A @ self.beta,
             vcov=V,
             vcov_type=self.vcov_type,
@@ -444,17 +476,19 @@ class DIDResult(RegressionResult):
                 if self._ess_table is not None
                 else None
             ),
+            _internal={**internal(self), **p.diagnostics},
+            _periods=self._periods,
             diagnostics={
                 **self.diagnostics,
-                **p.diagnostics,
+                **public_plan,
                 "warnings": list(self.diagnostics.get("warnings", []))
                 + (
                     [
                         "Cohort contributors change across event times; inspect composition() or select a balanced window."
                     ]
-                    if p.kind == "dynamic" and p.diagnostics["cohort_composition_changes"]
+                    if p.kind == "event_time" and p.diagnostics["cohort_composition_changes"]
                     else ["Cohort weights vary across event times; inspect composition()."]
-                    if p.kind == "dynamic" and p.diagnostics["cohort_weights_change"]
+                    if p.kind == "event_time" and p.diagnostics["cohort_weights_change"]
                     else []
                 ),
             },
@@ -465,14 +499,15 @@ class DIDResult(RegressionResult):
     def _summary_fields(self):
         return {
             **super()._summary_fields(),
-            "estimator": self.estimator,
+            "estimator": PUBLIC_ESTIMATORS.get(self.estimator, self.estimator),
             "n_units": self.n_units,
             "diagnostics": self.diagnostics,
         }
 
     def _summary_lines(self):
         return [
-            f"estimator: {self.estimator}; units: {self.n_units:,}",
+            f"estimator: {PUBLIC_ESTIMATORS.get(self.estimator, self.estimator)}; "
+            f"units: {self.n_units:,}",
             *super()._summary_lines(),
             self.diagnostics.get("inference", ""),
             *(

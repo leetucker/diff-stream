@@ -1,0 +1,27 @@
+{
+  "note": "Hashes and version headers of the Stata command files the returned run used. The files themselves are third-party code and are not kept in this repository.",
+  "files": {
+    "did_imputation.ado": {
+      "sha256": "107d923b53375b88fc88044f7e56fd4853a76e2e3901abcc7277e16138a944e7",
+      "header": [
+        "did_imputation: Treatment effect estimation and pre-trend testing in staggered adoption diff-in-diff designs with an imputation approach of Borusyak, Jaravel, and Spiess (2023)",
+        "Version: November 22, 2023",
+        "Author: Kirill Borusyak",
+        "Recent updates: project() option can no longer be combined with autosample, which could lead to errors",
+        "Citation: Borusyak, Jaravel, and Spiess, \"Revisiting Event Study Designs: Robust and Efficient Estimation\" (2023)"
+      ]
+    },
+    "ftools.ado": {
+      "sha256": "459666a26fdcc67b798b0a38eab3dcefa6714c4e679745f99eca945f41b3cd88",
+      "header": [
+        "version 2.50.0 09jan2026"
+      ]
+    },
+    "reghdfe.ado": {
+      "sha256": "f9462bb7364055b138b223a495d4b0fd4b3c5e3bedc1fc886b75bf1546f9d66a",
+      "header": [
+        "version 6.13.1 10Jan2026"
+      ]
+    }
+  }
+}
