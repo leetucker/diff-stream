@@ -42,7 +42,7 @@ def provenance(write=False):
         REF / "versions.txt",
     ]
     value = dict(
-        files={str(p.relative_to(ROOT)): digest(p) for p in files},
+        files={p.relative_to(ROOT).as_posix(): digest(p) for p in files},
         network_required=False,
         stata_executed=False,
     )

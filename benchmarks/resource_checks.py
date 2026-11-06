@@ -8,7 +8,6 @@ unit blocks. This is a local watchdog, not an OS/cgroup hard memory limit.
 
 import argparse
 import csv
-import fcntl
 import hashlib
 import importlib.metadata
 import json
@@ -23,6 +22,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import psutil
+
+try:
+    import fcntl
+except ImportError:  # Windows: no lock between drivers
+    fcntl = None
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "benchmarks/results/resource_checks"
@@ -674,7 +678,8 @@ def main():
     DATA.mkdir(parents=True, exist_ok=True)
     lock_file = (a.results / ".driver.lock").open("w")
     try:
-        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if fcntl is not None:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         p.error("another resource-check driver is using this results directory")
     save(a.results / f"environment_{a.suite}.json", environment())

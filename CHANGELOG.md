@@ -43,3 +43,8 @@ The first release.
   otherwise, with batch sizes that adapt to the memory left; `profile=True`.
 - Validated against R did/DRDID, fixest, didimputation, did2s, etwfe/emfx,
   bacondecomp and TwoWayFEWeights, and the authors' Stata `did_imputation`.
+
+Known limitation: on macOS, the propensity logit of IPW and doubly robust
+Callaway-Sant'Anna can fail to converge when two covariates are almost
+identical (a condition number near 1e10); it converges on Linux and Windows.
+The test for that design is marked as an expected failure on macOS.
