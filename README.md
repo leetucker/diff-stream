@@ -1,11 +1,11 @@
 # diff-stream
 
-Difference-in-differences with staggered treatment timing, on panels larger
-than memory. Six estimators share one interface: Callaway and Sant'Anna,
-Sun and Abraham, Borusyak, Jaravel and Spiess imputation, Gardner's two-stage
-DiD, Wooldridge's extended two-way fixed effects, and stacked DiD. Two diagnostics show what
-a conventional two-way fixed effects estimate averages. Results are tested
-against the authors' R and Stata packages.
+Difference-in-differences with staggered treatment timing, on panels larger than
+memory. Inlcudes Callaway and Sant'Anna, Sun and Abraham, Borusyak, Jaravel and
+Spiess imputation, Gardner's two-stage DiD, Wooldridge's extended two-way fixed
+effects, and stacked DiD. Two diagnostics show what a conventional two-way fixed
+effects estimate averages. Results are tested against the authors' R and Stata
+packages.
 
 It reads Parquet in a stream, sorts the panel once (in memory when it fits,
 in whole-unit pieces on disk when it does not), and computes standard errors
