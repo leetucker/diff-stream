@@ -1,0 +1,1446 @@
+{
+  "cases": 78,
+  "passed": true,
+  "rows": [
+    {
+      "name": "absorbing_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.323716107011306,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.724964383655376,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 7.238712096271636,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.07770472205618684
+    },
+    {
+      "name": "absorbing_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.190608750845269,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.3687096977320925,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 5.893893933630147,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.0970082938388625
+    },
+    {
+      "name": "absorbing_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.245325974821857,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.387021668455941,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 6.154647316330872,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.09220912052086547
+    },
+    {
+      "name": "absorbing_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.3086741054516327,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.65281060277091,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 7.05428520059312,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.08187979372598755
+    },
+    {
+      "name": "absorbing_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.181110709936025,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.308459221981729,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 5.679558129689379,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.10205182949669965
+    },
+    {
+      "name": "absorbing_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.230749914057354,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.33125406436951,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 5.95188265493094,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.10349072353733572
+    },
+    {
+      "name": "always_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.0506041277120324,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 1.9951901786766109,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 4.418519245648256,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.12052730696798547
+    },
+    {
+      "name": "always_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 1.847871536387353,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 1.6308665429269986,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 3.4178017587895955,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.15065913370998116
+    },
+    {
+      "name": "always_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 1.971788729006422,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 1.8091419087872271,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 3.9688288309583424,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.1284973767445696
+    },
+    {
+      "name": "always_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.030918115631433,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 1.9462926059998216,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 4.292266997941093,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.12597916008548754
+    },
+    {
+      "name": "always_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 1.8328927660166325,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 1.5942480948312923,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 3.3109592721334082,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.1552451991143407
+    },
+    {
+      "name": "always_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 1.9538546654355755,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 1.7694481020102957,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 3.849927983312491,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.140988912910246
+    },
+    {
+      "name": "reversals_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": -0.010954677173088028,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.11892514547990876,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "reversals_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": -0.06860434962555612,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.9092072528491427,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "reversals_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": -0.03263528695603358,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.3103729718675988,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "reversals_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.0034749926041092046,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.030227309011996925,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "reversals_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": -0.05160939585010391,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.5113583803622583,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "reversals_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": -0.01218875841617297,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.08807621778912847,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "unbalanced_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.3608935678448963,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.7819474633075405,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 7.679277012790235,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.07594226551741766
+    },
+    {
+      "name": "unbalanced_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.257324021318371,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.4821644285511537,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 6.455607446839918,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.0926629723430361
+    },
+    {
+      "name": "unbalanced_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.286046697662664,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.4344428424439895,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 6.4925214961785205,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.0930414038304636
+    },
+    {
+      "name": "unbalanced_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.342499432697623,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.6797041147474694,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 7.305146423418863,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.0848614231564995
+    },
+    {
+      "name": "unbalanced_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.247119797708878,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.3936633924161743,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 6.049919472431091,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.10355400288975676
+    },
+    {
+      "name": "unbalanced_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.2675691810442955,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.3534218499166797,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 6.127660519775406,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.1090883342972025
+    },
+    {
+      "name": "complete_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.4383548545258464,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 3.0250097439419377,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 8.87711740791275,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.055437100213219945
+    },
+    {
+      "name": "complete_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.4533102426907907,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 3.062632796780804,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 9.198389825705037,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.053032291940141585
+    },
+    {
+      "name": "complete_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.37561850087377,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.647948509058613,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 7.43629864587217,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.0809719527080589
+    },
+    {
+      "name": "complete_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.408327900778018,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.868197789761207,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 8.175600103080322,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.06608298748642386
+    },
+    {
+      "name": "complete_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.41801023185613,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.8523117394928463,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 8.301842677040018,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.06525229619109128
+    },
+    {
+      "name": "complete_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.3420151675367635,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.5153399818030096,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 6.822239812530882,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.09131498228811974
+    },
+    {
+      "name": "gaps_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.323716107011306,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.724964383655376,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 7.238712096271636,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.07770472205618684
+    },
+    {
+      "name": "gaps_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.190608750845269,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.3687096977320925,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 5.893893933630147,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.0970082938388625
+    },
+    {
+      "name": "gaps_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.245325974821857,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.387021668455941,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 6.154647316330872,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.09220912052086547
+    },
+    {
+      "name": "gaps_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.3086741054516327,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.65281060277091,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 7.05428520059312,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.08187979372598755
+    },
+    {
+      "name": "gaps_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.181110709936025,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.308459221981729,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 5.679558129689379,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.10205182949669965
+    },
+    {
+      "name": "gaps_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.230749914057354,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.33125406436951,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 5.95188265493094,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.10349072353733572
+    },
+    {
+      "name": "no_never_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 1.0679684615910892,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.647672823121746,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 1.1259334952624567,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.35714285714286087
+    },
+    {
+      "name": "no_never_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.9432245968679414,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.5670499275053169,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 0.9733144791725491,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.3606557377049165
+    },
+    {
+      "name": "no_never_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.942853866454462,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.5372127420356503,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 0.9100855619881575,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.40598897115984417
+    },
+    {
+      "name": "no_never_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 1.0467428520864828,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.6279108364236632,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 1.084505404003507,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.3627680243000796
+    },
+    {
+      "name": "no_never_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.9238955029934676,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.5493371002024793,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 0.9343833047087047,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.36788106779160645
+    },
+    {
+      "name": "no_never_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.9198803493445559,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.5181762433247155,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 0.8725623378882166,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.41203472873263397
+    },
+    {
+      "name": "disconnected_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 1.001121672601064,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.4130094415953772,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 0.5284308729100243,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.6835443037974682
+    },
+    {
+      "name": "disconnected_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 1.0546409529517895,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.4521795435660548,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 0.5806328668651711,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.6452576549663926
+    },
+    {
+      "name": "disconnected_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.9812756144285567,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.3909431004577871,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 0.5035606405196917,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.7406378879371998
+    },
+    {
+      "name": "disconnected_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.9834470275311892,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.4029667655610961,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 0.5161627728592044,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.6868960781820281
+    },
+    {
+      "name": "disconnected_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 1.035838362206364,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.4403149502339324,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 0.5661244540325405,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.6493532036080977
+    },
+    {
+      "name": "disconnected_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.9644074097774686,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.381437922788571,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 0.49202118905846476,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.744143868913477
+    },
+    {
+      "name": "singleton_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.3237161070113035,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.6756519830996495,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 7.186496419320087,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.07770472205618685
+    },
+    {
+      "name": "singleton_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.190608750845269,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.3501712230843794,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 5.874044674213999,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.09700829383886249
+    },
+    {
+      "name": "singleton_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.2453259748218564,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.3658688758830473,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 6.131157542233918,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.09220912052086545
+    },
+    {
+      "name": "singleton_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.30867410545163,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.6058970634778373,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 7.004422021862076,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.0818797937259876
+    },
+    {
+      "name": "singleton_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.181110709936026,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.2908051854940483,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 5.660879934864079,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.10205182949669962
+    },
+    {
+      "name": "singleton_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 2.2307499140573563,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 2.3109674288778406,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 5.929570060748467,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.10349072353733563
+    },
+    {
+      "name": "cycle_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.009448187748054905,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": null,
+          "status": "infinite_constant_multiplier"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "cycle_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.009448187748054797,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.018896375496109594,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "cycle_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.009448187748054757,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.05391846500853259,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "cycle_1_equal",
+      "status": "unidentified",
+      "native_status": "ok"
+    },
+    {
+      "name": "cycle_1_unit",
+      "status": "unidentified",
+      "native_status": "ok"
+    },
+    {
+      "name": "cycle_1_changing",
+      "status": "unidentified",
+      "native_status": "ok"
+    },
+    {
+      "name": "constant_multiplier_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": -0.10272797513792746,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": null,
+          "status": "infinite_constant_multiplier"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "constant_multiplier_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.12419460392813869,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": null,
+          "status": "infinite_constant_multiplier"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "constant_multiplier_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": -0.12608611401098774,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": null,
+          "status": "infinite_constant_multiplier"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "constant_multiplier_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": -0.10777921727570366,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 3.448245652418834,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "constant_multiplier_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.09826665391777684,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 1.4177765770927555,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "constant_multiplier_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": -0.1286582390948986,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 3.9879445279656056,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "infeasible_no_negative_weights"
+        }
+      ],
+      "negative_mass": -0.0
+    },
+    {
+      "name": "zero_outcome_0_equal",
+      "status": "ok",
+      "native_status": "error",
+      "beta": 0.0,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.0,
+          "status": "zero_coefficient"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "undefined_zero_coefficient"
+        }
+      ],
+      "negative_mass": 0.07770472205618684
+    },
+    {
+      "name": "zero_outcome_0_unit",
+      "status": "ok",
+      "native_status": "error",
+      "beta": 0.0,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.0,
+          "status": "zero_coefficient"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "undefined_zero_coefficient"
+        }
+      ],
+      "negative_mass": 0.0970082938388625
+    },
+    {
+      "name": "zero_outcome_0_changing",
+      "status": "ok",
+      "native_status": "error",
+      "beta": 0.0,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.0,
+          "status": "zero_coefficient"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "undefined_zero_coefficient"
+        }
+      ],
+      "negative_mass": 0.09220912052086547
+    },
+    {
+      "name": "zero_outcome_1_equal",
+      "status": "ok",
+      "native_status": "error",
+      "beta": 0.0,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.0,
+          "status": "zero_coefficient"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "undefined_zero_coefficient"
+        }
+      ],
+      "negative_mass": 0.08187979372598755
+    },
+    {
+      "name": "zero_outcome_1_unit",
+      "status": "ok",
+      "native_status": "error",
+      "beta": 0.0,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.0,
+          "status": "zero_coefficient"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "undefined_zero_coefficient"
+        }
+      ],
+      "negative_mass": 0.10205182949669965
+    },
+    {
+      "name": "zero_outcome_1_changing",
+      "status": "ok",
+      "native_status": "error",
+      "beta": 0.0,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.0,
+          "status": "zero_coefficient"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": null,
+          "status": "undefined_zero_coefficient"
+        }
+      ],
+      "negative_mass": 0.10349072353733572
+    },
+    {
+      "name": "wagepan_0_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.10662746555843501,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.09686909502991967,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 3.175858897581757,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.010528987131443778
+    },
+    {
+      "name": "wagepan_0_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.10984707647449633,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.09958722880147686,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 3.4637179458754708,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.009693886088587844
+    },
+    {
+      "name": "wagepan_0_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.12454175256508644,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.10844633920592492,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 3.2467857819123016,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.011900224163752865
+    },
+    {
+      "name": "wagepan_1_equal",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.09495658188259064,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.08601220965580472,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 2.4334826648396457,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.012221585115627317
+    },
+    {
+      "name": "wagepan_1_unit",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.1014845970179421,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.09181794255237972,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 2.849653408848327,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.011041425549615971
+    },
+    {
+      "name": "wagepan_1_changing",
+      "status": "ok",
+      "native_status": "ok",
+      "beta": 0.1101469307337354,
+      "sensitivity": [
+        {
+          "measure": "zero_average_sd",
+          "value": 0.09568880382685578,
+          "status": "finite"
+        },
+        {
+          "measure": "all_opposite_sign_sd",
+          "value": 2.4212408147441105,
+          "status": "finite"
+        }
+      ],
+      "negative_mass": 0.014363101167089738
+    }
+  ]
+}

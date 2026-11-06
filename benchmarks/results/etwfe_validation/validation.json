@@ -1,0 +1,40 @@
+{
+  "reference_configurations": 60,
+  "full_suite": {
+    "passed": 1291,
+    "skipped": 1,
+    "execution": "Existing suite and ETWFE suite run separately"
+  },
+  "etwfe_suite": {
+    "passed": 145
+  },
+  "polars_1_37_etwfe_suite": {
+    "passed": 145
+  },
+  "kernel_resource_fixture": {
+    "passed": 1
+  },
+  "resource_probes": {
+    "passed": 6,
+    "kernel_oom_kills_in_fits": 0
+  },
+  "reference_maxima": {
+    "beta_max_abs": 1.1091683127517626e-12,
+    "vcov_max_abs": 1.641603519786372e-12,
+    "dynamic_beta_max_abs": 8.666956041736285e-13,
+    "dynamic_vcov_max_abs": 1.641603519786372e-12,
+    "simple_beta_max_abs": 1.5576429035490946e-13,
+    "simple_vcov_max_abs": 1.848798891757042e-13,
+    "cohort_beta_max_abs": 1.8784973576657649e-13,
+    "cohort_vcov_max_abs": 1.085284639934514e-12,
+    "calendar_beta_max_abs": 2.3359092438113294e-13,
+    "calendar_vcov_max_abs": 4.833911049217932e-13
+  },
+  "checks": [
+    "Ruff lint/format",
+    "Sphinx warnings-as-errors",
+    "sdist and wheel",
+    "mpdta example executed"
+  ],
+  "local_platform": "Linux/WSL; portable resource CI configured for Linux/macOS/Windows"
+}

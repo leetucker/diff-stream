@@ -1,0 +1,117 @@
+{
+  "status": "passed",
+  "source": "bacondecomp documented math_reform example; aggregated Goodman (2019) data",
+  "sample": {
+    "units": 26,
+    "rows": 520,
+    "first_class": 1975,
+    "last_class": 1994,
+    "cohort_sizes": [
+      {
+        "cohort": 0,
+        "n_units": 11
+      },
+      {
+        "cohort": 1984,
+        "n_units": 1
+      },
+      {
+        "cohort": 1985,
+        "n_units": 4
+      },
+      {
+        "cohort": 1986,
+        "n_units": 1
+      },
+      {
+        "cohort": 1987,
+        "n_units": 9
+      }
+    ],
+    "excluded_units": 0,
+    "excluded_rows": 0,
+    "missing_adoption_rows": 220
+  },
+  "specification": {
+    "outcome": "incearn_ln",
+    "treatment": "reform_math",
+    "unit": "state",
+    "time": "class",
+    "covariates": null,
+    "sampling_weights": null,
+    "normalization": "missing reformyr_math maps to first_treat=0; original columns unchanged"
+  },
+  "twfe_estimate": 0.002459972919957044,
+  "decomposed_estimate": 0.0024599729199570606,
+  "reconstruction_error": 1.6479873021779667e-17,
+  "n_comparisons": 16,
+  "type_summary": [
+    {
+      "comparison_type": "treated_vs_never",
+      "n_comparisons": 4,
+      "weight": 0.8838206199164651,
+      "estimate": -0.001288486526258415,
+      "contribution": -0.0011387909603917251
+    },
+    {
+      "comparison_type": "earlier_vs_later",
+      "n_comparisons": 6,
+      "weight": 0.06353044625192351,
+      "estimate": 0.028675931547749927,
+      "contribution": 0.0018217947279181646
+    },
+    {
+      "comparison_type": "later_vs_earlier",
+      "n_comparisons": 6,
+      "weight": 0.05264893383161135,
+      "estimate": 0.03375128465305593,
+      "contribution": 0.001776969152430621
+    }
+  ],
+  "max_abs_difference": {
+    "comparison_estimates": 1.7208456881689926e-15,
+    "comparison_weights": 5.551115123125783e-16,
+    "comparison_contributions": 3.445594504158933e-16,
+    "pair_R_dense_OLS": 6.8209327075408055e-15,
+    "weight_sum": 2.220446049250313e-16,
+    "reconstruction": 1.6479873021779667e-17,
+    "full_R_dense_OLS": 3.7426658994199613e-16,
+    "full_Python_dense_OLS": 9.20877957222288e-15,
+    "pair_Python_dense_OLS": 2.008115895790752e-14,
+    "summary_weight": 1.1102230246251565e-16,
+    "summary_estimate": 8.743006318923108e-16,
+    "summary_contribution": 3.2504381131115423e-16,
+    "summary_n_comparisons": 0.0,
+    "documented_weight": 0.0,
+    "documented_estimate": 0.0,
+    "already_treated_control_weight": 0.0
+  },
+  "reference_versions": [
+    "R 4.5.3",
+    "bacondecomp 0.1.3",
+    "fixest 0.14.2",
+    "bacondecomp package license MIT + file LICENSE",
+    "Source: https://github.com/evanjflack/bacondecomp#example ; data/math_reform.rda from installed package.",
+    "Public aggregated data from Goodman (2019, Journal of Labor Economics), compulsory high-school mathematics coursework and subsequent income.",
+    "Exact documented unweighted formula incearn_ln ~ reform_math; state/class panel; 26 states x 20 graduating classes, 1975-1994.",
+    "Raw source columns and never-treated missing adoption-year values retained in snapshot. Analysis maps only missing reformyr_math to cohort 0.",
+    "No sample exclusions, covariates, sampling weights or Stata execution.",
+    "Actual bacondecomp comparison output, actual rounded bacon_summary output, and independent full-unit/time-dummy OLS on the full and every restricted pair sample.",
+    "This is the documented aggregated-data worked example, not every specification or microdata table in the underlying paper."
+  ],
+  "files": {
+    "tests/data/math_reform.csv": "a03bfff5d1d2975207fe2e2d0ed999283c9d3f2391db26f30a39f332051da06b",
+    "benchmarks/external/math_reform_reference.R": "85368fc0f0646df7eec0880a689851de3909ff846fd5ce8e9c3eef3a4a5528c9",
+    "benchmarks/math_reform_replication.py": "e78685dc38daaf29076ae963085a5321abb2c9f2075d47d7061688152d29671b",
+    "tests/data/math_reform_reference/cohorts.csv.gz": "d7ba397f896b20261e13ad6622b419a6f9e1937f13a5f440190396fef1975f69",
+    "tests/data/math_reform_reference/comparisons.csv.gz": "2e075a5a812fd6f9089a8a7d1352988db2fe47b4438b2c519c3c3f8b51a4ad8a",
+    "tests/data/math_reform_reference/documented_summary.csv.gz": "24cfc14b39c3f8862e0b001a8eb8dee822c98f35eaf3227fb002f0e3e257dabc",
+    "tests/data/math_reform_reference/twfe.csv.gz": "66181d8edbf0bffc62b264060228a1dc762603785c34e78f1d451d880b4e57a0",
+    "tests/data/math_reform_reference/type_summary.csv.gz": "1580d7189ec5848eb4b254497c3f7b11815f9e3d4f1aec501ffd4edc405d20c7",
+    "tests/data/math_reform_reference/versions.txt": "ca9553a73c7ffb9988391d68ec535969b5634d9da2c3f2267733c85b5498de73"
+  },
+  "python_version": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "numpy_version": "2.5.4",
+  "polars_version": "2.1.0",
+  "stata_executed": false
+}

@@ -1,0 +1,461 @@
+{
+  "name": "balanced_overlap_very_weak_ipw",
+  "scenario": "overlap_very_weak",
+  "method": "ipw",
+  "panel_mode": "balanced",
+  "outcome_scale": 1.0,
+  "expected_refusal": false,
+  "canonical_input_sha256": "a9465d6d39dede341b6916b1244a32be5ac46c8cc2061dbb84b23218de3e85b7",
+  "status": "ok",
+  "fit": {
+    "cells": [
+      [
+        3,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        5,
+        5
+      ]
+    ],
+    "beta": [
+      0.31681132331412515,
+      1.4080315669231642,
+      1.4157224492390297,
+      1.716773425319607,
+      0.21283127590461076,
+      0.08468715858092252,
+      -0.1111792438185722,
+      1.518488978022082
+    ],
+    "vcov": [
+      [
+        0.038565066711617836,
+        -0.013446774147623224,
+        -0.013213864746440438,
+        -0.014772289193334632,
+        0.013752111546433913,
+        -0.004136966686780281,
+        0.00023105456551762582,
+        -0.0014476834416912194
+      ],
+      [
+        -0.013446774147623224,
+        0.027409585820320433,
+        0.013842100830413567,
+        0.01650472103310606,
+        -0.00461011282901697,
+        0.011958002977136784,
+        -0.004814982995625637,
+        0.0003794136468391465
+      ],
+      [
+        -0.013213864746440438,
+        0.013842100830413567,
+        0.02960257471018185,
+        0.020989848723961372,
+        -0.004933952317283136,
+        0.004582139656359505,
+        0.005501115935010256,
+        -0.004235700832722782
+      ],
+      [
+        -0.014772289193334632,
+        0.01650472103310606,
+        0.020989848723961372,
+        0.04443950322709225,
+        -0.00446791724916869,
+        0.006649752478018573,
+        0.00012266738541151853,
+        0.0032352197483891073
+      ],
+      [
+        0.013752111546433913,
+        -0.00461011282901697,
+        -0.004933952317283136,
+        -0.00446791724916869,
+        0.032559195932645245,
+        -0.004516815382668844,
+        -0.0005524580721774142,
+        0.0014088020711387407
+      ],
+      [
+        -0.004136966686780281,
+        0.011958002977136784,
+        0.004582139656359505,
+        0.006649752478018573,
+        -0.004516815382668844,
+        0.026205007123650915,
+        -0.009278914548273752,
+        0.000736340177370449
+      ],
+      [
+        0.00023105456551762582,
+        -0.004814982995625637,
+        0.005501115935010256,
+        0.00012266738541151853,
+        -0.0005524580721774142,
+        -0.009278914548273752,
+        0.03266734683677903,
+        -0.01063783267587212
+      ],
+      [
+        -0.0014476834416912194,
+        0.0003794136468391465,
+        -0.004235700832722782,
+        0.0032352197483891073,
+        0.0014088020711387407,
+        0.000736340177370449,
+        -0.01063783267587212,
+        0.02008204177460298
+      ]
+    ],
+    "att": 1.517302058387993,
+    "se": 0.11341618240498212,
+    "diagnostics": {
+      "pretrends": 0,
+      "bootstrap_reps": 0,
+      "bootstrap_seed": null,
+      "bootstrap_weights": null,
+      "bootstrap_unit_order": null,
+      "sampling_weights": "w",
+      "weight_convention": "positive time-invariant unit sampling weights",
+      "weight_scale": 1.0,
+      "total_unit_weight": 2400.0,
+      "cohort_weight_totals": {
+        "0": 1119.0,
+        "3": 121.0,
+        "5": 1160.0
+      },
+      "anticipation": 0,
+      "reference_event_time": -1,
+      "cohort_sizes": {
+        "0": 1119,
+        "3": 121,
+        "5": 1160
+      },
+      "time_min": 1,
+      "time_max": 5,
+      "panel_mode": "balanced",
+      "balanced_sample": true,
+      "input_units": 2400,
+      "input_rows": 12000,
+      "dropped_units": 0,
+      "dropped_rows": 0,
+      "omitted_cells": [],
+      "inference": "unit clustered; nuisance-adjusted analytic scores",
+      "control_group": "nevertreated",
+      "base_period": "varying",
+      "periods": 5,
+      "batch_units": 137,
+      "partitions": 1,
+      "preprocess_mb": 4,
+      "max_decoded_leaf_bytes": 970507,
+      "est_method": "ipw",
+      "covariate_names": [
+        "Intercept",
+        "x",
+        "z"
+      ],
+      "covariates_time_invariant": false,
+      "nuisance_systems": 6,
+      "propensity_models": 6,
+      "nuisance_source_passes": 14,
+      "trim_level": 0.8,
+      "probability_cap": 0.999999,
+      "comparisons": [
+        {
+          "cohort": 3,
+          "controls": [
+            0
+          ],
+          "covariate_time": 1,
+          "cells": [
+            0
+          ],
+          "n_treated": 121,
+          "n_controls": 1119,
+          "trimmed_controls": 1,
+          "capped_probabilities": 0,
+          "effective_controls": 110.80685657985534,
+          "propensity_min": 5.524265797807187e-11,
+          "propensity_max": 0.9167993813688221,
+          "iterations": 8
+        },
+        {
+          "cohort": 3,
+          "controls": [
+            0
+          ],
+          "covariate_time": 2,
+          "cells": [
+            1,
+            2,
+            3
+          ],
+          "n_treated": 121,
+          "n_controls": 1119,
+          "trimmed_controls": 1,
+          "capped_probabilities": 0,
+          "effective_controls": 128.67251676438536,
+          "propensity_min": 1.1878046334252734e-10,
+          "propensity_max": 0.9717274233724905,
+          "iterations": 7
+        },
+        {
+          "cohort": 5,
+          "controls": [
+            0
+          ],
+          "covariate_time": 1,
+          "cells": [
+            4
+          ],
+          "n_treated": 1160,
+          "n_controls": 1119,
+          "trimmed_controls": 13,
+          "capped_probabilities": 259,
+          "effective_controls": 71.75058634236429,
+          "propensity_min": 7.308022273907012e-19,
+          "propensity_max": 0.999999,
+          "iterations": 10
+        },
+        {
+          "cohort": 5,
+          "controls": [
+            0
+          ],
+          "covariate_time": 2,
+          "cells": [
+            5
+          ],
+          "n_treated": 1160,
+          "n_controls": 1119,
+          "trimmed_controls": 13,
+          "capped_probabilities": 266,
+          "effective_controls": 77.9806727497727,
+          "propensity_min": 1.4005437138381535e-18,
+          "propensity_max": 0.999999,
+          "iterations": 10
+        },
+        {
+          "cohort": 5,
+          "controls": [
+            0
+          ],
+          "covariate_time": 3,
+          "cells": [
+            6
+          ],
+          "n_treated": 1160,
+          "n_controls": 1119,
+          "trimmed_controls": 14,
+          "capped_probabilities": 340,
+          "effective_controls": 57.402731852134075,
+          "propensity_min": 2.2465534495082693e-20,
+          "propensity_max": 0.999999,
+          "iterations": 10
+        },
+        {
+          "cohort": 5,
+          "controls": [
+            0
+          ],
+          "covariate_time": 4,
+          "cells": [
+            7
+          ],
+          "n_treated": 1160,
+          "n_controls": 1119,
+          "trimmed_controls": 14,
+          "capped_probabilities": 312,
+          "effective_controls": 74.33912859298687,
+          "propensity_min": 5.08591820811587e-21,
+          "propensity_max": 0.999999,
+          "iterations": 10
+        }
+      ],
+      "warnings": [
+        "Propensity trimming removed control contributions in some comparisons; inspect diagnostics['comparisons'].",
+        "Some propensity probabilities were capped at 1-1e-6 under the R DRDID convention."
+      ]
+    }
+  },
+  "wall_s": 0.1807469189952826,
+  "expected_outcome": true,
+  "reference": {
+    "name": "balanced_overlap_very_weak_ipw",
+    "status": "ok",
+    "warnings": [
+      "fit_glm: fitted probabilities numerically 0 or 1 occurred",
+      "overlap condition violated for group 5 in time period 2",
+      "fit_glm: fitted probabilities numerically 0 or 1 occurred",
+      "overlap condition violated for group 5 in time period 3",
+      "fit_glm: fitted probabilities numerically 0 or 1 occurred",
+      "overlap condition violated for group 5 in time period 4",
+      "fit_glm: fitted probabilities numerically 0 or 1 occurred",
+      "overlap condition violated for group 5 in time period 5"
+    ],
+    "fit": {
+      "cells": [
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          5,
+          5
+        ]
+      ],
+      "beta": [
+        0.31681132331406797,
+        1.4080315669311423,
+        1.4157224492534364,
+        1.7167734253448341,
+        0.21283127591737558,
+        0.08468715858387646,
+        -0.11117924261951617,
+        1.5184889781043702
+      ],
+      "vcov": [
+        [
+          0.038565066711609926,
+          -0.013446774147684684,
+          -0.013213864746488523,
+          -0.014772289193246158,
+          0.013752111545017641,
+          -0.004136966686684256,
+          0.0002310545579940013,
+          -0.001447683439886995
+        ],
+        [
+          -0.013446774147684684,
+          0.02740958582131756,
+          0.013842100831038501,
+          0.0165047210337196,
+          -0.004610112828848117,
+          0.011958002976986766,
+          -0.00481498299079142,
+          0.0003794136466303953
+        ],
+        [
+          -0.013213864746488523,
+          0.013842100831038501,
+          0.029602574712457617,
+          0.020989848726602357,
+          -0.004933952317150618,
+          0.004582139656353448,
+          0.005501115919845731,
+          -0.004235700826931148
+        ],
+        [
+          -0.014772289193246158,
+          0.0165047210337196,
+          0.020989848726602357,
+          0.04443950323235951,
+          -0.004467917249027083,
+          0.006649752477909378,
+          0.0001226673835257995,
+          0.0032352197527539678
+        ],
+        [
+          0.013752111545017641,
+          -0.004610112828848117,
+          -0.004933952317150618,
+          -0.004467917249027083,
+          0.032559195924882045,
+          -0.004516815382244622,
+          -0.0005524580643642988,
+          0.0014088020677422372
+        ],
+        [
+          -0.004136966686684256,
+          0.011958002976986766,
+          0.004582139656353448,
+          0.006649752477909378,
+          -0.004516815382244622,
+          0.026205007120119993,
+          -0.009278914538320575,
+          0.0007363401788687183
+        ],
+        [
+          0.0002310545579940013,
+          -0.00481498299079142,
+          0.005501115919845731,
+          0.0001226673835257995,
+          -0.0005524580643642988,
+          -0.009278914538320575,
+          0.03266734651411814,
+          -0.010637832618458961
+        ],
+        [
+          -0.001447683439886995,
+          0.0003794136466303953,
+          -0.004235700826931148,
+          0.0032352197527539678,
+          0.0014088020677422372,
+          0.0007363401788687183,
+          -0.010637832618458961,
+          0.020082041730364996
+        ]
+      ],
+      "att": 1.5173020584544508,
+      "se": 0.11341618229760629
+    }
+  },
+  "comparison": {
+    "beta_max_abs": 1.1990560211394552e-09,
+    "vcov_max_abs": 3.2266089106114393e-10,
+    "att_abs": 6.645772820945695e-11,
+    "se_abs": 1.0737583044928556e-10,
+    "passed": true
+  }
+}

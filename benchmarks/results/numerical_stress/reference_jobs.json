@@ -1,0 +1,562 @@
+[
+  {
+    "name": "balanced_baseline_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_baseline.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_baseline_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_baseline.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_baseline_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_baseline.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_x_small_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_x_small.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_x_small_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_x_small.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_x_small_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_x_small.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_x_large_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_x_large.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_x_large_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_x_large.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_x_large_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_x_large.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_y_small_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_y_small.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_y_small_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_y_small.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_y_small_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_y_small.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_y_large_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_y_large.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_y_large_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_y_large.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_y_large_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_y_large.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_collinear_mild_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_collinear_mild.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_collinear_mild_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_collinear_mild.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_collinear_mild_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_collinear_mild.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_collinear_border_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_collinear_border.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_collinear_border_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_collinear_border.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_collinear_border_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_collinear_border.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_overlap_weak_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_overlap_weak.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "balanced_overlap_weak_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_overlap_weak.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "balanced_overlap_weak_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_overlap_weak.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "balanced_overlap_very_weak_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_overlap_very_weak.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "balanced_overlap_very_weak_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_overlap_very_weak.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "balanced_overlap_very_weak_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_overlap_very_weak.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "balanced_weights_wide_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_weights_wide.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_weights_wide_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_weights_wide.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_weights_wide_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_weights_wide.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_weights_aligned_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_weights_aligned.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_weights_aligned_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_weights_aligned.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_weights_aligned_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_weights_aligned.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_rare_cohort_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_rare_cohort.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_rare_cohort_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_rare_cohort.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_rare_cohort_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_rare_cohort.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_large_offset_centered_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_large_offset_centered.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_large_offset_centered_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_large_offset_centered.csv",
+    "method": "ipw",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_large_offset_centered_dr",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_large_offset_centered.csv",
+    "method": "dr",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "balanced_quasi_separated_reg",
+    "csv_path": "benchmarks/data/numerical_stress/balanced_quasi_separated.csv",
+    "method": "reg",
+    "panel_mode": "balanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_baseline_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_baseline.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_baseline_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_baseline.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_baseline_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_baseline.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_x_small_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_x_small.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_x_small_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_x_small.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_x_small_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_x_small.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_x_large_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_x_large.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_x_large_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_x_large.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_x_large_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_x_large.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_y_small_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_y_small.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_y_small_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_y_small.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_y_small_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_y_small.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_y_large_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_y_large.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_y_large_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_y_large.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_y_large_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_y_large.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_collinear_mild_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_collinear_mild.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_collinear_mild_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_collinear_mild.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_collinear_mild_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_collinear_mild.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_collinear_border_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_collinear_border.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_collinear_border_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_collinear_border.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_collinear_border_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_collinear_border.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_overlap_weak_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_overlap_weak.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "unbalanced_overlap_weak_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_overlap_weak.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "unbalanced_overlap_weak_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_overlap_weak.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "unbalanced_overlap_very_weak_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_overlap_very_weak.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "unbalanced_overlap_very_weak_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_overlap_very_weak.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "unbalanced_overlap_very_weak_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_overlap_very_weak.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.8
+  },
+  {
+    "name": "unbalanced_weights_wide_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_weights_wide.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_weights_wide_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_weights_wide.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_weights_wide_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_weights_wide.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_weights_aligned_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_weights_aligned.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_weights_aligned_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_weights_aligned.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_weights_aligned_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_weights_aligned.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_rare_cohort_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_rare_cohort.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_rare_cohort_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_rare_cohort.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_rare_cohort_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_rare_cohort.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_large_offset_centered_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_large_offset_centered.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_large_offset_centered_ipw",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_large_offset_centered.csv",
+    "method": "ipw",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_large_offset_centered_dr",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_large_offset_centered.csv",
+    "method": "dr",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  },
+  {
+    "name": "unbalanced_quasi_separated_reg",
+    "csv_path": "benchmarks/data/numerical_stress/unbalanced_quasi_separated.csv",
+    "method": "reg",
+    "panel_mode": "unbalanced",
+    "trim_level": 0.995
+  }
+]

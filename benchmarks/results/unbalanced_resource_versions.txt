@@ -1,0 +1,10 @@
+Python 3.12.3
+diff-stream 0.1.0.dev0
+hdfe-stream 0.8.0
+polars 2.1.0
+numpy 2.5.4
+numba 0.68.1
+pyarrow 26.0.0
+Two threads; preprocess_mb=16; five periods.
+One-million-unit resource input tiles the 100000-unit input ten times with distinct IDs.
+RSS includes resident mapped pages and allocator retention; sampled at 5 ms in phase probes.

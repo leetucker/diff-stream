@@ -1,0 +1,4 @@
+R 4.5.3
+did 2.5.1
+DRDID 1.4.0
+Actual did::att_gt, est_method reg/ipw/dr; analytic covariance; earlier-period covariates.

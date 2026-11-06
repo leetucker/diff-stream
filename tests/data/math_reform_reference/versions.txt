@@ -1,0 +1,11 @@
+R 4.5.3
+bacondecomp 0.1.3
+fixest 0.14.2
+bacondecomp package license MIT + file LICENSE
+Source: https://github.com/evanjflack/bacondecomp#example ; data/math_reform.rda from installed package.
+Public aggregated data from Goodman (2019, Journal of Labor Economics), compulsory high-school mathematics coursework and subsequent income.
+Exact documented unweighted formula incearn_ln ~ reform_math; state/class panel; 26 states x 20 graduating classes, 1975-1994.
+Raw source columns and never-treated missing adoption-year values retained in snapshot. Analysis maps only missing reformyr_math to cohort 0.
+No sample exclusions, covariates, sampling weights or Stata execution.
+Actual bacondecomp comparison output, actual rounded bacon_summary output, and independent full-unit/time-dummy OLS on the full and every restricted pair sample.
+This is the documented aggregated-data worked example, not every specification or microdata table in the underlying paper.

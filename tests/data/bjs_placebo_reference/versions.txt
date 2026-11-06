@@ -1,0 +1,8 @@
+R 4.5.3
+fixest 0.14.2
+didimputation 0.5.1
+Independent full-unit-dummy WLS with clean observations and pooled lead indicators; full unit-clustered covariance.
+Actual fixest and didimputation pretrends estimates/SEs also checked; global fixest SSC K.adj=FALSE,G.adj=FALSE, fixef.tol=1e-10.
+Anticipation uses affected-onset cohort labels in the R package; lead labels restored to actual treatment.
+Future cohorts retain their actual timing in the clean-placebo regression.
+Authors Stata finite-sample dof/F convention is not asserted; family CRV0/CRV1 and normal/chi2 inference apply.

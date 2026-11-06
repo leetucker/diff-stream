@@ -1,0 +1,37 @@
+{
+  "reference_specifications": 108,
+  "external_maxima": {
+    "native_beta_max_abs": 1.511827535383148e-08,
+    "native_vcov_max_abs": 2.5566408139859886e-09,
+    "precision_beta_max_abs": 2.6172675138269597e-11,
+    "precision_vcov_max_abs": 3.942332571504892e-12
+  },
+  "full_run": {
+    "passed": 1439,
+    "skipped": 1,
+    "obsolete_policy_assertion": 1
+  },
+  "updated_strict_reference_test": {
+    "passed": 1
+  },
+  "focused_polars_1_37": {
+    "passed": 149
+  },
+  "shared_core_balance": {
+    "passed": 6
+  },
+  "resource_probes": {
+    "passed": 4,
+    "kernel_oom_kills_in_fits": 0
+  },
+  "checks": [
+    "Ruff lint/format",
+    "Sphinx warnings-as-errors",
+    "sdist/wheel build",
+    "constant-covariate integration"
+  ],
+  "local_platform": "Linux/WSL; portable resource CI configured for Linux/macOS/Windows",
+  "kernel_resource_fixture": {
+    "passed": 1
+  }
+}

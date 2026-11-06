@@ -1,0 +1,14 @@
+{
+  "date": "2026-11-03",
+  "purpose": "local development only; small-scale serial subprocess runs",
+  "python": "3.12.3",
+  "polars": "2.1.0",
+  "data": "simulate_conditional_panel(seed=871), time-varying x, x/z design, 5 periods",
+  "sizes": [
+    1000,
+    10000
+  ],
+  "repeats": 2,
+  "r_versions": "R 4.5.3\ndid 2.5.1\nDRDID 1.4.0\nActual did::att_gt, est_method reg/ipw/dr; analytic covariance; earlier-period covariates.\n",
+  "notes": "Parquet versus CSV, imports excluded; first-use formula initialization included. Initial exploratory run overlapping tests retained separately."
+}

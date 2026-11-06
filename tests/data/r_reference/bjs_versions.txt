@@ -1,0 +1,4 @@
+R 4.5.3
+didimputation 0.5.1
+Dense full-unit-dummy oracle; independently implemented published score equations.
+Stata execution is external and is not claimed by this fixture.

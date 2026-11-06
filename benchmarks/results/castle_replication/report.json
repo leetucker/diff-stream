@@ -1,0 +1,601 @@
+{
+  "status": "passed",
+  "scope": "Unconditional Sun\u2013Abraham reanalysis of Cheng and Hoekstra (2013); not full original-paper replication",
+  "n_units": 50,
+  "n_obs": 550,
+  "n_cells": 50,
+  "years": [
+    2000,
+    2010
+  ],
+  "cohorts": [
+    {
+      "first_treat": 0,
+      "len": 29
+    },
+    {
+      "first_treat": 2005,
+      "len": 1
+    },
+    {
+      "first_treat": 2006,
+      "len": 13
+    },
+    {
+      "first_treat": 2007,
+      "len": 4
+    },
+    {
+      "first_treat": 2008,
+      "len": 2
+    },
+    {
+      "first_treat": 2009,
+      "len": 1
+    }
+  ],
+  "excluded_rows": 0,
+  "adoption_year_post_discrepancies": 21,
+  "source_post_convention": "year > effyear; shift1 matches source post",
+  "specifications": [
+    {
+      "case": "shift0_unweighted",
+      "shift": 0,
+      "sampling_weights": null,
+      "att": 0.11038303545755444,
+      "se": 0.03860192083991251,
+      "pretrend_test": {
+        "statistic": 5.178334562041286,
+        "pvalue": 0.1591947784456328,
+        "df1": 3,
+        "df2": null,
+        "distribution": "chi2",
+        "level": "dynamic",
+        "coefficients": [
+          "event::-4",
+          "event::-3",
+          "event::-2"
+        ],
+        "horizons": [
+          -4,
+          -3,
+          -2
+        ],
+        "cells": [
+          {
+            "cohort": 2005,
+            "time": 2001
+          },
+          {
+            "cohort": 2005,
+            "time": 2002
+          },
+          {
+            "cohort": 2005,
+            "time": 2003
+          },
+          {
+            "cohort": 2006,
+            "time": 2002
+          },
+          {
+            "cohort": 2006,
+            "time": 2003
+          },
+          {
+            "cohort": 2006,
+            "time": 2004
+          },
+          {
+            "cohort": 2007,
+            "time": 2003
+          },
+          {
+            "cohort": 2007,
+            "time": 2004
+          },
+          {
+            "cohort": 2007,
+            "time": 2005
+          },
+          {
+            "cohort": 2008,
+            "time": 2004
+          },
+          {
+            "cohort": 2008,
+            "time": 2005
+          },
+          {
+            "cohort": 2008,
+            "time": 2006
+          },
+          {
+            "cohort": 2009,
+            "time": 2005
+          },
+          {
+            "cohort": 2009,
+            "time": 2006
+          },
+          {
+            "cohort": 2009,
+            "time": 2007
+          }
+        ],
+        "n_restrictions": 3,
+        "anticipation": 0,
+        "reference_event_time": -1,
+        "null": "all selected clean pre-treatment effects equal zero",
+        "base_period": "g-1"
+      },
+      "max_abs_difference": {
+        "cells_beta": 1.84297022087776e-14,
+        "cells_se": 4.683753385137379e-15,
+        "cells_vcov": 4.423544863740858e-16,
+        "R_dummy_beta": 2.157996004115148e-15,
+        "R_dummy_vcov": 1.0321604682062002e-16,
+        "Python_dummy_beta": 4.218847493575595e-15,
+        "Python_dummy_vcov": 3.8163916471489756e-17,
+        "dynamic_beta": 1.7180701306074297e-14,
+        "dynamic_se": 3.795574965437254e-15,
+        "dynamic_vcov": 3.929148673087468e-16,
+        "simple_beta": 5.551115123125783e-16,
+        "simple_se": 9.020562075079397e-17,
+        "simple_vcov": 8.023096076392733e-18,
+        "cohort_beta": 1.7236212457305555e-14,
+        "cohort_se": 3.823330541052883e-15,
+        "cohort_vcov": 2.430781270712501e-16,
+        "calendar_beta": 1.84297022087776e-14,
+        "calendar_se": 2.518818487118324e-15,
+        "calendar_vcov": 1.8236280541206185e-16,
+        "balanced_dynamic_beta": 8.187894806610529e-16,
+        "balanced_dynamic_se": 1.249000902703301e-16,
+        "balanced_dynamic_vcov": 9.107298248878237e-18,
+        "pretrend_statistic": 6.572520305780927e-14,
+        "pretrend_pvalue": 4.218847493575595e-15
+      }
+    },
+    {
+      "case": "shift0_popwt",
+      "shift": 0,
+      "sampling_weights": "popwt",
+      "att": 0.10817684287716076,
+      "se": 0.0240661020503913,
+      "pretrend_test": {
+        "statistic": 4.209321236268384,
+        "pvalue": 0.23973030814597118,
+        "df1": 3,
+        "df2": null,
+        "distribution": "chi2",
+        "level": "dynamic",
+        "coefficients": [
+          "event::-4",
+          "event::-3",
+          "event::-2"
+        ],
+        "horizons": [
+          -4,
+          -3,
+          -2
+        ],
+        "cells": [
+          {
+            "cohort": 2005,
+            "time": 2001
+          },
+          {
+            "cohort": 2005,
+            "time": 2002
+          },
+          {
+            "cohort": 2005,
+            "time": 2003
+          },
+          {
+            "cohort": 2006,
+            "time": 2002
+          },
+          {
+            "cohort": 2006,
+            "time": 2003
+          },
+          {
+            "cohort": 2006,
+            "time": 2004
+          },
+          {
+            "cohort": 2007,
+            "time": 2003
+          },
+          {
+            "cohort": 2007,
+            "time": 2004
+          },
+          {
+            "cohort": 2007,
+            "time": 2005
+          },
+          {
+            "cohort": 2008,
+            "time": 2004
+          },
+          {
+            "cohort": 2008,
+            "time": 2005
+          },
+          {
+            "cohort": 2008,
+            "time": 2006
+          },
+          {
+            "cohort": 2009,
+            "time": 2005
+          },
+          {
+            "cohort": 2009,
+            "time": 2006
+          },
+          {
+            "cohort": 2009,
+            "time": 2007
+          }
+        ],
+        "n_restrictions": 3,
+        "anticipation": 0,
+        "reference_event_time": -1,
+        "null": "all selected clean pre-treatment effects equal zero",
+        "base_period": "g-1"
+      },
+      "max_abs_difference": {
+        "cells_beta": 3.4416913763379853e-15,
+        "cells_se": 2.6315755130568164e-15,
+        "cells_vcov": 2.896988204881268e-16,
+        "R_dummy_beta": 1.4849232954361469e-15,
+        "R_dummy_vcov": 3.191891195797325e-16,
+        "Python_dummy_beta": 8.215650382226158e-15,
+        "Python_dummy_vcov": 3.5995512126518747e-16,
+        "dynamic_beta": 2.220446049250313e-15,
+        "dynamic_se": 7.147060721024445e-16,
+        "dynamic_vcov": 5.767955557622884e-17,
+        "simple_beta": 7.494005416219807e-16,
+        "simple_se": 2.0122792321330962e-16,
+        "simple_vcov": 1.1384122811097797e-17,
+        "cohort_beta": 1.5404344466674047e-15,
+        "cohort_se": 1.5543122344752192e-15,
+        "cohort_vcov": 9.71445146547012e-17,
+        "calendar_beta": 1.1102230246251565e-15,
+        "calendar_se": 1.7728873924482969e-15,
+        "calendar_vcov": 6.033585089881832e-17,
+        "balanced_dynamic_beta": 9.992007221626409e-16,
+        "balanced_dynamic_se": 9.71445146547012e-17,
+        "balanced_dynamic_vcov": 8.117963766485214e-18,
+        "pretrend_statistic": 3.552713678800501e-15,
+        "pretrend_pvalue": 1.942890293094024e-16
+      }
+    },
+    {
+      "case": "shift1_unweighted",
+      "shift": 1,
+      "sampling_weights": null,
+      "att": 0.01940280800157595,
+      "se": 0.03418507215421767,
+      "pretrend_test": {
+        "statistic": 8.758045850399434,
+        "pvalue": 0.03268692184592478,
+        "df1": 3,
+        "df2": null,
+        "distribution": "chi2",
+        "level": "dynamic",
+        "coefficients": [
+          "event::-4",
+          "event::-3",
+          "event::-2"
+        ],
+        "horizons": [
+          -4,
+          -3,
+          -2
+        ],
+        "cells": [
+          {
+            "cohort": 2006,
+            "time": 2002
+          },
+          {
+            "cohort": 2006,
+            "time": 2003
+          },
+          {
+            "cohort": 2006,
+            "time": 2004
+          },
+          {
+            "cohort": 2007,
+            "time": 2003
+          },
+          {
+            "cohort": 2007,
+            "time": 2004
+          },
+          {
+            "cohort": 2007,
+            "time": 2005
+          },
+          {
+            "cohort": 2008,
+            "time": 2004
+          },
+          {
+            "cohort": 2008,
+            "time": 2005
+          },
+          {
+            "cohort": 2008,
+            "time": 2006
+          },
+          {
+            "cohort": 2009,
+            "time": 2005
+          },
+          {
+            "cohort": 2009,
+            "time": 2006
+          },
+          {
+            "cohort": 2009,
+            "time": 2007
+          },
+          {
+            "cohort": 2010,
+            "time": 2006
+          },
+          {
+            "cohort": 2010,
+            "time": 2007
+          },
+          {
+            "cohort": 2010,
+            "time": 2008
+          }
+        ],
+        "n_restrictions": 3,
+        "anticipation": 0,
+        "reference_event_time": -1,
+        "null": "all selected clean pre-treatment effects equal zero",
+        "base_period": "g-1"
+      },
+      "max_abs_difference": {
+        "cells_beta": 2.950070743246158e-14,
+        "cells_se": 3.8719027983802334e-15,
+        "cells_vcov": 1.3322676295501878e-15,
+        "R_dummy_beta": 1.9567680809018384e-15,
+        "R_dummy_vcov": 1.3097162243624894e-16,
+        "Python_dummy_beta": 7.327471962526033e-15,
+        "Python_dummy_vcov": 6.245004513516506e-17,
+        "dynamic_beta": 2.786659791809143e-14,
+        "dynamic_se": 3.2959746043559335e-15,
+        "dynamic_vcov": 3.920475055707584e-16,
+        "simple_beta": 2.0469737016526324e-15,
+        "simple_se": 2.7755575615628914e-17,
+        "simple_vcov": 1.5178830414797062e-18,
+        "cohort_beta": 2.808864252301646e-14,
+        "cohort_se": 2.5049406993105094e-15,
+        "cohort_vcov": 6.453171330633722e-16,
+        "calendar_beta": 2.7394753132625738e-14,
+        "calendar_se": 2.4841240175987878e-15,
+        "calendar_vcov": 1.700029006457271e-16,
+        "balanced_dynamic_beta": 2.6298407895808396e-15,
+        "balanced_dynamic_se": 4.163336342344337e-17,
+        "balanced_dynamic_vcov": 1.6371452804531117e-17,
+        "pretrend_statistic": 5.684341886080802e-14,
+        "pretrend_pvalue": 8.81239525796218e-16
+      }
+    },
+    {
+      "case": "shift1_popwt",
+      "shift": 1,
+      "sampling_weights": "popwt",
+      "att": 0.07854299355312493,
+      "se": 0.02619003578597868,
+      "pretrend_test": {
+        "statistic": 14.602882806376623,
+        "pvalue": 0.002189471525488638,
+        "df1": 3,
+        "df2": null,
+        "distribution": "chi2",
+        "level": "dynamic",
+        "coefficients": [
+          "event::-4",
+          "event::-3",
+          "event::-2"
+        ],
+        "horizons": [
+          -4,
+          -3,
+          -2
+        ],
+        "cells": [
+          {
+            "cohort": 2006,
+            "time": 2002
+          },
+          {
+            "cohort": 2006,
+            "time": 2003
+          },
+          {
+            "cohort": 2006,
+            "time": 2004
+          },
+          {
+            "cohort": 2007,
+            "time": 2003
+          },
+          {
+            "cohort": 2007,
+            "time": 2004
+          },
+          {
+            "cohort": 2007,
+            "time": 2005
+          },
+          {
+            "cohort": 2008,
+            "time": 2004
+          },
+          {
+            "cohort": 2008,
+            "time": 2005
+          },
+          {
+            "cohort": 2008,
+            "time": 2006
+          },
+          {
+            "cohort": 2009,
+            "time": 2005
+          },
+          {
+            "cohort": 2009,
+            "time": 2006
+          },
+          {
+            "cohort": 2009,
+            "time": 2007
+          },
+          {
+            "cohort": 2010,
+            "time": 2006
+          },
+          {
+            "cohort": 2010,
+            "time": 2007
+          },
+          {
+            "cohort": 2010,
+            "time": 2008
+          }
+        ],
+        "n_restrictions": 3,
+        "anticipation": 0,
+        "reference_event_time": -1,
+        "null": "all selected clean pre-treatment effects equal zero",
+        "base_period": "g-1"
+      },
+      "max_abs_difference": {
+        "cells_beta": 4.6629367034256575e-15,
+        "cells_se": 2.2447321779139884e-15,
+        "cells_vcov": 1.6089560239684886e-16,
+        "R_dummy_beta": 1.5543122344752192e-15,
+        "R_dummy_vcov": 7.24247051220317e-17,
+        "Python_dummy_beta": 5.245803791353865e-15,
+        "Python_dummy_vcov": 1.0798653637955624e-16,
+        "dynamic_beta": 3.552713678800501e-15,
+        "dynamic_se": 7.216449660063518e-16,
+        "dynamic_vcov": 5.984795992119984e-17,
+        "simple_beta": 7.771561172376096e-16,
+        "simple_se": 2.7755575615628914e-16,
+        "simple_vcov": 1.5720931501039814e-17,
+        "cohort_beta": 2.831068712794149e-15,
+        "cohort_se": 9.853229343548264e-16,
+        "cohort_vcov": 8.760353553682876e-17,
+        "calendar_beta": 2.6922908347160046e-15,
+        "calendar_se": 1.8492152253912764e-15,
+        "calendar_vcov": 6.239583502654078e-17,
+        "balanced_dynamic_beta": 9.298117831235686e-16,
+        "balanced_dynamic_se": 2.983724378680108e-16,
+        "balanced_dynamic_vcov": 1.940721888749053e-17,
+        "pretrend_statistic": 8.242295734817162e-13,
+        "pretrend_pvalue": 8.721322275473398e-16
+      }
+    }
+  ],
+  "reference_versions": [
+    "R 4.5.3",
+    "fixest 0.14.2",
+    "Unconditional SA reanalysis of Cheng and Hoekstra (2013), public did2s castle dataset.",
+    "50 states, 550 rows, years 2000-2010; 21 adopting and 29 never-treated states in this snapshot.",
+    "shift0 uses effyear; shift1 uses effyear+1 and matches source post exactly. Source columns unchanged.",
+    "Baseline unweighted; optional popwt sensitivity uses original positive state-constant weights.",
+    "Saturated all-supported cohort/event interactions, explicit ref.p=-1; no event binning or regression truncation.",
+    "State CRV0: K.adj=FALSE, G.adj=FALSE; fixed cohort/observation shares. No estimated-share variance term.",
+    "Full cell covariance from actual fixest, independently checked with full-dummy WLS unit-cluster scores.",
+    "Full aggregate covariance propagated from fixest cell covariance; actual fixest dynamic/ATT/cohort outputs checked.",
+    "Family intervals use normal critical values; fixest default t(49) p-values/intervals are not asserted.",
+    "Calendar and balanced-window aggregates are explicit linear maps; no native fixest shortcut is claimed."
+  ],
+  "files": {
+    "tests/data/castle.csv": "be64e88815b71584a41538eaaa61fa9484dbea6b18be4a30b9f4921ab475b739",
+    "benchmarks/external/castle_reference.R": "ce730d4cbe61511435ebee202bda42931fa6e09aa19417471cde0c60a5c90b7a",
+    "benchmarks/castle_replication.py": "0262b34d655cfa18250a13735a1b2aee76da8863cdce7697e0db63fdd85ddec4",
+    "tests/data/castle_source/DESCRIPTION.txt": "18dd4859f6efef4931f6b3e1c2726509fa89935869afb7e6801ed5497c029403",
+    "tests/data/castle_source/LICENSE.txt": "230f3c155edacd840e0763582d564f9a9b61af76e2670d8663fca6e68c42e4eb",
+    "tests/data/castle_source/PROVENANCE.json": "625cdadb9a2bd47d6c5e021bc5a913eced60f64cb55b7561939131b4867892f4",
+    "tests/data/castle_source/castle.rda": "dd46656a115acff7994793dac149c612e28f3b574696dc344419620fcc6238f5",
+    "tests/data/castle_reference/PROVENANCE.json": "cda31cf4631e6f3140f6cc3d5e900e9c93a37b5d1601e6b4179422ea833c66d2",
+    "tests/data/castle_reference/shift0_popwt_balanced_dynamic.csv.gz": "0a04d12956d5f388c8e1102a0f02f934305040e7135ab59c972dfb16218bf637",
+    "tests/data/castle_reference/shift0_popwt_balanced_dynamic_vcov.csv.gz": "90c9ef5d83472b255562d79307f0299333bc66c48c8613b08440ee3063ae1a6c",
+    "tests/data/castle_reference/shift0_popwt_calendar.csv.gz": "014d73d9f07247f02899693d20e03f92029204ef5b71e944f141c33c02be60f6",
+    "tests/data/castle_reference/shift0_popwt_calendar_vcov.csv.gz": "0cf66fb4011122ee49c4de2a44894a35fa69eb38590e545ae8515d84f7c18bf4",
+    "tests/data/castle_reference/shift0_popwt_cells.csv.gz": "858ce0a347a2520128585b18073208d8df4c699d4fd20a49eb1285f6e52d357f",
+    "tests/data/castle_reference/shift0_popwt_cells_vcov.csv.gz": "8b0f8fcd586dfdf4b7cd54eb8d6f1b8725d40daa2ec5fd662454341835e8bd2c",
+    "tests/data/castle_reference/shift0_popwt_cohort.csv.gz": "80b48d896a8065ba9a71be22afe726b3dea20337202780a0b24078866531529a",
+    "tests/data/castle_reference/shift0_popwt_cohort_vcov.csv.gz": "be005d25554b9a8310af64b0c7ee29bca01a9fcc013c6f679125ca1493c0ff4c",
+    "tests/data/castle_reference/shift0_popwt_dense_vcov.csv.gz": "9d25c914cb5f843f2e8323683816a3da0e9228cab8d1e08e2a1a473904ba2e08",
+    "tests/data/castle_reference/shift0_popwt_dynamic.csv.gz": "b54229d58b876e1a1160d1786ae2a911b04f6938fb87d67686bbf7c4516378fd",
+    "tests/data/castle_reference/shift0_popwt_dynamic_vcov.csv.gz": "d65db3723516e094c85b06f27bec805ecc0bfc5728f2c35a051022e73df38760",
+    "tests/data/castle_reference/shift0_popwt_pretrend.csv.gz": "919df23ed8b496ef58da762d65e79d4835a10141d82a0308cd66e61363f8c1ef",
+    "tests/data/castle_reference/shift0_popwt_simple.csv.gz": "43654dfa2ace2c2f9f1a599d0ac38075d601662f0bfa7c575d4cf2fc0eae12a0",
+    "tests/data/castle_reference/shift0_popwt_simple_vcov.csv.gz": "8de2c3ad505212bf999e817e1753c67890df7fd5138c417d5885b693a7d3517c",
+    "tests/data/castle_reference/shift0_unweighted_balanced_dynamic.csv.gz": "ae7ee427f5b8c8db7f0b2553eff3977f9eea579bd03ff77dd77a2a7a577a2433",
+    "tests/data/castle_reference/shift0_unweighted_balanced_dynamic_vcov.csv.gz": "c2bd43217106cdb7bb375581310bc2363b46105f11944d2299cbe5c848378909",
+    "tests/data/castle_reference/shift0_unweighted_calendar.csv.gz": "43a3a14543edcd2980087e91f246be88fd93af5ebf57a4cb17b48f4f2d8b194d",
+    "tests/data/castle_reference/shift0_unweighted_calendar_vcov.csv.gz": "518a71891cc501d19867d87d6156186a53f159537dc9a8d5e05a43f4fce1c135",
+    "tests/data/castle_reference/shift0_unweighted_cells.csv.gz": "3555b934c2058703dd1d2caee94585ef77a985764977c0682593921d8dfafd7f",
+    "tests/data/castle_reference/shift0_unweighted_cells_vcov.csv.gz": "1b3d2833e77656b231920465e8bdf606a521132c196061c690323c40a29e048a",
+    "tests/data/castle_reference/shift0_unweighted_cohort.csv.gz": "57230d394b1a48a8cdb8a2d55ed160121cabbb4804782a7c9e4d5831aa57866c",
+    "tests/data/castle_reference/shift0_unweighted_cohort_vcov.csv.gz": "359e86c13cb5863324f0750be0c9a95fb0d78e903c0a0968be45a040eeb8847e",
+    "tests/data/castle_reference/shift0_unweighted_dense_vcov.csv.gz": "566a8174cb39136e37cdb547e7fc775d4c81c4a7b174a8ef24f2da1ba1e94e14",
+    "tests/data/castle_reference/shift0_unweighted_dynamic.csv.gz": "fdf89666b7b611be29d1d23fcfa622c0c07fec28e35e435ab968d5642d590623",
+    "tests/data/castle_reference/shift0_unweighted_dynamic_vcov.csv.gz": "4932bb049bd5d2e22f15521de7bbe4313fd1c164f634d114ce8c31db4d0ead5a",
+    "tests/data/castle_reference/shift0_unweighted_pretrend.csv.gz": "d21f9abc0fd79b294c39774165cd64560ac025dcb6875131e56b9d4c8b20365e",
+    "tests/data/castle_reference/shift0_unweighted_simple.csv.gz": "5c0ec0488cdff3da72c2c77db380796e625fc1493295a2beac6d2e91be23ab5a",
+    "tests/data/castle_reference/shift0_unweighted_simple_vcov.csv.gz": "24014dc2fa6071c50409a5aaff839d8dfcf188032bafee87147717906761ee5d",
+    "tests/data/castle_reference/shift1_popwt_balanced_dynamic.csv.gz": "2517c626e763a49b5490c35e23f8351ac0d82e51ab347c3a3dd4a69394e5ad6c",
+    "tests/data/castle_reference/shift1_popwt_balanced_dynamic_vcov.csv.gz": "322b4497f6008c96ba9b5b691292fb4a1cfb7ab2f0540ce5c50c7c5a13b6cee7",
+    "tests/data/castle_reference/shift1_popwt_calendar.csv.gz": "3572b724393e3d7be3fd43ae6fa87c7a1427e28b10b24987e2ed998c24b2b055",
+    "tests/data/castle_reference/shift1_popwt_calendar_vcov.csv.gz": "31e34320d7d7ea0b7df9945f3763c56da4e698a4be879ba032e3203fa68c635e",
+    "tests/data/castle_reference/shift1_popwt_cells.csv.gz": "b1c3a20f8a34094e3a194cdde24ab356bb978d770e06acc9d887c30b955dd344",
+    "tests/data/castle_reference/shift1_popwt_cells_vcov.csv.gz": "95e3f26b9a7041a4a5085b04c5e57f631bafe3dad484b5ed615021cc2323b8c2",
+    "tests/data/castle_reference/shift1_popwt_cohort.csv.gz": "6509f682c9f43ad2c2c0d4f9b0e17e9b7dc471c0ad7eb76ea1f49c9dd59dfbd1",
+    "tests/data/castle_reference/shift1_popwt_cohort_vcov.csv.gz": "6dd0e75a920026c03d3367f7f95e4e8e2208d201e0d06dae3fe378b210e07cbc",
+    "tests/data/castle_reference/shift1_popwt_dense_vcov.csv.gz": "3ca9c0ba7da525e842759446a2c4bf2dd72ff18cc320d03c223bf1840ecb4492",
+    "tests/data/castle_reference/shift1_popwt_dynamic.csv.gz": "38718cecaa7a921b78bbcd7a3e0b486e6401e1b6aece71c7cf244fd178e0efd6",
+    "tests/data/castle_reference/shift1_popwt_dynamic_vcov.csv.gz": "b59bf978cbac412e474ebbbfb37a74a684f514d7fc5f564bb1459e0cec8ce0b1",
+    "tests/data/castle_reference/shift1_popwt_pretrend.csv.gz": "8fc4a942db122b3001730df0179869d3fa556366b5589a39085fe21496c96a8c",
+    "tests/data/castle_reference/shift1_popwt_simple.csv.gz": "198692404841621b42d40510a4507838e19969b1dcc52a32ffe393def364e1a2",
+    "tests/data/castle_reference/shift1_popwt_simple_vcov.csv.gz": "c6f540fbd9828cf4bf87a4d862647ca78be13badd5088253e145a667a46ec1c6",
+    "tests/data/castle_reference/shift1_unweighted_balanced_dynamic.csv.gz": "acfa42cd41d0b085adb18c5a1ef712aa86bcb88a14101a3d42f28e16f0ac921f",
+    "tests/data/castle_reference/shift1_unweighted_balanced_dynamic_vcov.csv.gz": "177070efdc712c71c93fbd676a78d8ad6e41214e2684d58edaa6aadbb602cfca",
+    "tests/data/castle_reference/shift1_unweighted_calendar.csv.gz": "73ef8f8c541fa6655786832b99612c7c41648b540f981c69b4d461944b02b7ca",
+    "tests/data/castle_reference/shift1_unweighted_calendar_vcov.csv.gz": "68ff5bcde97efdb9279686f13910588feb5f14363b0f321189969a3759b41221",
+    "tests/data/castle_reference/shift1_unweighted_cells.csv.gz": "cff753be1eeda45e76c64ba90c3e1981456c5710d4f40c38af1e057f9e0b1d32",
+    "tests/data/castle_reference/shift1_unweighted_cells_vcov.csv.gz": "6f16777945b7f1018a44eaf81b8935862d648a76b77d503e913c9ead63a2587f",
+    "tests/data/castle_reference/shift1_unweighted_cohort.csv.gz": "80b0b0eed0d20dbe020ca5a4f8f33a294e0ec9465012ef71cdbe1967b1ab1c94",
+    "tests/data/castle_reference/shift1_unweighted_cohort_vcov.csv.gz": "933835717e87bd614ce772e2ff7a6f4b6bd7f06bcd8a4bc11906acf030abd050",
+    "tests/data/castle_reference/shift1_unweighted_dense_vcov.csv.gz": "7462b34a63bd4b20a1990a91e2db2d8c1cab4a7c332cb6311791b60bc3735b52",
+    "tests/data/castle_reference/shift1_unweighted_dynamic.csv.gz": "63d130f8087f681b97206a6537d1564e196ee2a01651ef77454193db70c5ca72",
+    "tests/data/castle_reference/shift1_unweighted_dynamic_vcov.csv.gz": "ed789114939c51a44417d758782d1b9f24444bfc1e30081448d565993e92f14c",
+    "tests/data/castle_reference/shift1_unweighted_pretrend.csv.gz": "13c0b52d3cdffcf5b6e37b57fdf0a3c4335f59683219af6bc285ddde7b5837d8",
+    "tests/data/castle_reference/shift1_unweighted_simple.csv.gz": "27d3ab841bc70a5677584e2be39c628af891e2bb2c3ebf67fa7dd7f4c3a8ba7c",
+    "tests/data/castle_reference/shift1_unweighted_simple_vcov.csv.gz": "3c110f96325b80d6c7798dca30c60b4719604f463d62a2735267e539097ba126",
+    "tests/data/castle_reference/versions.txt": "6a5b9cdf092344194ecf2e1ec1a0299da024435d255f756e292d2f50bd6d84af"
+  },
+  "tolerance_absolute": 1e-09,
+  "pretrend_statistic_tolerance": 1e-08,
+  "stata_executed": false,
+  "python_version": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "numpy_version": "2.5.4",
+  "polars_version": "2.1.0"
+}

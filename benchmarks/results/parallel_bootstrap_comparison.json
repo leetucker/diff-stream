@@ -1,0 +1,73 @@
+{
+  "reps": 4,
+  "workers": 2,
+  "threads": 2,
+  "memory_gb": 2.5,
+  "note": "Resource probes overlap other test runs; timings are not isolated performance estimates.",
+  "input_sha256": {
+    "benchmarks/results/parallel_bootstrap_serial_resources/summary.json": "d0eb1a279ee5437d060616ab2d49d78939a3565dcaedd6bc650d5030b9fe47d7",
+    "benchmarks/results/parallel_bootstrap_resources/summary.json": "58b2d52493c968b9a0e59e13bf2e62961c89f9be08d9ffcfb4989e1c545d069e"
+  },
+  "rows": [
+    {
+      "estimator": "cs",
+      "n": 10000,
+      "serial_s": 3.8256513639935292,
+      "parallel_s": 15.882146805990487,
+      "serial_peak_rss_mib": 403.546875,
+      "parallel_peak_rss_mib": 1088.00390625,
+      "max_se_difference": 0.0,
+      "draw_plans_identical": true
+    },
+    {
+      "estimator": "bjs",
+      "n": 10000,
+      "serial_s": 3.6095736670249607,
+      "parallel_s": 10.741879581997637,
+      "serial_peak_rss_mib": 403.00390625,
+      "parallel_peak_rss_mib": 1070.796875,
+      "max_se_difference": 0.0,
+      "draw_plans_identical": true
+    },
+    {
+      "estimator": "gardner",
+      "n": 10000,
+      "serial_s": 2.6739639730076306,
+      "parallel_s": 10.282772062986623,
+      "serial_peak_rss_mib": 416.62109375,
+      "parallel_peak_rss_mib": 1076.48046875,
+      "max_se_difference": 0.0,
+      "draw_plans_identical": true
+    },
+    {
+      "estimator": "cs",
+      "n": 100000,
+      "serial_s": 48.031858205009485,
+      "parallel_s": 53.19379237899557,
+      "serial_peak_rss_mib": 527.7578125,
+      "parallel_peak_rss_mib": 1265.6171875,
+      "max_se_difference": 0.0,
+      "draw_plans_identical": true
+    },
+    {
+      "estimator": "bjs",
+      "n": 100000,
+      "serial_s": 51.810092794999946,
+      "parallel_s": 23.295217095990665,
+      "serial_peak_rss_mib": 515.12890625,
+      "parallel_peak_rss_mib": 1348.66015625,
+      "max_se_difference": 0.0,
+      "draw_plans_identical": true
+    },
+    {
+      "estimator": "gardner",
+      "n": 100000,
+      "serial_s": 40.007289550005225,
+      "parallel_s": 18.31748078900273,
+      "serial_peak_rss_mib": 528.0,
+      "parallel_peak_rss_mib": 1318.0859375,
+      "max_se_difference": 0.0,
+      "draw_plans_identical": true
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "unbalanced_quasi_separated_ipw",
+  "scenario": "quasi_separated",
+  "method": "ipw",
+  "panel_mode": "unbalanced",
+  "outcome_scale": 1.0,
+  "expected_refusal": true,
+  "canonical_input_sha256": "eb4f44fdff5bec0867f41849bc19b00825566fef0a7e800a0d0d47d37b56006e",
+  "status": "refused",
+  "error": "ValueError: propensity logit: singular or ill-conditioned nuisance design",
+  "wall_s": 0.6719072519917972,
+  "expected_outcome": true
+}

@@ -1,0 +1,32 @@
+{
+  "full_suite": {
+    "passed": 1146,
+    "skipped": 1
+  },
+  "polars_1_37_gardner": {
+    "passed": 67
+  },
+  "reference_fits": 48,
+  "numerical_maxima": {
+    "r_beta_max_abs": 2.5377921986091678e-11,
+    "r_vcov_max_abs": 2.3187007869296394e-13,
+    "dense_beta_max_abs": 8.482103908136196e-14,
+    "dense_vcov_max_abs": 1.3877787807814457e-15
+  },
+  "platform": "Linux/WSL; portable resource CI includes Linux/macOS/Windows; other OSes not locally executed",
+  "kernel_gardner_fixture": {
+    "passed": 1,
+    "deselected": 66
+  },
+  "resource_probes": {
+    "cases": 6,
+    "unexpected_failures": 0,
+    "kernel_oom_kills_in_fits": 0
+  },
+  "checks": [
+    "Sphinx warnings-as-errors",
+    "Ruff lint and format",
+    "sdist/wheel build",
+    "Public Castle example executed"
+  ]
+}

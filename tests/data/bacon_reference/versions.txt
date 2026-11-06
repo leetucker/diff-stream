@@ -1,0 +1,6 @@
+R 4.5.3
+bacondecomp 0.1.3
+fixest 0.14.2
+Actual installed bacondecomp::bacon; no source replacement.
+TWFE is independently fitted with lm and full unit/time dummies.
+Never-treated Inf/99999 sentinel restored to 0; future cohorts inferred from realized treatment.

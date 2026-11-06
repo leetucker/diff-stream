@@ -1,0 +1,32 @@
+Pinned unmodified authors did2s/etwfe/emfx; BJS points and clean leads from didimputation; full clean-lead covariance from fixest.
+R version 4.5.3 (2026-03-11)
+Platform: x86_64-conda-linux-gnu
+Running under: Ubuntu 24.04.2 LTS
+
+Matrix products: default
+BLAS/LAPACK: <R prefix>/lib/libopenblasp-r0.3.34.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+ [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+ [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+[10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
+
+time zone: UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] Formula_1.2-6               data.table_1.18.6.1        
+[3] marginaleffects_1.0.0.10007 fixest_0.14.2              
+
+loaded via a namespace (and not attached):
+ [1] backports_1.5.1     numDeriv_2016.8-1.1 Matrix_1.7-6       
+ [4] lattice_0.23-1      stringmagic_1.3.0   zoo_1.9-0          
+ [7] didimputation_0.5.1 generics_0.1.4      cli_3.6.6          
+[10] dreamerr_1.5.0      grid_4.5.3          sandwich_3.1-3     
+[13] compiler_4.5.3      tools_4.5.3         checkmate_2.3.4    
+[16] nlme_3.1-170        Rcpp_1.1.2          rlang_1.3.0        
+[19] insight_1.7.0      

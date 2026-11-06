@@ -1,0 +1,166 @@
+{
+  "scope": "Balanced unweighted unconditional BJS; 4 smart averages x 2 leaveout x 2 aggregates",
+  "tolerance_absolute": 1e-07,
+  "fits": 16,
+  "checks": [
+    {
+      "case": "bjs_cohort_time_plugin_dynamic",
+      "max_abs_beta": 5.601036789926184e-08,
+      "max_abs_se": 7.855585071325777e-09,
+      "max_abs_vcov": 2.7350047053509297e-09
+    },
+    {
+      "case": "bjs_cohort_time_plugin_simple",
+      "max_abs_beta": 2.1877878619847024e-08,
+      "max_abs_se": 1.5938584202457307e-09,
+      "max_abs_vcov": 3.7401141905757385e-10
+    },
+    {
+      "case": "bjs_cohort_time_leaveout_dynamic",
+      "max_abs_beta": 5.2355870083786726e-08,
+      "max_abs_se": 7.655138439810472e-09,
+      "max_abs_vcov": 2.693098782174941e-09
+    },
+    {
+      "case": "bjs_cohort_time_leaveout_simple",
+      "max_abs_beta": 1.949864070205365e-08,
+      "max_abs_se": 8.714804294873701e-10,
+      "max_abs_vcov": 2.063267993956952e-10
+    },
+    {
+      "case": "bjs_event_time_plugin_dynamic",
+      "max_abs_beta": 5.2355870083786726e-08,
+      "max_abs_se": 7.221121534062291e-09,
+      "max_abs_vcov": 2.515250424606208e-09
+    },
+    {
+      "case": "bjs_event_time_plugin_simple",
+      "max_abs_beta": 6.192766299761843e-09,
+      "max_abs_se": 1.076388825294039e-09,
+      "max_abs_vcov": 2.530897991182002e-10
+    },
+    {
+      "case": "bjs_event_time_leaveout_dynamic",
+      "max_abs_beta": 5.2355870083786726e-08,
+      "max_abs_se": 7.552893727114096e-09,
+      "max_abs_vcov": 2.6443817309484974e-09
+    },
+    {
+      "case": "bjs_event_time_leaveout_simple",
+      "max_abs_beta": 1.9855162625148637e-08,
+      "max_abs_se": 1.0242214854017107e-09,
+      "max_abs_vcov": 2.418362905765026e-10
+    },
+    {
+      "case": "bjs_cohort_plugin_dynamic",
+      "max_abs_beta": 5.0493225156600374e-08,
+      "max_abs_se": 6.7153109739592765e-09,
+      "max_abs_vcov": 2.3380063059186273e-09
+    },
+    {
+      "case": "bjs_cohort_plugin_simple",
+      "max_abs_beta": 2.1310353703896112e-08,
+      "max_abs_se": 2.0675161166439082e-09,
+      "max_abs_vcov": 4.851589182480742e-10
+    },
+    {
+      "case": "bjs_cohort_leaveout_dynamic",
+      "max_abs_beta": 5.782739109783108e-08,
+      "max_abs_se": 7.903438042911048e-09,
+      "max_abs_vcov": 2.780451278938667e-09
+    },
+    {
+      "case": "bjs_cohort_leaveout_simple",
+      "max_abs_beta": 6.178214162488871e-09,
+      "max_abs_se": 7.81190626075734e-10,
+      "max_abs_vcov": 1.8495029813214714e-10
+    },
+    {
+      "case": "bjs_all_plugin_dynamic",
+      "max_abs_beta": 5.601036789926184e-08,
+      "max_abs_se": 7.908813243195922e-09,
+      "max_abs_vcov": 2.7547862255228317e-09
+    },
+    {
+      "case": "bjs_all_plugin_simple",
+      "max_abs_beta": 6.52746035001428e-09,
+      "max_abs_se": 1.5881059106659379e-09,
+      "max_abs_vcov": 3.732941438600035e-10
+    },
+    {
+      "case": "bjs_all_leaveout_dynamic",
+      "max_abs_beta": 5.601036789926184e-08,
+      "max_abs_se": 6.98656651976215e-09,
+      "max_abs_vcov": 2.4461020327326555e-09
+    },
+    {
+      "case": "bjs_all_leaveout_simple",
+      "max_abs_beta": 2.4293496769800527e-08,
+      "max_abs_se": 1.2563546591959351e-09,
+      "max_abs_vcov": 2.9644647674131885e-10
+    }
+  ],
+  "maxima": {
+    "max_abs_beta": 5.782739109783108e-08,
+    "max_abs_se": 7.908813243195922e-09,
+    "max_abs_vcov": 2.780451278938667e-09
+  },
+  "input_sha256": "6a1111f17ed030ccba25d44342d38e9a4ebbcc27601e71a363b85ba224b86233",
+  "original_bundle_manifest": {
+    "scope": "BJS balanced unweighted, anticipation=0, four averaging groups, plugin/leaveout, dynamic/simple",
+    "files": {
+      "benchmarks/external/validate_bjs.do": {
+        "bytes": 2077,
+        "sha256": "c57a4ac9273207172371fb631b29b841b2911b45706d2005bcba9b9b96be8745"
+      },
+      "tests/data/reference_panel.csv": {
+        "bytes": 37272,
+        "sha256": "6a1111f17ed030ccba25d44342d38e9a4ebbcc27601e71a363b85ba224b86233"
+      },
+      "RUN_STATA.do": {
+        "bytes": 392,
+        "sha256": "14177fb5e99b5f2665410174d660fb306af442326907ce901e7bd9bb70a04424"
+      },
+      "README.txt": {
+        "bytes": 2419,
+        "sha256": "1c6ba4ed6715a74e86d2b3ac251a44bdc2d51fd5472b2afc95d95e56eca05347"
+      }
+    }
+  },
+  "returned_sha256": {
+    "bjs_all_leaveout_dynamic.csv": "7b3286450bd379301073234c46f720b2dd5871f247004704325b8a1066b9e717",
+    "bjs_all_leaveout_dynamic_vcov.csv": "fedfdf9da48790a0de51f2c47329b92ea77f8f7f2f972cf227c394127fd9f1b2",
+    "bjs_all_leaveout_simple.csv": "c8e2332dc6143ff208ab9f72ecbf262fcac1cad48071349e85d85f0824c85c68",
+    "bjs_all_leaveout_simple_vcov.csv": "a1b5b7188f3803cda7f7226d51bf1b73b65bfa125ce715b9881858effe5fd8aa",
+    "bjs_all_plugin_dynamic.csv": "5c7297e1c06a25e50c2f60f86ca817e62064edcc09abfb3e482cde77b2cd269a",
+    "bjs_all_plugin_dynamic_vcov.csv": "6d6205bddd939a4a2ad2c48fa0bdcd39431baec756af1c24ba1bbfa03a04d70a",
+    "bjs_all_plugin_simple.csv": "26a41c459568ed4c76f0ed30d0ca02ba60011467d2d90328e0cc96bd1a7f7f66",
+    "bjs_all_plugin_simple_vcov.csv": "9430c1dd2643b828d09992108515c2d7a2a8004cee831d25d9757c0a93526560",
+    "bjs_cohort_leaveout_dynamic.csv": "cf05cc758391a1326ae4bc837f5866ecd89a5697f6176e11d69d941693e1dfe4",
+    "bjs_cohort_leaveout_dynamic_vcov.csv": "8406bc5fb49414fcaf559c6af901ba562c0a88b2b4ab1b664e1334d8469c25b4",
+    "bjs_cohort_leaveout_simple.csv": "9ebc27ab974a27f6bfb3c1e7c2c15b7e45a6a70ff75086e33c543064fa027bd6",
+    "bjs_cohort_leaveout_simple_vcov.csv": "7e45318dd3172790090a00894e60d1e69955564094b0477d451d92522c83d770",
+    "bjs_cohort_plugin_dynamic.csv": "e9c85b5793c8d31dc9b508bb23da3ded808c17ed9a142f7c3bd6c83e15c00b36",
+    "bjs_cohort_plugin_dynamic_vcov.csv": "1eb2bc5b50f093ce6eae64ea024fe1cdc7cded738af5241e516e59c6bff671e3",
+    "bjs_cohort_plugin_simple.csv": "3c75dd87efd32e4aef99f04fcda2cdfecd415a9c1d36a418cb8c930928b5cc0e",
+    "bjs_cohort_plugin_simple_vcov.csv": "d7d22508474311e47415759a0448b125840c73e8a39b1529b9c2aaf01299f044",
+    "bjs_cohort_time_leaveout_dynamic.csv": "e09b994c356a0d63e4cbd513b91d90a32b770e77d462eca30bd5db0766c23b85",
+    "bjs_cohort_time_leaveout_dynamic_vcov.csv": "57b526d50ceec81d3f66e973194905e9f1e7d9fcdc4f7ea06487669b21daf5f0",
+    "bjs_cohort_time_leaveout_simple.csv": "4546ea73c08fdb366affbafa4c30b2102dfc5e7c216833ffda7da82e4d6a4863",
+    "bjs_cohort_time_leaveout_simple_vcov.csv": "4ea41d106f253df27d808ce9488ad0a1255bf64d9c8451403b6243efa57ec609",
+    "bjs_cohort_time_plugin_dynamic.csv": "8b9cd133dd2b78cad21fc2e6e96fddc0fa406f8594e78f04157b8d6dee182418",
+    "bjs_cohort_time_plugin_dynamic_vcov.csv": "b473ede032a174ed4754ed9efba30f4aa2dfbc4f6a60065d449ca8f7ccafd0da",
+    "bjs_cohort_time_plugin_simple.csv": "340413715aa2ec137bb0ba8e44ef15d921216eb76ae594dd5856b5429bf40b86",
+    "bjs_cohort_time_plugin_simple_vcov.csv": "d1269479b3637cd5b541f5372ea6a1f19edc2e47f9e975a588b58f40d92e3e26",
+    "bjs_event_time_leaveout_dynamic.csv": "2a8fc3d09092336cf67c98ce0da04d24d24db3871fa225f613f6c09b74ab5362",
+    "bjs_event_time_leaveout_dynamic_vcov.csv": "48277f88ae49d7999c1a467e24405ffd4c0f6193dbc4e0ef9ec66e6bcb3baf05",
+    "bjs_event_time_leaveout_simple.csv": "f1d07e9eddc10a1344f9af2e19a3ff89c12dccca5b195cd7d4b04fd8e6f10561",
+    "bjs_event_time_leaveout_simple_vcov.csv": "0032f6929f566661d6574b71e437778979bd4b283ad3427cb1ec2a4338e2f896",
+    "bjs_event_time_plugin_dynamic.csv": "ea16a50ed1d2f6c3527c9a2d35ca52a6da07751f120d5924122c360bf602f78d",
+    "bjs_event_time_plugin_dynamic_vcov.csv": "58a7fa29245d035effeb26a532e6e296fda518dc969eed85590026e7fca6a08a",
+    "bjs_event_time_plugin_simple.csv": "cdb71d65ce77b5acf61449ab86884b149df65cec8ac5e9b3ecdd112caae9abc5",
+    "bjs_event_time_plugin_simple_vcov.csv": "9c5685ae64f2c188a84f5ab75f3e21b70eefab35a2a0ac4545e827cc19b2562d",
+    "environment.log": "f8240c658b9b787dd23283b94f6d6b8dc9c1183a75b58a1d9c5cf9ed77ed2f4c",
+    "validation.log": "5f1870292cf74186edbf55104e2653606768ec331f84b0d10d0e7df9bc0fe4de"
+  }
+}

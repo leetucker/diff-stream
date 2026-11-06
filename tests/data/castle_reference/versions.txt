@@ -1,0 +1,12 @@
+R 4.5.3
+fixest 0.14.2
+Unconditional SA reanalysis of Cheng and Hoekstra (2013), public did2s castle dataset.
+50 states, 550 rows, years 2000-2010; 21 adopting and 29 never-treated states in this snapshot.
+shift0 uses effyear; shift1 uses effyear+1 and matches source post exactly. Source columns unchanged.
+Baseline unweighted; optional popwt sensitivity uses original positive state-constant weights.
+Saturated all-supported cohort/event interactions, explicit ref.p=-1; no event binning or regression truncation.
+State CRV0: K.adj=FALSE, G.adj=FALSE; fixed cohort/observation shares. No estimated-share variance term.
+Full cell covariance from actual fixest, independently checked with full-dummy WLS unit-cluster scores.
+Full aggregate covariance propagated from fixest cell covariance; actual fixest dynamic/ATT/cohort outputs checked.
+Family intervals use normal critical values; fixest default t(49) p-values/intervals are not asserted.
+Calendar and balanced-window aggregates are explicit linear maps; no native fixest shortcut is claimed.

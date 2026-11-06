@@ -1,0 +1,15 @@
+{
+  "input": "benchmarks/data/unbalanced_1000000.parquet",
+  "import_baseline_mib": 203.265625,
+  "implementation": "cohort_time_systems",
+  "warmed_rss_mib": 270.11328125,
+  "n_units": 1000000,
+  "n_obs": 4076930,
+  "checksum": 11.899292445538958,
+  "wall_s": 13.001660173002165,
+  "phase_peaks_mib": {
+    "preparation": 502.25390625,
+    "sunab_systems": 407.2890625
+  },
+  "final_rss_mib": 378.97265625
+}

@@ -1,0 +1,933 @@
+{
+  "restricted_comparisons": 40,
+  "passed": true,
+  "rows": [
+    {
+      "case": "balanced_0_0",
+      "estimator": "bjs",
+      "rows": 1662,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.55351295663786e-14,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "balanced_0_0",
+      "estimator": "gardner_static",
+      "rows": 1662,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.3203661214665772e-14,
+      "vcov_max_abs": 3.469446951953614e-18
+    },
+    {
+      "case": "balanced_0_0",
+      "estimator": "gardner_dynamic",
+      "rows": 1662,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.6423307986078726e-14,
+      "vcov_max_abs": 2.636779683484747e-16
+    },
+    {
+      "case": "balanced_0_0",
+      "estimator": "etwfe_conditional",
+      "rows": 1662,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.815214645262131e-14,
+      "vcov_max_abs": 1.3183898417423734e-16
+    },
+    {
+      "case": "balanced_0_0",
+      "estimator": "etwfe_unconditional",
+      "rows": 1662,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.815214645262131e-14,
+      "vcov_max_abs": 1.1796119636642288e-16
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "bjs",
+      "rows": 1662,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.848499131540393e-11,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "gardner_static",
+      "rows": 1662,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.491895496030793e-11,
+      "vcov_max_abs": 6.577030586818466e-14
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "gardner_dynamic",
+      "rows": 1662,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.848499131540393e-11,
+      "vcov_max_abs": 6.488559689543649e-14
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "etwfe_conditional",
+      "rows": 1662,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 9.992007221626409e-15,
+      "vcov_max_abs": 2.943879948841266e-16
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "etwfe_unconditional",
+      "rows": 1662,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 9.992007221626409e-15,
+      "vcov_max_abs": 4.3021142204224816e-16
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "bjs",
+      "rows": 1385,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 6.306066779870889e-14,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "gardner_static",
+      "rows": 1385,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 6.609296443471635e-16,
+      "vcov_max_abs": 1.0547118733938987e-15
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "gardner_dynamic",
+      "rows": 1385,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 6.428191312579656e-14,
+      "vcov_max_abs": 1.412064909445121e-15
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "etwfe_conditional",
+      "rows": 1385,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.7755575615628914e-15,
+      "vcov_max_abs": 1.1796119636642288e-16
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "etwfe_unconditional",
+      "rows": 1385,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.7755575615628914e-15,
+      "vcov_max_abs": 1.1796119636642288e-16
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "bjs",
+      "rows": 1385,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 3.2847169428862344e-11,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "gardner_static",
+      "rows": 1385,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.5895507960171926e-11,
+      "vcov_max_abs": 5.756159437986241e-14
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "gardner_dynamic",
+      "rows": 1385,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 3.2846836361954956e-11,
+      "vcov_max_abs": 3.8825886949922506e-13
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "etwfe_conditional",
+      "rows": 1385,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.6542323066914832e-14,
+      "vcov_max_abs": 4.0245584642661925e-16
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "etwfe_unconditional",
+      "rows": 1385,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.6542323066914832e-14,
+      "vcov_max_abs": 3.7470027081099033e-16
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "bjs",
+      "rows": 1565,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.4913404672588513e-13,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "gardner_static",
+      "rows": 1565,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.441380431150719e-13,
+      "vcov_max_abs": 5.655198531684391e-16
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "gardner_dynamic",
+      "rows": 1565,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.4846791291111003e-13,
+      "vcov_max_abs": 7.667477763817487e-16
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "etwfe_conditional",
+      "rows": 1565,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.2620794126737565e-14,
+      "vcov_max_abs": 7.632783294297951e-17
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "etwfe_unconditional",
+      "rows": 1565,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.2620794126737565e-14,
+      "vcov_max_abs": 6.245004513516506e-17
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "bjs",
+      "rows": 1565,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.1881606809538425e-11,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "gardner_static",
+      "rows": 1565,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.0402567696132792e-11,
+      "vcov_max_abs": 5.5788706987414116e-14
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "gardner_dynamic",
+      "rows": 1565,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.18813847649335e-11,
+      "vcov_max_abs": 5.622759202683625e-14
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "etwfe_conditional",
+      "rows": 1565,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.6431300764452317e-14,
+      "vcov_max_abs": 3.5388358909926865e-16
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "etwfe_unconditional",
+      "rows": 1565,
+      "units": 277,
+      "last_clean_time": 6,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.6431300764452317e-14,
+      "vcov_max_abs": 4.3021142204224816e-16
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "bjs",
+      "rows": 1288,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 3.6193270602780103e-14,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "gardner_static",
+      "rows": 1288,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.8504976157250894e-14,
+      "vcov_max_abs": 1.0408340855860843e-17
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "gardner_dynamic",
+      "rows": 1288,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 3.6193270602780103e-14,
+      "vcov_max_abs": 4.163336342344337e-17
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "etwfe_conditional",
+      "rows": 1288,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 3.9968028886505635e-15,
+      "vcov_max_abs": 1.734723475976807e-16
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "etwfe_unconditional",
+      "rows": 1288,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 3.9968028886505635e-15,
+      "vcov_max_abs": 1.5959455978986625e-16
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "bjs",
+      "rows": 1288,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.5194512315019892e-12,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "gardner_static",
+      "rows": 1288,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.2549683514606613e-12,
+      "vcov_max_abs": 3.8614944575243726e-15
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "gardner_dynamic",
+      "rows": 1288,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 1.5196732761069143e-12,
+      "vcov_max_abs": 3.64777652528403e-14
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "etwfe_conditional",
+      "rows": 1288,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.653433028854124e-14,
+      "vcov_max_abs": 5.273559366969494e-16
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "etwfe_unconditional",
+      "rows": 1288,
+      "units": 277,
+      "last_clean_time": 5,
+      "current_full_status": "refused",
+      "current_full_message": "at least one never-treated and one treated cohort are required",
+      "beta_max_abs": 2.653433028854124e-14,
+      "vcov_max_abs": 4.85722573273506e-16
+    }
+  ],
+  "unsupported_strata": [
+    {
+      "estimator": "bjs",
+      "reason": "BJS untreated covariate/fixed-effect design is unidentified: singular or ill-conditioned nuisance design"
+    },
+    {
+      "estimator": "gardner",
+      "reason": "Gardner untreated covariate/fixed-effect design is unidentified: singular or ill-conditioned nuisance design"
+    }
+  ],
+  "native_unrestricted_probes": [
+    {
+      "name": "balanced_0_0_bjs_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 3,
+      "nonfinite_estimates": 1
+    },
+    {
+      "name": "balanced_0_0_gardner_static_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 1,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "balanced_0_0_gardner_dynamic_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 7,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "balanced_0_0_etwfe_notyet_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 2,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "balanced_0_0_etwfe_never_full",
+      "status": "error",
+      "error": "The 'never' control group for first_treat could not be identified. You can provide a bespoke group reference level via the `gref` argument.\n",
+      "warnings": ""
+    },
+    {
+      "name": "balanced_0_1_bjs_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 3,
+      "nonfinite_estimates": 1
+    },
+    {
+      "name": "balanced_0_1_gardner_static_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 1,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "balanced_0_1_gardner_dynamic_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 7,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "balanced_0_1_etwfe_notyet_full",
+      "status": "error",
+      "error": "Supplied 1939 items to be assigned to 1662 items of column 'N'. If you wish to 'recycle' the RHS please use rep() to make this intent clear to readers of your code.",
+      "warnings": ""
+    },
+    {
+      "name": "balanced_0_1_etwfe_never_full",
+      "status": "error",
+      "error": "The 'never' control group for first_treat could not be identified. You can provide a bespoke group reference level via the `gref` argument.\n",
+      "warnings": ""
+    },
+    {
+      "name": "balanced_1_0_bjs_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 4,
+      "nonfinite_estimates": 2
+    },
+    {
+      "name": "balanced_1_0_gardner_static_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 1,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "balanced_1_0_gardner_dynamic_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 6,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "balanced_1_0_etwfe_notyet_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 2,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "balanced_1_0_etwfe_never_full",
+      "status": "error",
+      "error": "The 'never' control group for first_treat could not be identified. You can provide a bespoke group reference level via the `gref` argument.\n",
+      "warnings": ""
+    },
+    {
+      "name": "balanced_1_1_bjs_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 4,
+      "nonfinite_estimates": 2
+    },
+    {
+      "name": "balanced_1_1_gardner_static_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 1,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "balanced_1_1_gardner_dynamic_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 6,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "balanced_1_1_etwfe_notyet_full",
+      "status": "error",
+      "error": "Supplied 1939 items to be assigned to 1385 items of column 'N'. If you wish to 'recycle' the RHS please use rep() to make this intent clear to readers of your code.",
+      "warnings": ""
+    },
+    {
+      "name": "balanced_1_1_etwfe_never_full",
+      "status": "error",
+      "error": "The 'never' control group for first_treat could not be identified. You can provide a bespoke group reference level via the `gref` argument.\n",
+      "warnings": ""
+    },
+    {
+      "name": "unbalanced_0_0_bjs_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 3,
+      "nonfinite_estimates": 1
+    },
+    {
+      "name": "unbalanced_0_0_gardner_static_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 1,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "unbalanced_0_0_gardner_dynamic_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 7,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "unbalanced_0_0_etwfe_notyet_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 2,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "unbalanced_0_0_etwfe_never_full",
+      "status": "error",
+      "error": "The 'never' control group for first_treat could not be identified. You can provide a bespoke group reference level via the `gref` argument.\n",
+      "warnings": ""
+    },
+    {
+      "name": "unbalanced_0_1_bjs_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 3,
+      "nonfinite_estimates": 1
+    },
+    {
+      "name": "unbalanced_0_1_gardner_static_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 1,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "unbalanced_0_1_gardner_dynamic_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 7,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "unbalanced_0_1_etwfe_notyet_full",
+      "status": "error",
+      "error": "Supplied 1824 items to be assigned to 1565 items of column 'N'. If you wish to 'recycle' the RHS please use rep() to make this intent clear to readers of your code.",
+      "warnings": ""
+    },
+    {
+      "name": "unbalanced_0_1_etwfe_never_full",
+      "status": "error",
+      "error": "The 'never' control group for first_treat could not be identified. You can provide a bespoke group reference level via the `gref` argument.\n",
+      "warnings": ""
+    },
+    {
+      "name": "unbalanced_1_0_bjs_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 4,
+      "nonfinite_estimates": 2
+    },
+    {
+      "name": "unbalanced_1_0_gardner_static_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 1,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "unbalanced_1_0_gardner_dynamic_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 6,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "unbalanced_1_0_etwfe_notyet_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 2,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "unbalanced_1_0_etwfe_never_full",
+      "status": "error",
+      "error": "The 'never' control group for first_treat could not be identified. You can provide a bespoke group reference level via the `gref` argument.\n",
+      "warnings": ""
+    },
+    {
+      "name": "unbalanced_1_1_bjs_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 4,
+      "nonfinite_estimates": 2
+    },
+    {
+      "name": "unbalanced_1_1_gardner_static_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 1,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "unbalanced_1_1_gardner_dynamic_full",
+      "status": "returned",
+      "error": "",
+      "warnings": "",
+      "returned_rows": 6,
+      "nonfinite_estimates": 0
+    },
+    {
+      "name": "unbalanced_1_1_etwfe_notyet_full",
+      "status": "error",
+      "error": "Supplied 1824 items to be assigned to 1288 items of column 'N'. If you wish to 'recycle' the RHS please use rep() to make this intent clear to readers of your code.",
+      "warnings": ""
+    },
+    {
+      "name": "unbalanced_1_1_etwfe_never_full",
+      "status": "error",
+      "error": "The 'never' control group for first_treat could not be identified. You can provide a bespoke group reference level via the `gref` argument.\n",
+      "warnings": ""
+    }
+  ],
+  "gardner_dynamic_reference_differences": [
+    {
+      "case": "balanced_0_0",
+      "max_common_difference": 0.15478464211664517,
+      "by_term": {
+        "event::-5": 0.15478464211664517,
+        "event::-4": 0.0546217602207816,
+        "event::-3": 0.007647074784595212,
+        "event::-2": 0.1046171311395804,
+        "event::0": 2.6423307986078726e-14,
+        "event::1": 1.5765166949677223e-14
+      }
+    },
+    {
+      "case": "balanced_0_1",
+      "max_common_difference": 0.033175435015758314,
+      "by_term": {
+        "event::-5": 0.007937219544770974,
+        "event::-4": 0.033175435015758314,
+        "event::-3": 0.029189925588189416,
+        "event::-2": 0.011638788416514154,
+        "event::0": 1.3146594923796329e-11,
+        "event::1": 1.848499131540393e-11
+      }
+    },
+    {
+      "case": "balanced_1_0",
+      "max_common_difference": 0.07568919646178193,
+      "by_term": {
+        "event::-5": 0.07205279149204841,
+        "event::-4": 0.017731482824657575,
+        "event::-3": 0.07568919646178193,
+        "event::-1": 2.5646151868841116e-14,
+        "event::0": 6.428191312579656e-14
+      }
+    },
+    {
+      "case": "balanced_1_1",
+      "max_common_difference": 0.03108192946991916,
+      "by_term": {
+        "event::-5": 0.03108192946991916,
+        "event::-4": 0.008830790596820993,
+        "event::-3": 0.0009587340211722958,
+        "event::-1": 2.243852326166973e-11,
+        "event::0": 3.2846836361954956e-11
+      }
+    },
+    {
+      "case": "unbalanced_0_0",
+      "max_common_difference": 0.161032478128244,
+      "by_term": {
+        "event::-5": 0.161032478128244,
+        "event::-4": 0.06556385669042622,
+        "event::-3": 0.008601088680933608,
+        "event::-2": 0.11718527919211953,
+        "event::0": 2.4225066397320916e-13,
+        "event::1": 2.4846791291111003e-13
+      }
+    },
+    {
+      "case": "unbalanced_0_1",
+      "max_common_difference": 0.04777912505790574,
+      "by_term": {
+        "event::-5": 0.0008837564161527159,
+        "event::-4": 0.04777912505790574,
+        "event::-3": 0.03833981451315632,
+        "event::-2": 0.010446929794695636,
+        "event::0": 9.665379607781688e-12,
+        "event::1": 1.18813847649335e-11
+      }
+    },
+    {
+      "case": "unbalanced_1_0",
+      "max_common_difference": 0.06607251987050754,
+      "by_term": {
+        "event::-5": 0.06566096217154628,
+        "event::-4": 0.03409599977273582,
+        "event::-3": 0.06607251987050754,
+        "event::-1": 2.5146551507759796e-14,
+        "event::0": 3.6193270602780103e-14
+      }
+    },
+    {
+      "case": "unbalanced_1_1",
+      "max_common_difference": 0.04379696045391737,
+      "by_term": {
+        "event::-5": 0.04379696045391737,
+        "event::-4": 0.02346898953149812,
+        "event::-3": 0.0090265897905595,
+        "event::-1": 1.1238510122524303e-12,
+        "event::0": 1.5196732761069143e-12
+      }
+    }
+  ],
+  "bjs_placebo_relabeling_differences": [
+    {
+      "case": "balanced_0_0",
+      "max_abs_difference": 0.31441817010303696
+    },
+    {
+      "case": "balanced_0_1",
+      "max_abs_difference": 0.31561484794816486
+    },
+    {
+      "case": "balanced_1_0",
+      "max_abs_difference": 0.21434562255392545
+    },
+    {
+      "case": "balanced_1_1",
+      "max_abs_difference": 0.16477110877123666
+    },
+    {
+      "case": "unbalanced_0_0",
+      "max_abs_difference": 0.343975694602677
+    },
+    {
+      "case": "unbalanced_0_1",
+      "max_abs_difference": 0.3331789057355219
+    },
+    {
+      "case": "unbalanced_1_0",
+      "max_abs_difference": 0.24236065231688195
+    },
+    {
+      "case": "unbalanced_1_1",
+      "max_abs_difference": 0.25517985384525144
+    }
+  ],
+  "future_cohort_full_window_fits": [
+    {
+      "estimator": "bjs",
+      "anticipation": 0,
+      "retained_rows": 1939
+    },
+    {
+      "estimator": "gardner",
+      "anticipation": 0,
+      "retained_rows": 1939
+    },
+    {
+      "estimator": "etwfe",
+      "anticipation": 0,
+      "retained_rows": 1939
+    },
+    {
+      "estimator": "bjs",
+      "anticipation": 1,
+      "retained_rows": 1939
+    },
+    {
+      "estimator": "gardner",
+      "anticipation": 1,
+      "retained_rows": 1939
+    },
+    {
+      "estimator": "etwfe",
+      "anticipation": 1,
+      "retained_rows": 1939
+    }
+  ],
+  "complete_panel_selection": {
+    "reference_group_requested": "auto",
+    "reference_group": "lasttreated",
+    "reference_cohort": 6,
+    "reference_cohort_units": 105,
+    "reference_never_units": 0,
+    "input_time_min": 1,
+    "input_time_max": 7,
+    "reference_cutoff": 6,
+    "reference_last_clean_time": 5,
+    "reference_dropped_rows": 354,
+    "reference_dropped_units": 0,
+    "reference_includes_never_treated": false,
+    "reference_selection": "after original balanced/complete/unbalanced panel policy; before reference is affected",
+    "original_last_cohort": 7,
+    "naive_truncate_first_last_clean_time": 6
+  },
+  "review_only": true,
+  "production_reference_policies_changed": false
+}

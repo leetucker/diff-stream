@@ -1,0 +1,13 @@
+{
+  "name": "unbalanced_singular_dr",
+  "scenario": "singular",
+  "method": "dr",
+  "panel_mode": "unbalanced",
+  "outcome_scale": 1.0,
+  "expected_refusal": true,
+  "canonical_input_sha256": "f0e593424dc27713659cf7dd75a0a7d039f759eccd9b46ba66171904a4e3e0ee",
+  "status": "refused",
+  "error": "ValueError: stratified outcome regression (system 0, 804 observations, 3 columns): singular or ill-conditioned nuisance design",
+  "wall_s": 0.030506240000249818,
+  "expected_outcome": true
+}

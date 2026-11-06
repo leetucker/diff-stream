@@ -1,0 +1,13 @@
+{
+  "threads": 4,
+  "n_obs": 8000000,
+  "wall_s": 3.2736069960010354,
+  "sampled_peak_rss_mb": {
+    "baseline": 198.50390625,
+    "validation": 1428.96484375,
+    "sort_and_stage": 1761.1875,
+    "cohort_means": 1185.05859375,
+    "small_solve": 1177.80859375,
+    "scores_and_covariance": 1089.62109375
+  }
+}

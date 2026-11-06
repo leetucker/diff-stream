@@ -1,0 +1,13 @@
+{
+  "name": "balanced_separated_reg",
+  "scenario": "separated",
+  "method": "reg",
+  "panel_mode": "balanced",
+  "outcome_scale": 1.0,
+  "expected_refusal": true,
+  "canonical_input_sha256": "c3da15452b6ddf881228f2a033cb6d8a2436c1b35e30a7c22966bca4f0a99ce2",
+  "status": "refused",
+  "error": "ValueError: outcome regression: singular or ill-conditioned nuisance design",
+  "wall_s": 0.02231065501109697,
+  "expected_outcome": true
+}

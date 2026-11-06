@@ -1,0 +1,7 @@
+R 4.5.3
+did 2.5.1
+BMisc 1.4.10
+Common Rademacher draws supplied from hdfe_stream.core.wildboot.WEIGHTS; Python seed 815, unit-major 400x199; fixture row=id+1.
+Process-local replacement of run_multiplier_bootstrap supplies common draws; installed did mboot computes IQR SEs/type-1 critical values.
+Varying-base A=2 uses effective-onset labels; actual-treatment post aggregates use actual cohort labels.
+Pretests explicitly select clean t<g-A cells and use the R analytic covariance.

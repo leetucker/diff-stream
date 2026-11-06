@@ -1,0 +1,8 @@
+R 4.5.3
+didimputation 0.5.1
+anticipation 0
+sampling weights w
+didimputation first-stage fixef.tol=1e-10
+Package weighted point estimates only: its weighted variance uses squared-weight first-stage Gram; dense WLS covariance is the inference reference.
+Dense full-unit-dummy oracle; independently implemented published score equations.
+Stata execution is external and is not claimed by this fixture.

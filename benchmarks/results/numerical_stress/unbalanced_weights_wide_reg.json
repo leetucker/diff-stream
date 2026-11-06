@@ -1,0 +1,450 @@
+{
+  "name": "unbalanced_weights_wide_reg",
+  "scenario": "weights_wide",
+  "method": "reg",
+  "panel_mode": "unbalanced",
+  "outcome_scale": 1.0,
+  "expected_refusal": false,
+  "canonical_input_sha256": "d182a3f3d6cac6f16032d5d03b60f13579903b2e39da6f66604328c667bb6311",
+  "status": "ok",
+  "fit": {
+    "cells": [
+      [
+        3,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        5,
+        5
+      ]
+    ],
+    "beta": [
+      0.12863481285577893,
+      1.1674711456177878,
+      0.9596213723817225,
+      1.3350710199678617,
+      0.5200540702173946,
+      -0.18675479103558795,
+      -0.08441317199145504,
+      1.4016286877656585
+    ],
+    "vcov": [
+      [
+        0.1744993976186982,
+        -0.10118901368657338,
+        -0.08156799046372404,
+        -0.11654431462757153,
+        0.09333221882250149,
+        -0.05841454237855839,
+        -0.011876753509651842,
+        0.011842397018602308
+      ],
+      [
+        -0.10118901368657338,
+        0.13255144390357895,
+        0.06013257043610266,
+        0.08651873842232258,
+        -0.05789753356409866,
+        0.0866144559446219,
+        -0.030361904628087057,
+        -0.011338349681795598
+      ],
+      [
+        -0.08156799046372404,
+        0.06013257043610266,
+        0.1320628971252777,
+        0.08188206564876446,
+        -0.06425515812086327,
+        0.052265511328983834,
+        0.05799633716516083,
+        -0.049409047909046676
+      ],
+      [
+        -0.11654431462757153,
+        0.08651873842232258,
+        0.08188206564876446,
+        0.1690785746374528,
+        -0.062049742629724444,
+        0.049258612111782334,
+        0.021617430559779216,
+        0.03167703845434313
+      ],
+      [
+        0.09333221882250149,
+        -0.05789753356409866,
+        -0.06425515812086327,
+        -0.062049742629724444,
+        0.15374934698184156,
+        -0.09817292598216427,
+        -0.0006474021578181763,
+        -0.004594644771633826
+      ],
+      [
+        -0.05841454237855839,
+        0.0866144559446219,
+        0.052265511328983834,
+        0.049258612111782334,
+        -0.09817292598216427,
+        0.1490218891263172,
+        -0.07253982408390175,
+        0.012171113953771353
+      ],
+      [
+        -0.011876753509651842,
+        -0.030361904628087057,
+        0.05799633716516083,
+        0.021617430559779216,
+        -0.0006474021578181763,
+        -0.07253982408390175,
+        0.16344338959836646,
+        -0.0828367831316152
+      ],
+      [
+        0.011842397018602308,
+        -0.011338349681795598,
+        -0.049409047909046676,
+        0.03167703845434313,
+        -0.004594644771633826,
+        0.012171113953771353,
+        -0.0828367831316152,
+        0.15115999522306636
+      ]
+    ],
+    "att": 1.2239580475204561,
+    "se": 0.24341427134295887,
+    "diagnostics": {
+      "pretrends": 0,
+      "bootstrap_reps": 0,
+      "bootstrap_seed": null,
+      "bootstrap_weights": null,
+      "bootstrap_unit_order": null,
+      "sampling_weights": "w",
+      "weight_convention": "positive time-invariant unit sampling weights",
+      "weight_scale": 41984.791124035735,
+      "total_unit_weight": 100763498.69768576,
+      "cohort_weight_totals": {
+        "0": 33062758.970852952,
+        "3": 31050635.343311932,
+        "5": 36650104.38352088
+      },
+      "anticipation": 0,
+      "reference_event_time": -1,
+      "cohort_sizes": {
+        "0": 804,
+        "3": 749,
+        "5": 847
+      },
+      "time_min": 1,
+      "time_max": 5,
+      "panel_mode": "unbalanced",
+      "balanced_sample": false,
+      "input_units": 2400,
+      "input_rows": 10800,
+      "dropped_units": 0,
+      "dropped_rows": 0,
+      "omitted_cells": [],
+      "control_group": "nevertreated",
+      "base_period": "varying",
+      "inference": "unit clustered; observed-row analytic scores",
+      "periods": 5,
+      "batch_units": 137,
+      "preprocess_mb": 4,
+      "partitions": 1,
+      "max_decoded_leaf_bytes": 873457,
+      "warnings": [],
+      "est_method": "reg",
+      "covariate_names": [
+        "Intercept",
+        "x",
+        "z"
+      ],
+      "covariate_convention": "observed-date covariates; repeated-cross-section functionals",
+      "nuisance_systems": 5,
+      "propensity_models": 0,
+      "nuisance_source_passes": 3,
+      "trim_level": 0.995,
+      "comparisons": [
+        {
+          "cohort": 3,
+          "time": 2,
+          "base": 1,
+          "trimmed_controls": 0,
+          "capped_probabilities": 0,
+          "n_control_pre": 804,
+          "n_control_post": 583,
+          "n_treated_pre": 749,
+          "n_treated_post": 576,
+          "propensity_range": null,
+          "effective_controls": null,
+          "logit_iterations": null
+        },
+        {
+          "cohort": 3,
+          "time": 3,
+          "base": 2,
+          "trimmed_controls": 0,
+          "capped_probabilities": 0,
+          "n_control_pre": 583,
+          "n_control_post": 804,
+          "n_treated_pre": 576,
+          "n_treated_post": 749,
+          "propensity_range": null,
+          "effective_controls": null,
+          "logit_iterations": null
+        },
+        {
+          "cohort": 3,
+          "time": 4,
+          "base": 2,
+          "trimmed_controls": 0,
+          "capped_probabilities": 0,
+          "n_control_pre": 583,
+          "n_control_post": 583,
+          "n_treated_pre": 576,
+          "n_treated_post": 576,
+          "propensity_range": null,
+          "effective_controls": null,
+          "logit_iterations": null
+        },
+        {
+          "cohort": 3,
+          "time": 5,
+          "base": 2,
+          "trimmed_controls": 0,
+          "capped_probabilities": 0,
+          "n_control_pre": 583,
+          "n_control_post": 804,
+          "n_treated_pre": 576,
+          "n_treated_post": 749,
+          "propensity_range": null,
+          "effective_controls": null,
+          "logit_iterations": null
+        },
+        {
+          "cohort": 5,
+          "time": 2,
+          "base": 1,
+          "trimmed_controls": 0,
+          "capped_probabilities": 0,
+          "n_control_pre": 804,
+          "n_control_post": 583,
+          "n_treated_pre": 847,
+          "n_treated_post": 641,
+          "propensity_range": null,
+          "effective_controls": null,
+          "logit_iterations": null
+        },
+        {
+          "cohort": 5,
+          "time": 3,
+          "base": 2,
+          "trimmed_controls": 0,
+          "capped_probabilities": 0,
+          "n_control_pre": 583,
+          "n_control_post": 804,
+          "n_treated_pre": 641,
+          "n_treated_post": 847,
+          "propensity_range": null,
+          "effective_controls": null,
+          "logit_iterations": null
+        },
+        {
+          "cohort": 5,
+          "time": 4,
+          "base": 3,
+          "trimmed_controls": 0,
+          "capped_probabilities": 0,
+          "n_control_pre": 804,
+          "n_control_post": 583,
+          "n_treated_pre": 847,
+          "n_treated_post": 641,
+          "propensity_range": null,
+          "effective_controls": null,
+          "logit_iterations": null
+        },
+        {
+          "cohort": 5,
+          "time": 5,
+          "base": 4,
+          "trimmed_controls": 0,
+          "capped_probabilities": 0,
+          "n_control_pre": 583,
+          "n_control_post": 804,
+          "n_treated_pre": 641,
+          "n_treated_post": 847,
+          "propensity_range": null,
+          "effective_controls": null,
+          "logit_iterations": null
+        }
+      ]
+    }
+  },
+  "wall_s": 0.06969334800669458,
+  "expected_outcome": true,
+  "reference": {
+    "name": "unbalanced_weights_wide_reg",
+    "status": "ok",
+    "warnings": [],
+    "fit": {
+      "cells": [
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          5,
+          5
+        ]
+      ],
+      "beta": [
+        0.12863481285577896,
+        1.1674711456177889,
+        0.9596213723817223,
+        1.3350710199678621,
+        0.5200540702173944,
+        -0.18675479103558684,
+        -0.08441317199145537,
+        1.4016286877656579
+      ],
+      "vcov": [
+        [
+          0.17449939761869818,
+          -0.10118901368657326,
+          -0.08156799046372398,
+          -0.11654431462757155,
+          0.09333221882250152,
+          -0.058414542378558386,
+          -0.011876753509651866,
+          0.011842397018602355
+        ],
+        [
+          -0.10118901368657326,
+          0.13255144390357881,
+          0.06013257043610259,
+          0.08651873842232259,
+          -0.057897533564098644,
+          0.0866144559446218,
+          -0.030361904628087022,
+          -0.011338349681795635
+        ],
+        [
+          -0.08156799046372398,
+          0.06013257043610259,
+          0.13206289712527752,
+          0.08188206564876435,
+          -0.06425515812086323,
+          0.052265511328983785,
+          0.057996337165160804,
+          -0.04940904790904661
+        ],
+        [
+          -0.11654431462757155,
+          0.08651873842232259,
+          0.08188206564876435,
+          0.16907857463745257,
+          -0.062049742629724396,
+          0.04925861211178233,
+          0.02161743055977922,
+          0.03167703845434305
+        ],
+        [
+          0.09333221882250152,
+          -0.057897533564098644,
+          -0.06425515812086323,
+          -0.062049742629724396,
+          0.15374934698184156,
+          -0.09817292598216427,
+          -0.0006474021578182034,
+          -0.0045946447716337605
+        ],
+        [
+          -0.058414542378558386,
+          0.0866144559446218,
+          0.052265511328983785,
+          0.04925861211178233,
+          -0.09817292598216427,
+          0.1490218891263169,
+          -0.07253982408390168,
+          0.012171113953771222
+        ],
+        [
+          -0.011876753509651866,
+          -0.030361904628087022,
+          0.057996337165160804,
+          0.02161743055977922,
+          -0.0006474021578182034,
+          -0.07253982408390168,
+          0.1634433895983665,
+          -0.0828367831316152
+        ],
+        [
+          0.011842397018602355,
+          -0.011338349681795635,
+          -0.04940904790904661,
+          0.03167703845434305,
+          -0.0045946447716337605,
+          0.012171113953771222,
+          -0.0828367831316152,
+          0.15115999522306625
+        ]
+      ],
+      "att": 1.2239580475204561,
+      "se": 0.2434142713429588
+    }
+  },
+  "comparison": {
+    "beta_max_abs": 1.1102230246251565e-15,
+    "vcov_max_abs": 3.0531133177191805e-16,
+    "att_abs": 0.0,
+    "se_abs": 8.326672684688674e-17,
+    "passed": true
+  }
+}

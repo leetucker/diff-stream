@@ -1,0 +1,1724 @@
+{
+  "fits": 48,
+  "passed": true,
+  "inference_passed": true,
+  "point_tolerance_failures": [],
+  "maxima": {
+    "post": {
+      "max_abs_beta": 3.737386666813336e-08,
+      "max_abs_se": 5.828856841638697e-11,
+      "max_abs_vcov": 1.226524715125521e-10
+    },
+    "placebo": {
+      "max_abs_beta": 1.1657341758564144e-15,
+      "max_abs_se": 1.5265566588595902e-15,
+      "max_abs_vcov": 6.730727086790012e-16
+    },
+    "clean_regression": {
+      "max_abs_beta": 8.881784197001252e-16,
+      "max_abs_se": 8.049116928532385e-16,
+      "max_abs_vcov": 3.5388358909926865e-16
+    }
+  },
+  "max_abs_F": 6.23945339839338e-14,
+  "max_abs_F_pvalue": 1.0852430065710905e-14,
+  "checks": [
+    {
+      "case": "balanced_w1_a2_cohort_time_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 3.737386666813336e-08,
+        "max_abs_se": 5.466527230879592e-11,
+        "max_abs_vcov": 2.9491548092508424e-11
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_cohort_time_plugin_simple",
+      "post": {
+        "max_abs_beta": 5.398505642517648e-09,
+        "max_abs_se": 1.7212897773788427e-12,
+        "max_abs_vcov": 8.297390552414186e-13
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_cohort_time_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 1.9097537995449443e-08,
+        "max_abs_se": 5.828856841638697e-11,
+        "max_abs_vcov": 1.4755800747945358e-11
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_cohort_time_leaveout_simple",
+      "post": {
+        "max_abs_beta": 1.3210139648833774e-09,
+        "max_abs_se": 2.5557889138383416e-12,
+        "max_abs_vcov": 1.2396403348269303e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_event_time_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 7.4254098425541315e-09,
+        "max_abs_se": 3.3159586187991863e-12,
+        "max_abs_vcov": 2.254353648201146e-11
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_event_time_plugin_simple",
+      "post": {
+        "max_abs_beta": 1.2121148529331549e-08,
+        "max_abs_se": 8.53675463652337e-12,
+        "max_abs_vcov": 4.1260467265047396e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_event_time_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 9.272314471786558e-09,
+        "max_abs_se": 1.6125323298865624e-11,
+        "max_abs_vcov": 7.391885714636004e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_event_time_leaveout_simple",
+      "post": {
+        "max_abs_beta": 8.535098849904443e-09,
+        "max_abs_se": 7.447986671849094e-12,
+        "max_abs_vcov": 3.61247143310095e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_cohort_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 8.103519855140462e-09,
+        "max_abs_se": 1.7783358119416448e-11,
+        "max_abs_vcov": 8.126478656667047e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_cohort_plugin_simple",
+      "post": {
+        "max_abs_beta": 8.535098849904443e-09,
+        "max_abs_se": 6.572076216571077e-12,
+        "max_abs_vcov": 3.1680491563435e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_cohort_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 9.272314471786558e-09,
+        "max_abs_se": 1.8442025684350938e-11,
+        "max_abs_vcov": 8.473957646693009e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_cohort_leaveout_simple",
+      "post": {
+        "max_abs_beta": 8.535098849904443e-09,
+        "max_abs_se": 7.516515188044082e-12,
+        "max_abs_vcov": 3.645764246051897e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_all_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 9.272314471786558e-09,
+        "max_abs_se": 1.5879214609881842e-11,
+        "max_abs_vcov": 8.35007063493265e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_all_plugin_simple",
+      "post": {
+        "max_abs_beta": 8.535098849904443e-09,
+        "max_abs_se": 5.778155731661627e-12,
+        "max_abs_vcov": 2.8022584253051264e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_all_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 9.272314471786558e-09,
+        "max_abs_se": 1.6125295543290008e-11,
+        "max_abs_vcov": 7.3918787757421e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "balanced_w1_a2_all_leaveout_simple",
+      "post": {
+        "max_abs_beta": 8.535098849904443e-09,
+        "max_abs_se": 5.882072606766542e-12,
+        "max_abs_vcov": 2.860857384323623e-12
+      },
+      "placebo": {
+        "max_abs_beta": 1.1657341758564144e-15,
+        "max_abs_se": 1.5265566588595902e-15,
+        "max_abs_vcov": 6.730727086790012e-16
+      },
+      "clean_regression": {
+        "max_abs_beta": 8.881784197001252e-16,
+        "max_abs_se": 8.049116928532385e-16,
+        "max_abs_vcov": 3.5388358909926865e-16
+      },
+      "adjustments": {
+        "imputation": 1.0069973340519043,
+        "clean_regression": 1.0074988267481453
+      },
+      "clean_metadata": {
+        "N": 2019,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 400,
+        "df_r": 399
+      },
+      "max_abs_F": 1.27675647831893e-14,
+      "max_abs_F_pvalue": 5.88418203051333e-15
+    },
+    {
+      "case": "complete_w1_a2_cohort_time_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 6.023793908127573e-09,
+        "max_abs_se": 7.93110022101473e-12,
+        "max_abs_vcov": 5.9298954635522705e-12
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_cohort_time_plugin_simple",
+      "post": {
+        "max_abs_beta": 5.806507719086085e-09,
+        "max_abs_se": 1.968702978416559e-12,
+        "max_abs_vcov": 1.0240003289752053e-12
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_cohort_time_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 5.226412636005762e-09,
+        "max_abs_se": 6.150968623330755e-12,
+        "max_abs_vcov": 4.664990616021214e-12
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_cohort_time_leaveout_simple",
+      "post": {
+        "max_abs_beta": 5.806507719086085e-09,
+        "max_abs_se": 2.6229574068281636e-12,
+        "max_abs_vcov": 1.3742340598810188e-12
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_event_time_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 5.226412636005762e-09,
+        "max_abs_se": 7.504441512651283e-12,
+        "max_abs_vcov": 1.8953755231976288e-11
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_event_time_plugin_simple",
+      "post": {
+        "max_abs_beta": 5.806507719086085e-09,
+        "max_abs_se": 3.2307490016592055e-14,
+        "max_abs_vcov": 1.697253448895708e-14
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_event_time_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 4.764884931063307e-09,
+        "max_abs_se": 1.5994650048867243e-11,
+        "max_abs_vcov": 4.162784006389586e-11
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_event_time_leaveout_simple",
+      "post": {
+        "max_abs_beta": 5.806507719086085e-09,
+        "max_abs_se": 1.4510614931850796e-13,
+        "max_abs_vcov": 7.653599976009673e-14
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_cohort_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 3.350672894697482e-08,
+        "max_abs_se": 2.996292103318865e-11,
+        "max_abs_vcov": 1.8456652872700374e-11
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_cohort_plugin_simple",
+      "post": {
+        "max_abs_beta": 2.2095365537211364e-09,
+        "max_abs_se": 1.4547807403175739e-12,
+        "max_abs_vcov": 7.567141357966989e-13
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_cohort_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 1.4381878132851966e-08,
+        "max_abs_se": 2.7905178168197153e-11,
+        "max_abs_vcov": 1.4810763726558207e-11
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_cohort_leaveout_simple",
+      "post": {
+        "max_abs_beta": 5.806507719086085e-09,
+        "max_abs_se": 2.6229018956769323e-12,
+        "max_abs_vcov": 1.374220182093211e-12
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_all_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 1.5674860964765003e-08,
+        "max_abs_se": 5.344819031805059e-11,
+        "max_abs_vcov": 1.156832685200726e-10
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_all_plugin_simple",
+      "post": {
+        "max_abs_beta": 5.806507719086085e-09,
+        "max_abs_se": 3.0679903062491576e-12,
+        "max_abs_vcov": 1.625602430443962e-12
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_all_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 2.7843929828463843e-08,
+        "max_abs_se": 2.9767632803157085e-11,
+        "max_abs_vcov": 1.226524715125521e-10
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "complete_w1_a2_all_leaveout_simple",
+      "post": {
+        "max_abs_beta": 1.0099565406207489e-08,
+        "max_abs_se": 1.7156831511044857e-12,
+        "max_abs_vcov": 9.122702593344911e-13
+      },
+      "placebo": {
+        "max_abs_beta": 2.220446049250313e-16,
+        "max_abs_se": 2.7755575615628914e-16,
+        "max_abs_vcov": 9.020562075079397e-17
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.440892098500626e-16,
+        "max_abs_se": 3.3306690738754696e-16,
+        "max_abs_vcov": 1.8041124150158794e-16
+      },
+      "adjustments": {
+        "imputation": 1.0093128228706836,
+        "clean_regression": 1.0099803578064448
+      },
+      "clean_metadata": {
+        "N": 1523,
+        "df_m": 3,
+        "df_a": 7,
+        "clusters": 300,
+        "df_r": 299
+      },
+      "max_abs_F": 3.4416913763379853e-15,
+      "max_abs_F_pvalue": 1.6653345369377348e-15
+    },
+    {
+      "case": "mpdta_w0_a0_cohort_time_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 6.318928491566567e-09,
+        "max_abs_se": 1.2756080913778334e-12,
+        "max_abs_vcov": 4.79945401997417e-14
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_cohort_time_plugin_simple",
+      "post": {
+        "max_abs_beta": 6.629240802136227e-09,
+        "max_abs_se": 1.3197082315841158e-13,
+        "max_abs_vcov": 3.4899925831222145e-15
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_cohort_time_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 6.318928491566567e-09,
+        "max_abs_se": 1.4488028832193578e-12,
+        "max_abs_vcov": 6.361187618320052e-14
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_cohort_time_leaveout_simple",
+      "post": {
+        "max_abs_beta": 2.8591868178606816e-09,
+        "max_abs_se": 4.56704118967366e-13,
+        "max_abs_vcov": 1.2302794416899077e-14
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_event_time_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 6.318928491566567e-09,
+        "max_abs_se": 1.5377522172288494e-11,
+        "max_abs_vcov": 2.7892823142340595e-12
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_event_time_plugin_simple",
+      "post": {
+        "max_abs_beta": 3.555826078027735e-09,
+        "max_abs_se": 4.772848782863548e-13,
+        "max_abs_vcov": 1.2669580011850923e-14
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_event_time_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 2.562821956042516e-08,
+        "max_abs_se": 9.377339182936595e-12,
+        "max_abs_vcov": 1.081602575515525e-11
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_event_time_leaveout_simple",
+      "post": {
+        "max_abs_beta": 2.8591868178606816e-09,
+        "max_abs_se": 9.157138589066527e-12,
+        "max_abs_vcov": 2.4598937253469955e-13
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_cohort_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 2.5105747564202474e-08,
+        "max_abs_se": 2.590098274746211e-13,
+        "max_abs_vcov": 2.288277802919153e-14
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_cohort_plugin_simple",
+      "post": {
+        "max_abs_beta": 2.8591868178606816e-09,
+        "max_abs_se": 3.38824454604314e-13,
+        "max_abs_vcov": 8.960199119126266e-15
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_cohort_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 6.318928491566567e-09,
+        "max_abs_se": 1.4488028832193578e-12,
+        "max_abs_vcov": 6.361165934276602e-14
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_cohort_leaveout_simple",
+      "post": {
+        "max_abs_beta": 4.109511217431638e-09,
+        "max_abs_se": 1.1731934868031146e-13,
+        "max_abs_vcov": 3.160368017632309e-15
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_all_plugin_dynamic",
+      "post": {
+        "max_abs_beta": 6.318928491566567e-09,
+        "max_abs_se": 1.5377522172288494e-11,
+        "max_abs_vcov": 2.7892822058138422e-12
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_all_plugin_simple",
+      "post": {
+        "max_abs_beta": 2.8591868178606816e-09,
+        "max_abs_se": 6.8455466989414404e-12,
+        "max_abs_vcov": 1.8411970082246598e-13
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_all_leaveout_dynamic",
+      "post": {
+        "max_abs_beta": 6.318928491566567e-09,
+        "max_abs_se": 1.7874878660562032e-11,
+        "max_abs_vcov": 2.8450027706947156e-12
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    },
+    {
+      "case": "mpdta_w0_a0_all_leaveout_simple",
+      "post": {
+        "max_abs_beta": 2.8591868178606816e-09,
+        "max_abs_se": 8.552176328224803e-12,
+        "max_abs_vcov": 2.319365402861373e-13
+      },
+      "placebo": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 5.0306980803327406e-17,
+        "max_abs_vcov": 1.4907779871675686e-18
+      },
+      "clean_regression": {
+        "max_abs_beta": 4.649058915617843e-16,
+        "max_abs_se": 2.2551405187698492e-17,
+        "max_abs_vcov": 7.047314121155779e-19
+      },
+      "adjustments": {
+        "imputation": 1.0039230080983734,
+        "clean_regression": 1.0043828903741858
+      },
+      "clean_metadata": {
+        "N": 2189,
+        "df_m": 1,
+        "df_a": 4,
+        "clusters": 480,
+        "df_r": 479
+      },
+      "max_abs_F": 6.23945339839338e-14,
+      "max_abs_F_pvalue": 1.0852430065710905e-14
+    }
+  ],
+  "tolerance_absolute": 1e-07,
+  "convention": "Post CRV0; did_imputation placebo SSC and native reghdfe SSC differ by nested-FE adjustment of one; native F checked separately",
+  "bundle_manifest": {
+    "cases": [
+      {
+        "name": "balanced_w1_a2",
+        "stata_input": "balanced.csv",
+        "python_input": "balanced.csv",
+        "panel_mode": "balanced",
+        "anticipation": 2,
+        "pretrends": 3,
+        "weighted": true
+      },
+      {
+        "name": "complete_w1_a2",
+        "stata_input": "complete.csv",
+        "python_input": "unbalanced.csv",
+        "panel_mode": "complete",
+        "anticipation": 2,
+        "pretrends": 3,
+        "weighted": true
+      },
+      {
+        "name": "mpdta_w0_a0",
+        "stata_input": "mpdta.csv",
+        "python_input": "mpdta.csv",
+        "panel_mode": "balanced",
+        "anticipation": 0,
+        "pretrends": 1,
+        "weighted": false
+      }
+    ],
+    "expected_fits": 48,
+    "expected_csv_files": 154,
+    "source_bundle_sha256": "a0f56e89394874ab6f425022daed3939cb6315ede88c8f7ede856e66ea03f194",
+    "default_storage_type": "double",
+    "only_estimator_setting_change": "set type double",
+    "sha256": {
+      "balanced.csv": "26f70206492ecd99c09d607d507b3ffc2c97617b83e76b0d1d89cf939ed4b59b",
+      "mpdta.csv": "5504b3e70906c65b941a218cb6ff635751cb62f49c80ba56174e0d0ea987288c",
+      "unbalanced.csv": "91e12b43dd486d32e4c5075ac9ee7f91ec0b2ddda390c7e6ef0b138d9dfb4854",
+      "complete.csv": "2d4b4c6da70927f94933545ba57052bac8c52000867fd36f5236bbac4b0b55a4",
+      "validate_bjs_extended.do": "6c9b71658c203c13ca0464464fab2d1f9562e80bb02a024d9e9fbaf1779e5810",
+      "cases.do": "222c2d0d90f307cc1981c392f5343252d6357a3b40d3b22c62f1fee0b357bea3",
+      "RUN_STATA.do": "761c3a8160d8a9a387918e1ad14434d8c533e4146936d0f4e132db3adc83b36c",
+      "README.txt": "d61f405eca17c7e629acce85815c07e5173ac101469388639fac1e1c18d723cd"
+    }
+  },
+  "returned_sha256": {
+    "balanced_w1_a2_all_leaveout_dynamic.csv": "8680560126e35873b74130e596e90d7d03b3336487a01e03a6c49a052df1bce7",
+    "balanced_w1_a2_all_leaveout_dynamic_meta.csv": "741d9675b74c5b876cd4e49d93838eab3acd58f98f584df547cd124223f5f6f4",
+    "balanced_w1_a2_all_leaveout_dynamic_vcov.csv": "2ca3410df6d520a6bff05c81567fe700ff3c6a1cf0b33d5ed5078b7ddec12f5c",
+    "balanced_w1_a2_all_leaveout_simple.csv": "4dea0703c99208c9fb93484b1965007a825291984c26ac425c3bb07350cc180b",
+    "balanced_w1_a2_all_leaveout_simple_meta.csv": "bd670ef7c6baf5e3584e1f3564be6c52dc035c52a0c87bc845f6a1431d53ff14",
+    "balanced_w1_a2_all_leaveout_simple_vcov.csv": "749e6c52e97556bac7abed8c0ff29eed32b979501c761d0273343e834606660e",
+    "balanced_w1_a2_all_plugin_dynamic.csv": "3f11fde16d430e323e692f354fbc7fa394fad09e2233d09d49094a77e97d436d",
+    "balanced_w1_a2_all_plugin_dynamic_meta.csv": "741d9675b74c5b876cd4e49d93838eab3acd58f98f584df547cd124223f5f6f4",
+    "balanced_w1_a2_all_plugin_dynamic_vcov.csv": "11d3367cdb6fcaed57214d81e5c36b257a579bd26620c1c5840b52ae6258de86",
+    "balanced_w1_a2_all_plugin_simple.csv": "3d5f33398718da81ef90b6b448a457e39c046aa9bb70f2092bbf274fc1bf0b72",
+    "balanced_w1_a2_all_plugin_simple_meta.csv": "bd670ef7c6baf5e3584e1f3564be6c52dc035c52a0c87bc845f6a1431d53ff14",
+    "balanced_w1_a2_all_plugin_simple_vcov.csv": "370f33c1ab1525d346fb17ab2629b48e9b5146bbdc441af8f0ab88f4eaeab461",
+    "balanced_w1_a2_clean.csv": "ed430400572d69445ad5c86d4b0e719321ab59d0d68d6b2d35afc59fd37974d8",
+    "balanced_w1_a2_clean_meta.csv": "54592d0b1caea4a90c001fd664b73256aa9a440a61689f3c04e06abb4527b9b8",
+    "balanced_w1_a2_clean_vcov.csv": "b1832c4bea6adb47d288aadf05ca20b3085999e974c3d1812626c763ea13bb32",
+    "balanced_w1_a2_cohort_leaveout_dynamic.csv": "5ebead21754c87b388846ff16bd816ee70a540d73295911ef028f838e0de7eeb",
+    "balanced_w1_a2_cohort_leaveout_dynamic_meta.csv": "741d9675b74c5b876cd4e49d93838eab3acd58f98f584df547cd124223f5f6f4",
+    "balanced_w1_a2_cohort_leaveout_dynamic_vcov.csv": "6c93fb2333ea36ece4d0bad0b1d2dc8ddb6d6e5f70f6f482e60d065c3dc61bac",
+    "balanced_w1_a2_cohort_leaveout_simple.csv": "ac8ae87fd5d86e66973f0e450a1690bf314f8f0d1f367a10c5ae659958afc278",
+    "balanced_w1_a2_cohort_leaveout_simple_meta.csv": "bd670ef7c6baf5e3584e1f3564be6c52dc035c52a0c87bc845f6a1431d53ff14",
+    "balanced_w1_a2_cohort_leaveout_simple_vcov.csv": "ef33fe9f967fb06b3535b6923616e8a01b16ad4bf3d9d57dfa90bdeb6f464d32",
+    "balanced_w1_a2_cohort_plugin_dynamic.csv": "7236a79a845dd1a3001398ad82f82a48168ef6bc5d60bd92c5dc5bb787afc1ed",
+    "balanced_w1_a2_cohort_plugin_dynamic_meta.csv": "741d9675b74c5b876cd4e49d93838eab3acd58f98f584df547cd124223f5f6f4",
+    "balanced_w1_a2_cohort_plugin_dynamic_vcov.csv": "d1edc48e99eb7de6ecc38012312e1d08f2bca175bd12cccd347eafd95acbda26",
+    "balanced_w1_a2_cohort_plugin_simple.csv": "8c274e568facaadcb9694f8db636244ab1fa4717efcde0dfa7db5e8d6a260c24",
+    "balanced_w1_a2_cohort_plugin_simple_meta.csv": "bd670ef7c6baf5e3584e1f3564be6c52dc035c52a0c87bc845f6a1431d53ff14",
+    "balanced_w1_a2_cohort_plugin_simple_vcov.csv": "e40f1a671595a7c28277099c70b3399a8791dd0adbb8f1bdf6104886516b0ea5",
+    "balanced_w1_a2_cohort_time_leaveout_dynamic.csv": "78f0b9e7ff8b66fab051e00ff3ecc3ae3c6a714ac4a1b42ec2fe0e33cec44c0e",
+    "balanced_w1_a2_cohort_time_leaveout_dynamic_meta.csv": "741d9675b74c5b876cd4e49d93838eab3acd58f98f584df547cd124223f5f6f4",
+    "balanced_w1_a2_cohort_time_leaveout_dynamic_vcov.csv": "977d8c8bb047ba843d39fa104f30785639865e8f08d7d3540a727bb9ab029080",
+    "balanced_w1_a2_cohort_time_leaveout_simple.csv": "cc1163682706078fe9f079a86e5ff42faff81b6ddefd7588a0e144c3917825b9",
+    "balanced_w1_a2_cohort_time_leaveout_simple_meta.csv": "bd670ef7c6baf5e3584e1f3564be6c52dc035c52a0c87bc845f6a1431d53ff14",
+    "balanced_w1_a2_cohort_time_leaveout_simple_vcov.csv": "8ef199ca8c9551290d1318f4938da42626f384b44f3a3b2ffc87e429b5e58153",
+    "balanced_w1_a2_cohort_time_plugin_dynamic.csv": "63f12e56c889dacde4e3c74f0d07ddf66417303d4555e3bab5d40a895e8debcb",
+    "balanced_w1_a2_cohort_time_plugin_dynamic_meta.csv": "741d9675b74c5b876cd4e49d93838eab3acd58f98f584df547cd124223f5f6f4",
+    "balanced_w1_a2_cohort_time_plugin_dynamic_vcov.csv": "04df300af9ee2fdaa2f6881e999a1a7eae4aa34230c4ab348481e5a85d7ce11c",
+    "balanced_w1_a2_cohort_time_plugin_simple.csv": "f33c59f591f9cf6e35bf375c563bde2b5d04eb4224105e535ea1025578e168f9",
+    "balanced_w1_a2_cohort_time_plugin_simple_meta.csv": "bd670ef7c6baf5e3584e1f3564be6c52dc035c52a0c87bc845f6a1431d53ff14",
+    "balanced_w1_a2_cohort_time_plugin_simple_vcov.csv": "e63ad4fe2f12d044b00727b47936a33b07f8ff39021b25906a65bae7e269b1fe",
+    "balanced_w1_a2_event_time_leaveout_dynamic.csv": "2ea4beddd322ac99df7b2d2eaee8972c42da09520c45710d3f0265ef6f6ea9d5",
+    "balanced_w1_a2_event_time_leaveout_dynamic_meta.csv": "741d9675b74c5b876cd4e49d93838eab3acd58f98f584df547cd124223f5f6f4",
+    "balanced_w1_a2_event_time_leaveout_dynamic_vcov.csv": "5c16c4ee5e5e117d1a931040375d9095c2a3ffe6d96bf5055fb55277bd37ed5f",
+    "balanced_w1_a2_event_time_leaveout_simple.csv": "c5bd3a8a768b378c2952b24b20683939c27358b94d4176545402103a8858d246",
+    "balanced_w1_a2_event_time_leaveout_simple_meta.csv": "bd670ef7c6baf5e3584e1f3564be6c52dc035c52a0c87bc845f6a1431d53ff14",
+    "balanced_w1_a2_event_time_leaveout_simple_vcov.csv": "36a367eff8fd7a27413f986c0401434b6c7c0e328fde050b320537eeaa739027",
+    "balanced_w1_a2_event_time_plugin_dynamic.csv": "afead9f91a2a062b54dae2de935e5d1f1911970d4312253b1f5754fe5c5c68aa",
+    "balanced_w1_a2_event_time_plugin_dynamic_meta.csv": "741d9675b74c5b876cd4e49d93838eab3acd58f98f584df547cd124223f5f6f4",
+    "balanced_w1_a2_event_time_plugin_dynamic_vcov.csv": "09236bc687089d03f7cc941321ec2af83364798688db2bc8bf5439cce39e8c22",
+    "balanced_w1_a2_event_time_plugin_simple.csv": "bd55f10f166480cc8af47748f54eff8e332418df46f057898bffdcea7acbc479",
+    "balanced_w1_a2_event_time_plugin_simple_meta.csv": "bd670ef7c6baf5e3584e1f3564be6c52dc035c52a0c87bc845f6a1431d53ff14",
+    "balanced_w1_a2_event_time_plugin_simple_vcov.csv": "2aee819759d7264cf9afc61c764f07dea9dbe228da63c5032a0a50c8ee312761",
+    "complete_w1_a2_all_leaveout_dynamic.csv": "09035dc48b81463aa22d72a649d3f9d8d89778fac984778d3f59171c0807e723",
+    "complete_w1_a2_all_leaveout_dynamic_meta.csv": "d6708ec65149991d139ca278c9e2bc6515090f13c52a90c3e392ba9b0a783fe7",
+    "complete_w1_a2_all_leaveout_dynamic_vcov.csv": "725f5140c7c07780a8b3646440b21324f41172570c3e2a82a9ab978fce4830a0",
+    "complete_w1_a2_all_leaveout_simple.csv": "5f991ad1706ffbba11e3a5621d033dcd244f1dc5927059c486560d0abdf4b018",
+    "complete_w1_a2_all_leaveout_simple_meta.csv": "86ea86f0a0ae1d39d0729012e7513dd8090fa956b148955252e58993b09a52ec",
+    "complete_w1_a2_all_leaveout_simple_vcov.csv": "8db4666ecd251a40aac5f1fdd81602efb83a37bb62d65e7458e8217b576758f1",
+    "complete_w1_a2_all_plugin_dynamic.csv": "878dba36fd0791792d4b4afb809909cd7f5b5b7531001ddf95b6b4d2b5a9a859",
+    "complete_w1_a2_all_plugin_dynamic_meta.csv": "d6708ec65149991d139ca278c9e2bc6515090f13c52a90c3e392ba9b0a783fe7",
+    "complete_w1_a2_all_plugin_dynamic_vcov.csv": "9113a9f95a052c8798afd3c073cc3e45427f138dd1382c9d8abc6d1c0c65eee3",
+    "complete_w1_a2_all_plugin_simple.csv": "79a2e4a9c0714336be497188bde0d65354f960a9ad549f8aa1a0783afaec60ac",
+    "complete_w1_a2_all_plugin_simple_meta.csv": "86ea86f0a0ae1d39d0729012e7513dd8090fa956b148955252e58993b09a52ec",
+    "complete_w1_a2_all_plugin_simple_vcov.csv": "23c4e77175149d1c0215f9df7b6ce6b3d970926faf3c83660214d7d2b6bab885",
+    "complete_w1_a2_clean.csv": "a73daa96e4e5f1216f654e0292398ee8cb2b66f6209a845d6a3b6f2d4c66fcd9",
+    "complete_w1_a2_clean_meta.csv": "a97e28374014c752473d898b38d81f3dc6fa307e0c7e3605e8d760b27d8a0c60",
+    "complete_w1_a2_clean_vcov.csv": "2f157bf0032e4ab3c053af42f2cadb64429bcd6d8abbfcd52e3971735b24a20f",
+    "complete_w1_a2_cohort_leaveout_dynamic.csv": "f8d9dfc02cb05a7cabcb9b6bc11a859db0679ed8284c438c46d5136ea29f2ea2",
+    "complete_w1_a2_cohort_leaveout_dynamic_meta.csv": "d6708ec65149991d139ca278c9e2bc6515090f13c52a90c3e392ba9b0a783fe7",
+    "complete_w1_a2_cohort_leaveout_dynamic_vcov.csv": "26f9bc3de097ebcd1d4c75346b1dd4935b005a8895d5c0d849ab9045e9d5ad81",
+    "complete_w1_a2_cohort_leaveout_simple.csv": "af33ea318c999bd7a556aaa6d42504d9962adf4543014de3a53c292aaac5d6bd",
+    "complete_w1_a2_cohort_leaveout_simple_meta.csv": "86ea86f0a0ae1d39d0729012e7513dd8090fa956b148955252e58993b09a52ec",
+    "complete_w1_a2_cohort_leaveout_simple_vcov.csv": "2144a5e247c723419f346e4738426fc1804b610471b4f6783362c3afaf2b58ad",
+    "complete_w1_a2_cohort_plugin_dynamic.csv": "1c369ead161a56b9a3b9af65329c442ecaaf523750e4c3835a235dba72307fa9",
+    "complete_w1_a2_cohort_plugin_dynamic_meta.csv": "d6708ec65149991d139ca278c9e2bc6515090f13c52a90c3e392ba9b0a783fe7",
+    "complete_w1_a2_cohort_plugin_dynamic_vcov.csv": "bc10517dba6ec8902e1fa8240e1830d06a5e718b6824e97fbc00f95b823f5cbd",
+    "complete_w1_a2_cohort_plugin_simple.csv": "f08466177eb87f7ea82c0bd8c1565bc385002b2c07686997c3eeafc067b4063d",
+    "complete_w1_a2_cohort_plugin_simple_meta.csv": "86ea86f0a0ae1d39d0729012e7513dd8090fa956b148955252e58993b09a52ec",
+    "complete_w1_a2_cohort_plugin_simple_vcov.csv": "58992de4d8584fb3854baf2da4f3e8c1f43ac950f76e9b3eb518f7b0234545b4",
+    "complete_w1_a2_cohort_time_leaveout_dynamic.csv": "a207a3209438d8dcc1af7d5d9ae9fd69b4213beb290f31627f748fe6730f04ca",
+    "complete_w1_a2_cohort_time_leaveout_dynamic_meta.csv": "d6708ec65149991d139ca278c9e2bc6515090f13c52a90c3e392ba9b0a783fe7",
+    "complete_w1_a2_cohort_time_leaveout_dynamic_vcov.csv": "5582da0faa040db38a086ac450d01800b1d168ef04fd7dd62b3f9f06a2e30a5e",
+    "complete_w1_a2_cohort_time_leaveout_simple.csv": "c7ba5156e7ba24ab44408b99eeed724175c9285c9e7ac9760787bcd5cfd68e64",
+    "complete_w1_a2_cohort_time_leaveout_simple_meta.csv": "86ea86f0a0ae1d39d0729012e7513dd8090fa956b148955252e58993b09a52ec",
+    "complete_w1_a2_cohort_time_leaveout_simple_vcov.csv": "3d123596308c45fa3344363c489049cea1ff2e5b8f943cb8f0ef61207efeee61",
+    "complete_w1_a2_cohort_time_plugin_dynamic.csv": "aa2fca05929f74ac8909b1c59c2a8dbe152109c51af76a94a9b6b5de4dccd24b",
+    "complete_w1_a2_cohort_time_plugin_dynamic_meta.csv": "d6708ec65149991d139ca278c9e2bc6515090f13c52a90c3e392ba9b0a783fe7",
+    "complete_w1_a2_cohort_time_plugin_dynamic_vcov.csv": "9d3b0f2f1a8d194883af5a830bf3624199225ad98f623ca36e2b91f2924160a7",
+    "complete_w1_a2_cohort_time_plugin_simple.csv": "026eb2cce68759896d84743aaeae8ff0fc01f5aa98cf8a602d6036d3d6267f94",
+    "complete_w1_a2_cohort_time_plugin_simple_meta.csv": "86ea86f0a0ae1d39d0729012e7513dd8090fa956b148955252e58993b09a52ec",
+    "complete_w1_a2_cohort_time_plugin_simple_vcov.csv": "546113ccfd6d8fafe1b1c5d3246a2ddce4c737d652dc00b01893aa6711f87223",
+    "complete_w1_a2_event_time_leaveout_dynamic.csv": "89807d78192bfb1b8ca310935c1ea7b32152ee4ba62f371b72cc59128fda072b",
+    "complete_w1_a2_event_time_leaveout_dynamic_meta.csv": "d6708ec65149991d139ca278c9e2bc6515090f13c52a90c3e392ba9b0a783fe7",
+    "complete_w1_a2_event_time_leaveout_dynamic_vcov.csv": "d32c341c75a3d71825aaff4dbac4afa6106d915cb143325f4adffb6c47dab9d6",
+    "complete_w1_a2_event_time_leaveout_simple.csv": "984b53b1dfee06ee2a5bcce1bd133bc1c3417c0f00f31ddb5001a3c6458ccb60",
+    "complete_w1_a2_event_time_leaveout_simple_meta.csv": "86ea86f0a0ae1d39d0729012e7513dd8090fa956b148955252e58993b09a52ec",
+    "complete_w1_a2_event_time_leaveout_simple_vcov.csv": "135fad428948a2521e33d55305d9f4cb3d5db806aea376e9ab93f371d0188ad1",
+    "complete_w1_a2_event_time_plugin_dynamic.csv": "b7327068ad111947bd1ff8ff958433fc7378bb37fe22417b6a2d14e26c42f523",
+    "complete_w1_a2_event_time_plugin_dynamic_meta.csv": "d6708ec65149991d139ca278c9e2bc6515090f13c52a90c3e392ba9b0a783fe7",
+    "complete_w1_a2_event_time_plugin_dynamic_vcov.csv": "b4c4205fbee89ca22c73c5180ef9c5a7954398f710394277fbea39c702702daa",
+    "complete_w1_a2_event_time_plugin_simple.csv": "d98be8176efd9dfa4e77571ac92b918171ac1495ee5eba75d76067b25aede11c",
+    "complete_w1_a2_event_time_plugin_simple_meta.csv": "86ea86f0a0ae1d39d0729012e7513dd8090fa956b148955252e58993b09a52ec",
+    "complete_w1_a2_event_time_plugin_simple_vcov.csv": "0379ef9fe02d2664c6a868839357bd036f989f829fcd357adc665b39b7114503",
+    "did_imputation.ado": "107d923b53375b88fc88044f7e56fd4853a76e2e3901abcc7277e16138a944e7",
+    "ftools.ado": "459666a26fdcc67b798b0a38eab3dcefa6714c4e679745f99eca945f41b3cd88",
+    "mpdta_w0_a0_all_leaveout_dynamic.csv": "f895254d82b3b449a7f6919ec5977956015cbbe6b8bdd4af75e407a76448a880",
+    "mpdta_w0_a0_all_leaveout_dynamic_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_all_leaveout_dynamic_vcov.csv": "54fae0eb3f9008c8a157156da2ac8cb2517c49d990fa0a8c8eeea304c083b763",
+    "mpdta_w0_a0_all_leaveout_simple.csv": "57e8a0b901af18bbe658109103b7c66b6f638a589488444c04cebf7a058a7eef",
+    "mpdta_w0_a0_all_leaveout_simple_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_all_leaveout_simple_vcov.csv": "a6f4f45f9a5eaad3f52a236d5a7e97c3a2682080f75dcc6893a8053ef09a87e6",
+    "mpdta_w0_a0_all_plugin_dynamic.csv": "b719b92a5046570bef36971269bee09e636a7e6795625cafdff2704917e1e96e",
+    "mpdta_w0_a0_all_plugin_dynamic_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_all_plugin_dynamic_vcov.csv": "efbc98938392a38756e83387e2fbbe15da5d95a3e037d19aace46d23f06bfbe9",
+    "mpdta_w0_a0_all_plugin_simple.csv": "9b301bd1af755c8821b47cea3f8cd24dd9e4a9cf4cadccc7671646ba2025cf04",
+    "mpdta_w0_a0_all_plugin_simple_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_all_plugin_simple_vcov.csv": "253ba222ad574b77d5f7ccfaeac01089c41740d9a85f82fb53c75289d888b7e4",
+    "mpdta_w0_a0_clean.csv": "9bc7bfc57c834c3cb0ba57ca64b41512b1118033d4a355d292632e37dbf12dd4",
+    "mpdta_w0_a0_clean_meta.csv": "e28e2d410ff1a7b7715a16ba0516bd60997afdd2a8b38f8675ec71cc895a390b",
+    "mpdta_w0_a0_clean_vcov.csv": "53d494dfe5f4440fd86edc232638ea8d1542206f7e6b0b8a2e736420a67db452",
+    "mpdta_w0_a0_cohort_leaveout_dynamic.csv": "1acf3e47f7d3df3e0e8b371baf5fd7aa90b7d3adef7a5e4971af6d5462d71640",
+    "mpdta_w0_a0_cohort_leaveout_dynamic_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_cohort_leaveout_dynamic_vcov.csv": "39853fe62aeaf6178420e3cfdd46d76cb3312c2d9c7734a75a7eaf291048fddd",
+    "mpdta_w0_a0_cohort_leaveout_simple.csv": "1387a895c31040d57d566f74d9f5a4edd89875977524aefd151104a6a9d552c8",
+    "mpdta_w0_a0_cohort_leaveout_simple_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_cohort_leaveout_simple_vcov.csv": "8e55d69a3120c644371fc2ee3316ea8be46f2b98161b0557ef36e5415e7bafc6",
+    "mpdta_w0_a0_cohort_plugin_dynamic.csv": "d09286393076263b486a006fb5a770bc9d450a4ba2a125c65fa855f3a9cbee06",
+    "mpdta_w0_a0_cohort_plugin_dynamic_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_cohort_plugin_dynamic_vcov.csv": "7f518956d8c94d136ea4dfeabf3d1123c1ca8e919c55664ac3c0c14d6b286a7a",
+    "mpdta_w0_a0_cohort_plugin_simple.csv": "ebf0283f47162785102e1ee13b39a94cca572caf17643243966ac85bdadacdc8",
+    "mpdta_w0_a0_cohort_plugin_simple_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_cohort_plugin_simple_vcov.csv": "0cac724cc09e971b2877f84d2187369e3349d714c5a3324289115d0ea5c314d6",
+    "mpdta_w0_a0_cohort_time_leaveout_dynamic.csv": "6213d188f4631baf805b01b361864c4e3718dbb569a8469ef9bba88948c5cc20",
+    "mpdta_w0_a0_cohort_time_leaveout_dynamic_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_cohort_time_leaveout_dynamic_vcov.csv": "bda3a608e724ddb2b10e9c335f5b50eb3c5b8b2bac60a0d444ad9d9bf398206d",
+    "mpdta_w0_a0_cohort_time_leaveout_simple.csv": "be12e61c701e1beb7ebfc635bc50be10f82000ffcab5efb0b344c7bbf454002d",
+    "mpdta_w0_a0_cohort_time_leaveout_simple_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_cohort_time_leaveout_simple_vcov.csv": "dff8677ca6835b9f85717b4f54e613c3934797282e55e2d17ab50c7c988a5ffb",
+    "mpdta_w0_a0_cohort_time_plugin_dynamic.csv": "5b86d797695da910b6bdd52ae8ee92e05ba83d232b1762424e76715e4ad1fcea",
+    "mpdta_w0_a0_cohort_time_plugin_dynamic_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_cohort_time_plugin_dynamic_vcov.csv": "a76e9131181fd817534a7976b23110f59b4bc8412f320b5dd50f52c9b6454a54",
+    "mpdta_w0_a0_cohort_time_plugin_simple.csv": "fe343d476cddac2fa4c4a77d5ad0ac487686278124be665e2e8add003819519d",
+    "mpdta_w0_a0_cohort_time_plugin_simple_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_cohort_time_plugin_simple_vcov.csv": "919043330cb6f038920ae77429297cac86d00427741dc57bd79d5f88937cc1f8",
+    "mpdta_w0_a0_event_time_leaveout_dynamic.csv": "ebc25b464c8083e6be87fdfc26b529587d3fe336c271b6c7a6140eaa0313bb5f",
+    "mpdta_w0_a0_event_time_leaveout_dynamic_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_event_time_leaveout_dynamic_vcov.csv": "c0d76f24ef16d14afd7d0e914210fbdcd82a9ae14ba881c137cef59bb4673235",
+    "mpdta_w0_a0_event_time_leaveout_simple.csv": "d17e5c86fdcb34534c4523f84d4ab8f771f4a8b95421cdda42144170d3a60fe5",
+    "mpdta_w0_a0_event_time_leaveout_simple_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_event_time_leaveout_simple_vcov.csv": "dbb9bba434c127be2dce79221fdb217a0e55f5fb177d9d683a96d9f53017de37",
+    "mpdta_w0_a0_event_time_plugin_dynamic.csv": "f93aee057dc05e57b09d7e6f72a38ab17bca824aedeba4f152846a26b094ed18",
+    "mpdta_w0_a0_event_time_plugin_dynamic_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_event_time_plugin_dynamic_vcov.csv": "36587d3c0632c3d9505507013706df8c2afe2f36bf995823ea36a72f2ba7ac47",
+    "mpdta_w0_a0_event_time_plugin_simple.csv": "8c1e08321ab3dcea93bb198978c8b21e1ab66700b5b8549f103388583a6bccee",
+    "mpdta_w0_a0_event_time_plugin_simple_meta.csv": "acac24ba8ea0521c15f969d0995e8154d231ed7e4a5b387595d8228afa833e90",
+    "mpdta_w0_a0_event_time_plugin_simple_vcov.csv": "8e7766ea13940ac0dc4ea8994c9d381853c819f54450910e2d09a09233a322fb",
+    "reghdfe.ado": "f9462bb7364055b138b223a495d4b0fd4b3c5e3bedc1fc886b75bf1546f9d66a",
+    "status.csv": "9d4d388d116cf7dae2d63e28e5ce440baf597d4334ab8556a5e79f9c3a8271cf",
+    "status.dta": "cbd163faf5248844ef2afbeaa18d1dccde84084857ae42024183cd68f7d7cf4e",
+    "validation.log": "27a19547aa26149b3c142f3a54ddce4a61d1442545df395686d3f7b8e39c80b9"
+  }
+}

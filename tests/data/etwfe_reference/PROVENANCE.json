@@ -1,0 +1,1290 @@
+{
+  "source": {
+    "commit": "d36673d3f07783aa297bbec31d6d8aabfc66243b",
+    "files": {
+      "DESCRIPTION": {
+        "url": "https://raw.githubusercontent.com/grantmcdermott/etwfe/d36673d3f07783aa297bbec31d6d8aabfc66243b/DESCRIPTION",
+        "sha256": "47dff528797fc17d5695202852c931eea52af7a0854bde8e7964554301884895"
+      },
+      "LICENSE": {
+        "url": "https://raw.githubusercontent.com/grantmcdermott/etwfe/d36673d3f07783aa297bbec31d6d8aabfc66243b/LICENSE",
+        "sha256": "0f04406cf1398b1ef5e29a9e8b513c1db6e1a7332b1b5f4fb7218c71aa52461e"
+      },
+      "R/data.R": {
+        "url": "https://raw.githubusercontent.com/grantmcdermott/etwfe/d36673d3f07783aa297bbec31d6d8aabfc66243b/R/data.R",
+        "sha256": "50dc68972d31d61ae9ad4cd7e1c597a4341d060cb33c4f7fde4a4f674ac60f97"
+      },
+      "R/emfx.R": {
+        "url": "https://raw.githubusercontent.com/grantmcdermott/etwfe/d36673d3f07783aa297bbec31d6d8aabfc66243b/R/emfx.R",
+        "sha256": "bf2cf15a3be24a0b926ffc8bce89f1f94adcbfeeef0e3132805dd6a48e075789"
+      },
+      "R/etwfe.R": {
+        "url": "https://raw.githubusercontent.com/grantmcdermott/etwfe/d36673d3f07783aa297bbec31d6d8aabfc66243b/R/etwfe.R",
+        "sha256": "ebd864c8696565d8c52b28fbdf2013f394aee790901cc8073e733725f143c287"
+      },
+      "R/plot.R": {
+        "url": "https://raw.githubusercontent.com/grantmcdermott/etwfe/d36673d3f07783aa297bbec31d6d8aabfc66243b/R/plot.R",
+        "sha256": "5a391955c0f32fe2501051d655a6293b4f09d873c4bc01c8238cf675b66b3129"
+      }
+    }
+  },
+  "marginaleffects_source": {
+    "commit": "a4ac200424ec397862b434b67c8cd8fff131e972",
+    "files": {
+      "r/DESCRIPTION": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/DESCRIPTION",
+        "sha256": "898dc1bddc8cf8e7738ce45be258b4e822c03b8d01e3d21ffa10d503791b3b55"
+      },
+      "r/NAMESPACE": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/NAMESPACE",
+        "sha256": "db92011025997e780b924fa56e1a0b18c56de341251c5045d5d09ca2cbd4469c"
+      },
+      "r/R/add_hypothesis.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/add_hypothesis.R",
+        "sha256": "84798ed67f3f0160ed7d352defd525eb5fd483113afb2a1ed2670a3b9ad2cc7f"
+      },
+      "r/R/add_rowid.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/add_rowid.R",
+        "sha256": "e46c4bee9ef5a6cc56d40bd2cb087e680b6e3e2b29c9891b1d1c729f23811f6b"
+      },
+      "r/R/attributes.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/attributes.R",
+        "sha256": "9510da2e2c51529c6c0ae5a73ac4a55fd4b424317804e2a7a19a5f3dddbd8954"
+      },
+      "r/R/backtransform.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/backtransform.R",
+        "sha256": "d6c91673569fbced409e23fecc10034e8891eaefe6b57102b070da75246e7dd5"
+      },
+      "r/R/broom.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/broom.R",
+        "sha256": "8e714a713d69065bcbaf31de0ab4787ca2d6ec6543db7f0e39b01f5d0c4f0446"
+      },
+      "r/R/by.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/by.R",
+        "sha256": "05461511d294431b9840e2c7f9091f2b0fc7505c64c5b0005aced3ee1073f6e0"
+      },
+      "r/R/class.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/class.R",
+        "sha256": "f1b5df655b891d4d1e039cd96f42d44d04c2ec3a084021a6ae498910aa609a4d"
+      },
+      "r/R/comparisons.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/comparisons.R",
+        "sha256": "32f0134c2d447c39423b282caaa29d783a019162611a5a1c22675f9348aa0b18"
+      },
+      "r/R/comparisons_plan.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/comparisons_plan.R",
+        "sha256": "dc9d23139bfe6307c0580261dce88ca0148b3f6488a2137bd0e1eb7efa1bac5f"
+      },
+      "r/R/comparisons_plan_bayesian.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/comparisons_plan_bayesian.R",
+        "sha256": "52b479dd197f1f35b53fefdbcda5304751a9793b8748308b11c6258268015da2"
+      },
+      "r/R/comparisons_plan_frequentist.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/comparisons_plan_frequentist.R",
+        "sha256": "ac9a867fd71b3d2d178f75adb7b7b89a10d9f5bd2cf49b9e05ae1b428891dc4b"
+      },
+      "r/R/components.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/components.R",
+        "sha256": "fade5c0a7692591ca39d8e5c4385920e97dfbcb79ef2583be3930407f555f480"
+      },
+      "r/R/construct_call.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/construct_call.R",
+        "sha256": "0c695bd38521a089d21bb30b71d1fec391b7d833fa773e855734358a9cbd1e96"
+      },
+      "r/R/datagrid.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/datagrid.R",
+        "sha256": "7e8c2335386e12d607c763031f48b6a3eed3595497990da7aca91a86cec347d6"
+      },
+      "r/R/equivalence.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/equivalence.R",
+        "sha256": "f4e710e632fe206600197e2b7d5debf8d18335b3ad6b95e5220e4a3eb6632949"
+      },
+      "r/R/get_ci.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_ci.R",
+        "sha256": "8cb24538a59462a290d7ece1135fd5dc03b9f57fa102ace40c533cd62c79413c"
+      },
+      "r/R/get_coef.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_coef.R",
+        "sha256": "080e4ea2154831775c838743ee51eed61df93e70f96e17e96632c6aae6387ba1"
+      },
+      "r/R/get_comparisons_data.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_comparisons_data.R",
+        "sha256": "f14313d709a1adaefcd47d6fe009d54ccb201e8ee9b9af442dd85d9a9eef0ae4"
+      },
+      "r/R/get_comparisons_data_character.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_comparisons_data_character.R",
+        "sha256": "fd5f14fc20b7f2b847906b7a96021fbadeb6707e490a8f9053feae5fb1197650"
+      },
+      "r/R/get_comparisons_data_factor.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_comparisons_data_factor.R",
+        "sha256": "a3bfbc0d22818d6738800c67ae4d30ae34fe449364008843411883168ac358ff"
+      },
+      "r/R/get_comparisons_data_logical.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_comparisons_data_logical.R",
+        "sha256": "e41fc64a7347cdb64986b304533b3362d6af2acec5d928b807d979dbdecfbd7c"
+      },
+      "r/R/get_comparisons_data_numeric.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_comparisons_data_numeric.R",
+        "sha256": "9c7a090ac26e212b86f76fc8f65181327314841b32a8a45b13ccafe229e84c2b"
+      },
+      "r/R/get_dataset.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_dataset.R",
+        "sha256": "bcf7273dcf26e62ebc62372b71599b3758dbbcf72f04048271b0077b736f013c"
+      },
+      "r/R/get_degrees_of_freedom.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_degrees_of_freedom.R",
+        "sha256": "d5763230312fa95b1e79fa8b4281d26efe04ad95580167f59f251368dd2e067d"
+      },
+      "r/R/get_draws.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_draws.R",
+        "sha256": "1b6871432db66371d8a55def8ef8a324419e28adb986a8234d8d5fc2ac3fb0e5"
+      },
+      "r/R/get_group_names.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_group_names.R",
+        "sha256": "8d026ff0a57028a1ac1dc33ddfb62836b9033f5244b2c5962fc34088bd2b3637"
+      },
+      "r/R/get_hypotheses.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_hypotheses.R",
+        "sha256": "2fc6e95a2f9dacae4ed5c042511d48275fe64c3c4ceaa03908a485304efe4308"
+      },
+      "r/R/get_jacobian.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_jacobian.R",
+        "sha256": "be6f97eb69556111f4ca2088ebca3faaff7146aa54cbdb96cab0cc1d4a167818"
+      },
+      "r/R/get_jacobian_analytic.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_jacobian_analytic.R",
+        "sha256": "6260281b6e257a21174691ed90e73b2af442d081825e9061f756d1585922e36e"
+      },
+      "r/R/get_labels.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_labels.R",
+        "sha256": "84db646cf32c20ec3ff9b8824880492c830c5556f209cb9c8afb2089887edd74"
+      },
+      "r/R/get_model_matrix.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_model_matrix.R",
+        "sha256": "c2d7ab656cbcc60b70f0c9500a3aec7d99d1715b2d5241be432744efb59da30b"
+      },
+      "r/R/get_modeldata.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_modeldata.R",
+        "sha256": "f2c0487c3f9813a30eb1043853d0711dc34a49891808acc16c668e0689142372"
+      },
+      "r/R/get_predict.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_predict.R",
+        "sha256": "b7cbff7dc36a9b19a1705d4175caad7c1010367e9382e9b0f889a90e0ff73a38"
+      },
+      "r/R/get_se_delta.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_se_delta.R",
+        "sha256": "8609fe45f11f328a20e7badbc526c8de6844715c82ddd4410ac7e171f093aca6"
+      },
+      "r/R/get_vcov.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/get_vcov.R",
+        "sha256": "51cc749cba43ac92a3093a7c08ede1a71cada6223dc6b8a9060b00ee8ac8b4fb"
+      },
+      "r/R/hush.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/hush.R",
+        "sha256": "d1afa060f8982660477f4ff4a7b33ffb79e9e0e39f6f1fb4498d0310724dec51"
+      },
+      "r/R/hypotheses.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/hypotheses.R",
+        "sha256": "603245d04e90f98cd0a124329d80587713b14e6ab805e92ff15b6e2e5a6e577e"
+      },
+      "r/R/hypotheses_joint.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/hypotheses_joint.R",
+        "sha256": "6e9088b68d0d6e378930da2c6d56aeb9cc173d20cd0063e8a0ee73d7e2591d04"
+      },
+      "r/R/hypothesis.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/hypothesis.R",
+        "sha256": "fc47aeb16c9beb2a1459e293fc76cf613d8d97fed771f180695dcfa565d03c6c"
+      },
+      "r/R/hypothesis_compile.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/hypothesis_compile.R",
+        "sha256": "4dc16779f2ce75d0c76dabdabb30c6cc204c4af5aea7bb70bbe0e2343e95eec5"
+      },
+      "r/R/hypothesis_formula.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/hypothesis_formula.R",
+        "sha256": "cc9910aaf2609da9dab8bb1b10b5dcd877e92eb3cec1ab4e7f31447e194ca207"
+      },
+      "r/R/hypothesis_function.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/hypothesis_function.R",
+        "sha256": "d5cb154f7f3b2e54ab16eb38af8a41f05f05a9f39d87c6beafae7c965c54974a"
+      },
+      "r/R/hypothesis_matrix.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/hypothesis_matrix.R",
+        "sha256": "e7460ad97828bfea1409205933f92e8fec8597eff83640c55b5b918e1c443fe7"
+      },
+      "r/R/hypothesis_string.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/hypothesis_string.R",
+        "sha256": "d7607861b58605a31b2591a44268918dc048280e553457b7aa41d41bfdea117d"
+      },
+      "r/R/imputation.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/imputation.R",
+        "sha256": "af6adc004935063a6b6a814b9cda04bba8a1eb2cf976a5dda6ab86e6ec7388f6"
+      },
+      "r/R/inferences.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/inferences.R",
+        "sha256": "bf5a5ccef955fadcd1af8127bd084fd2bb7a3c68a1d0ae822af9f54c51852d92"
+      },
+      "r/R/inferences_boot.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/inferences_boot.R",
+        "sha256": "97350e9658c0b458587b5fa089f097d59f7a9c7b708c3bd3c089f4cf283c62a6"
+      },
+      "r/R/inferences_conformal.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/inferences_conformal.R",
+        "sha256": "bfa8f6d23811778dedfc549b215aaa02ed9d2cdfeeec80397097b137d42f436b"
+      },
+      "r/R/inferences_conformal_cv.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/inferences_conformal_cv.R",
+        "sha256": "81acff1e92abc3eb1f8b0ff7c10d3227a6969a2b3af4bd5f17513067a7e082a6"
+      },
+      "r/R/inferences_conformal_full.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/inferences_conformal_full.R",
+        "sha256": "438a20a28379b066514f2837a49164289a846db1dbb66c44cdbb79cbe1274784"
+      },
+      "r/R/inferences_conformal_quantile.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/inferences_conformal_quantile.R",
+        "sha256": "04af1a25477533015aa874c8c402fa5401a3a20a278a1939bdb4c0903b38e354"
+      },
+      "r/R/inferences_conformal_split.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/inferences_conformal_split.R",
+        "sha256": "123313cb3d652e1a780e3bec01c90d1e706de5e0d8bc5a5362570dcae495a07b"
+      },
+      "r/R/inferences_fwb.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/inferences_fwb.R",
+        "sha256": "eca97f3aa021a1fa5c750866b32841d760f528694f725aba1517ce7f6ccd4249"
+      },
+      "r/R/inferences_rsample.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/inferences_rsample.R",
+        "sha256": "73b33c9c6bbb24a6f0e97e5a197b0f02247af6d42f378a11449ec268585c55b4"
+      },
+      "r/R/inferences_simulation.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/inferences_simulation.R",
+        "sha256": "71cbfea750ae26c6d9586771992f63a25b056800828f831cf2c159926234c2b2"
+      },
+      "r/R/jacobian_stage.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/jacobian_stage.R",
+        "sha256": "951fbbb95f785a4c1a7d7055f65d139a219361d31b12d4ca748c1a9d308b52eb"
+      },
+      "r/R/matrix_apply.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/matrix_apply.R",
+        "sha256": "4e9fe1ee0b421b20418bdda88f3a1a65ad28f889accbf64f18bc8061d69085bf"
+      },
+      "r/R/mean_or_mode.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/mean_or_mode.R",
+        "sha256": "a8ba3dda557631660dce757001dfb5117daf709f299d1a5dadc5a421785d60ba"
+      },
+      "r/R/methods.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods.R",
+        "sha256": "9e434619652aa90f5536bce0c58d989462e81b2a546a88a704c3b6ac1bbeef93"
+      },
+      "r/R/methods_AER.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_AER.R",
+        "sha256": "84c4a4b8073e9296be17e05f59ca9fc107fd09e9d3fbc6548799906c14090853"
+      },
+      "r/R/methods_DirichletReg.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_DirichletReg.R",
+        "sha256": "9a8cde12b5cb2dc5588c32c5f93b40a573c3447fa628a736e192e8245307ba0b"
+      },
+      "r/R/methods_MASS.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_MASS.R",
+        "sha256": "c8283092a8abea52b817a234f5ba693f6da8962e9371cc700d840ebd1da44c3c"
+      },
+      "r/R/methods_MCMCglmm.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_MCMCglmm.R",
+        "sha256": "b8a618d6f97ea5ed17af385212694c15b804f8ac1cbe6757f4560a10afe76a9e"
+      },
+      "r/R/methods_Rchoice.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_Rchoice.R",
+        "sha256": "39da89532e5930397ba79fcfc16e72c9d17e8e256080ec13b76e7b57a0d1d32c"
+      },
+      "r/R/methods_WeightIt.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_WeightIt.R",
+        "sha256": "53460a0c7b178d575951c2146b884be66b2303bd8043b1083e94f0a89b1fc160"
+      },
+      "r/R/methods_aaa.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_aaa.R",
+        "sha256": "3cccced6806bf1a03569609b1e56c007805851b35c50d64b6dee0f1d5f2c962e"
+      },
+      "r/R/methods_afex.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_afex.R",
+        "sha256": "303cbbc670ec4c720449f5b8f517c7394940835fa012d4b44acaee4cb56a0ddd"
+      },
+      "r/R/methods_aod.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_aod.R",
+        "sha256": "27d4fa2648f36ac117e7b6a31640e785d30b6863ac3b0e2a4ba0608bd51ab369"
+      },
+      "r/R/methods_betareg.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_betareg.R",
+        "sha256": "050571871b092155660dfe7e00a6fa84cdd06dc2f7ed6d1b92b6960843059f86"
+      },
+      "r/R/methods_bife.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_bife.R",
+        "sha256": "6bea4354ee8552137af990e61f3fc1b65aae527ab95658ebcb27172cc42d4ae7"
+      },
+      "r/R/methods_biglm.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_biglm.R",
+        "sha256": "e3950e72cdfd53b200c0272426969b95e4a668ec03c99c71b472e2721e7238df"
+      },
+      "r/R/methods_brglm2.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_brglm2.R",
+        "sha256": "3493a184c50ec898bfc7981f4c4b6a87731e8aa3846caf273f31328a67b40b45"
+      },
+      "r/R/methods_brms.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_brms.R",
+        "sha256": "07566fb3afe16c63f6232329c87b84cee62cc15b4f40a5417ff718ec20844a1d"
+      },
+      "r/R/methods_crch.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_crch.R",
+        "sha256": "e8c5c3b4494d17e9b63983adbfc2f4f55af5aba503f6208c16ac307bd285df69"
+      },
+      "r/R/methods_dataframe.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_dataframe.R",
+        "sha256": "7ede18507280aa40ed94148605fa61dd21f704182d6329faf7613c62c22ac448"
+      },
+      "r/R/methods_dbarts.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_dbarts.R",
+        "sha256": "aa0eb5192ac0b13d127e44196fd92e4e33bf59415ee57c7bbeea1428b4a8ab66"
+      },
+      "r/R/methods_fixest.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_fixest.R",
+        "sha256": "b1f024da9b8dff54d3740e8e3a025ea545830b27d5b5401fc3bf14e3cfc8f68d"
+      },
+      "r/R/methods_flexsurv.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_flexsurv.R",
+        "sha256": "303398717070ac4641aa4ea17c27ee16d278581352f22c2817114919425db37c"
+      },
+      "r/R/methods_gamlss.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_gamlss.R",
+        "sha256": "a8015d931fc887271cb8236bc9c9223a88102b8e8b1b3f82bc5d24fa0927c9c1"
+      },
+      "r/R/methods_geepack.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_geepack.R",
+        "sha256": "70ca94cc965cc21b5fbe23772ad3c1364caa29dedd283f10c4c3ce891776766c"
+      },
+      "r/R/methods_glmmTMB.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_glmmTMB.R",
+        "sha256": "069825f73d3a2200b04f20ef505614a3d4ca840e01358ab0841f7cc7f225065a"
+      },
+      "r/R/methods_glmtoolbox.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_glmtoolbox.R",
+        "sha256": "29588540e0c51b9a3559e8aa03aa732ddc3d5a103a6edb8ff9d7674a56c8dc69"
+      },
+      "r/R/methods_glmx.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_glmx.R",
+        "sha256": "33a569e8a715ad653dfec70a90c19dbe0c2c6221c07ca1c0eb5c40345709e2c0"
+      },
+      "r/R/methods_ivreg.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_ivreg.R",
+        "sha256": "7676de11d9535f5efe92f851c0a9e7b87095c8b0d3bb5093e83baa92bbcb22c8"
+      },
+      "r/R/methods_lme4.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_lme4.R",
+        "sha256": "cc5186ac575a3cedff93d972d7feb42ebfbba29566d10531fc962b4a7963c782"
+      },
+      "r/R/methods_mclogit.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_mclogit.R",
+        "sha256": "043183823c4f0d5e0be7289ed31377c79126a438ec2f95dda80c080814de5bff"
+      },
+      "r/R/methods_mgcv.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_mgcv.R",
+        "sha256": "880d2fa52e8b6c4c190c027aaff04ee71f26445ea0ca2aef3925895ee7395d9c"
+      },
+      "r/R/methods_mhurdle.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_mhurdle.R",
+        "sha256": "e6fab87d29c28cfdd83625318e478eba1cd094a76e1a37fbc9a3d96e94f57d8d"
+      },
+      "r/R/methods_mice.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_mice.R",
+        "sha256": "e2c5a31968f15e1270844d73673f8235d276367ce2cd6ad8591dbec9d651de7f"
+      },
+      "r/R/methods_mlm.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_mlm.R",
+        "sha256": "b519557f9b6392d71c9ea8c855f440fe192f3d594ea07bbd59d140c8d50c3651"
+      },
+      "r/R/methods_mlogit.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_mlogit.R",
+        "sha256": "ada08e63af5ab3dd5db4ae792866db280528152a98160b5dca55878b52901c27"
+      },
+      "r/R/methods_mlr3.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_mlr3.R",
+        "sha256": "4344d5161ea34c72a3c043ab62807cb282b582327edc2f6082d61552a0d48a63"
+      },
+      "r/R/methods_mmrm.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_mmrm.R",
+        "sha256": "5ace3e1dd9ee8f9fe633a9513f5a757fa60d238c50cfc80b9a959bb11d412bbd"
+      },
+      "r/R/methods_nestedLogit.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_nestedLogit.R",
+        "sha256": "eaff1efb9e608097cfe766230bbde2d8a3d0050b4100e045e847ec59da351468"
+      },
+      "r/R/methods_nlme.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_nlme.R",
+        "sha256": "ea8a4781b1579a79d1f1cb8d8c6e6b9ec2aa4c92b1e638e57980cde36e1a6f97"
+      },
+      "r/R/methods_nnet.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_nnet.R",
+        "sha256": "e38928d541ff0f1f656b95e3c7e074e882f593c3578aade7f906b482f7e37491"
+      },
+      "r/R/methods_ordinal.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_ordinal.R",
+        "sha256": "99f96818f30df8aed487cdfc59ee9ee46d9c240d9457b7b263dfac01e35fa404"
+      },
+      "r/R/methods_plm.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_plm.R",
+        "sha256": "82c45b1cb194db8b8550ddfa1ea38f15eba3759853e7c28de17bb71a468f0586"
+      },
+      "r/R/methods_pscl.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_pscl.R",
+        "sha256": "31531c81846f189e27aaa017bc539901a0861e3ba635ceb96db06cf53cfd6cd9"
+      },
+      "r/R/methods_quantreg.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_quantreg.R",
+        "sha256": "fffed7758a3d8480990fd8f0b92ae7d09d8a57e9d01bae9913edec1e6c4a742e"
+      },
+      "r/R/methods_rms.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_rms.R",
+        "sha256": "239c4e4f4a1344ac47487592662f73cf2362074aaa176fb30663a92f888ef2d4"
+      },
+      "r/R/methods_robustlmm.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_robustlmm.R",
+        "sha256": "30a57d1a6ba5b1570beb9c3b3e842a3977da65f76f0fd275b1133a84c3a4e523"
+      },
+      "r/R/methods_rstanarm.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_rstanarm.R",
+        "sha256": "d0d9b638e5997956518886bcb98f754c2eecd2c89717d45bea784c1ab8960ebc"
+      },
+      "r/R/methods_rstpm2.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_rstpm2.R",
+        "sha256": "5fc497ef2a740e306215986d7ab6a78c01747da6c12cbc5184e8b1c6315d4edb"
+      },
+      "r/R/methods_sampleSelection.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_sampleSelection.R",
+        "sha256": "087e6ff57c449c4b0d68a14937e9690b3ebcf5389da416e602f4fb46a356c40f"
+      },
+      "r/R/methods_scam.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_scam.R",
+        "sha256": "1340716f0a15dbbb7c423e8e1c8c4fd2520da5374d510de035d8a9fead721697"
+      },
+      "r/R/methods_stats.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_stats.R",
+        "sha256": "fef5ecae72c074f512997ab6a5a563720a60a04d5c96f0d7297c4e1424fe242b"
+      },
+      "r/R/methods_survey.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_survey.R",
+        "sha256": "705bf0b16fcd6ca4c496b7fb9edc62183c2872f9da352ba1bddabfb120f849f4"
+      },
+      "r/R/methods_survival.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_survival.R",
+        "sha256": "7b88ba8d7c4dbbeb3e5a141728991c289cf2c4b57fcdd7a3ad0e8b5d83638174"
+      },
+      "r/R/methods_svyVGAM.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_svyVGAM.R",
+        "sha256": "c495b99bb5c824fdb4a45eb98a724fd32cea784289d02a2f22f0369323b3daa2"
+      },
+      "r/R/methods_systemfit.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_systemfit.R",
+        "sha256": "63f7af8d69125fc353891354ac3345eb9fbc7daed4edef59c6b4114bc22566c4"
+      },
+      "r/R/methods_tidymodels.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_tidymodels.R",
+        "sha256": "13cc34d21a8da21abbb4c6d7de82675cd16753fe7c54ea8312ffdb5ce1b826f9"
+      },
+      "r/R/methods_tobit1.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/methods_tobit1.R",
+        "sha256": "d52785c7e72cadd1452ab1a0489c520ea533519b2ddab5c099203f580e325d3b"
+      },
+      "r/R/modelarchive.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/modelarchive.R",
+        "sha256": "ca18519afbe919aeb7415b297bf2b35bfe93211cfa372a167fdb82e31e2df93d"
+      },
+      "r/R/multcomp.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/multcomp.R",
+        "sha256": "1af6738d2656fd53b6b3f39b31565c7fd3991b85415ff8cb026d567d19f8726e"
+      },
+      "r/R/myTryCatch.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/myTryCatch.R",
+        "sha256": "f0faf395b0f4063f4e29825c955132c5af0c21b60240fdb0fcc00b3b05b259cc"
+      },
+      "r/R/package.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/package.R",
+        "sha256": "da10b62f8b16dfdc822f7999b851f6b90ee4b4462d3cbb2512ba7adfbf758a1e"
+      },
+      "r/R/pad.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/pad.R",
+        "sha256": "3f75193dd57a20327ff48058bc3875a6c41f96522a5e5a71d53f0d99e7877852"
+      },
+      "r/R/plan_replay.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/plan_replay.R",
+        "sha256": "d03580a40c9bdec4ec6ac4f0cffbf20bcf0f93806adfe4da87aee3c182328da3"
+      },
+      "r/R/plot.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/plot.R",
+        "sha256": "4622b9779d597520277bbda38de8e6344469d585c1651109cd8f87a0bba384e9"
+      },
+      "r/R/plot_build.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/plot_build.R",
+        "sha256": "5838ad9c667dfe9ad7177a07b87cb456bdd52b7c58ae3009aa98fb5e072c1822"
+      },
+      "r/R/plot_comparisons.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/plot_comparisons.R",
+        "sha256": "90d68fcbfbb5cba28ea706ea6517699dd79c1947fdfc27e0dd4d752993449ad0"
+      },
+      "r/R/plot_predictions.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/plot_predictions.R",
+        "sha256": "058e2bad44cb217118289397f3c5427b5b6805fc3843d8fe9dfb07f47c360324"
+      },
+      "r/R/plot_slopes.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/plot_slopes.R",
+        "sha256": "6f8126919bba0e60d010e988b81fb36f9fea5fe867104228ca0c4c5aad0c5c87"
+      },
+      "r/R/predictions.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/predictions.R",
+        "sha256": "c15fee5ccdc1b802672b4994e1c305aea402b6f43d7bbca830c8c85d17d96c72"
+      },
+      "r/R/predictions_plan.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/predictions_plan.R",
+        "sha256": "30edf2a253ed390da3598497527e334796914f3a5b791ef565f2d443f82f99f0"
+      },
+      "r/R/predictions_plan_bayesian.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/predictions_plan_bayesian.R",
+        "sha256": "a7d1e56bebba4a1634ff454a850f37d656e786bd6de5c6b44ae60ef18793b0de"
+      },
+      "r/R/predictions_plan_frequentist.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/predictions_plan_frequentist.R",
+        "sha256": "a1d093c5f4a96475356fca3da811725f6382e7798da6cee5078b315789389797"
+      },
+      "r/R/print.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/print.R",
+        "sha256": "5a7d90a2137c47f41bbf334e09b388aad17a910ecfcbb2d18290874b184a10e4"
+      },
+      "r/R/prune.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/prune.R",
+        "sha256": "5dbcf6a87a5654f116b582e37418ad65d77a8aa5c16e0b4436cbf6783efb4ac8"
+      },
+      "r/R/refit.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/refit.R",
+        "sha256": "a5eacc7c569da67344bacc796dc15f836482e708c22572f2298f15e8f0878bd2"
+      },
+      "r/R/sanitize_by.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_by.R",
+        "sha256": "57a8df90cf7256f35bd48b2ed0dae9d724ec5bf2b66c814d79e352b67fefba24"
+      },
+      "r/R/sanitize_comparison.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_comparison.R",
+        "sha256": "cfb306f798a0e315354b615c10b744246924fa06ffc683f0ee505b0be909c109"
+      },
+      "r/R/sanitize_condition.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_condition.R",
+        "sha256": "19c34a27c6f849fff57557f70bd9871d1eca9657be88a3480bbf25f1ec84b699"
+      },
+      "r/R/sanitize_conf_level.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_conf_level.R",
+        "sha256": "99c3c6f6bf56f925532555245ef36b7c5b4d0712509f036a47fda9882f045aa1"
+      },
+      "r/R/sanitize_hypothesis_formula.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_hypothesis_formula.R",
+        "sha256": "6374deb8973da676a14cf90b7509e99ff4b213c819ce259202ca9c8f24664d44"
+      },
+      "r/R/sanitize_interaction.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_interaction.R",
+        "sha256": "bf4610a2bca033c68de8f6ec030802761f523d9b870240b6e8d7fe8c1d2fe60c"
+      },
+      "r/R/sanitize_newdata.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_newdata.R",
+        "sha256": "3b26cac325df8c5a2b0f9e7a50ff9b5a5828ba4a5ad1da5a3b60f4d2f4c8a1de"
+      },
+      "r/R/sanitize_numderiv.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_numderiv.R",
+        "sha256": "16f93b58ec618a92e96469a708775c5528f348e3b65fc897414bf28425144d0b"
+      },
+      "r/R/sanitize_reserved.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_reserved.R",
+        "sha256": "0d2c7417347f9d868d4e297f398c862d41de00fc75d0705bf4937eecaaaded78"
+      },
+      "r/R/sanitize_type.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_type.R",
+        "sha256": "8cd124fc17c7b66954e0f0952ee19e6dbd0d21eafe35386b58d29866628d8420"
+      },
+      "r/R/sanitize_variables.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_variables.R",
+        "sha256": "76d4baa109d2e6df3050a64e37288674a4316423dd7f63e4cb2532b1bd1c7aca"
+      },
+      "r/R/sanitize_vcov.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanitize_vcov.R",
+        "sha256": "9c5e19a501f762e9d00163adca2abc1be3e2977812c8074591f62582776016d0"
+      },
+      "r/R/sanity.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanity.R",
+        "sha256": "bf063f8c16110084ba1e516ef3f2685b4dfe5dbfb2e651dc0a17b65a1245ccc3"
+      },
+      "r/R/sanity_dots.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanity_dots.R",
+        "sha256": "3d8c58bc02c81227ae61100cf685a6b8877d78acde8c0f5d3e88e8ff214f6582"
+      },
+      "r/R/sanity_inferences.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanity_inferences.R",
+        "sha256": "e98079afb84c33223c37fb39c30773c87949a10895909d070958a7c85f3e1527"
+      },
+      "r/R/sanity_model.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanity_model.R",
+        "sha256": "7af7e38e467b9cd800b7fc77eb4d1bca38916273ce9e4953ed4c40f5943a0d7f"
+      },
+      "r/R/sanity_multcomp.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sanity_multcomp.R",
+        "sha256": "b2dc64dbf1c34e5da36259de2662186c435a6efb166f48c2ee865e0aa0d8062d"
+      },
+      "r/R/set_coef.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/set_coef.R",
+        "sha256": "4ef6208f2ea0cb57e49d0f0b73a9ae14114c4eea415a57b4ce92ff9a01a93e08"
+      },
+      "r/R/settings.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/settings.R",
+        "sha256": "48de9c43eb9940aadfb128d392e7fef74d8d141a8dda06105fd86edf7a2209fc"
+      },
+      "r/R/slopes.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/slopes.R",
+        "sha256": "4dc6e8c91a7304520fd527a31a48e942d53594455b84d5e62ef37bad467d342e"
+      },
+      "r/R/sort.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/sort.R",
+        "sha256": "1846562b50a7972150dc2e672f487c4969ce83a4004c0ed767bc04ffc938cb81"
+      },
+      "r/R/tinytest.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/tinytest.R",
+        "sha256": "f1b687f464eb9ddf48429542e61db57aa4491e038fab4ba9e36c4e3a015d9f48"
+      },
+      "r/R/type_dictionary.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/type_dictionary.R",
+        "sha256": "7945631968192a9fd44ae9c377a47f93b269f3ad14b1ef71bd932389cd8d4d46"
+      },
+      "r/R/unpack_matrix_cols.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/unpack_matrix_cols.R",
+        "sha256": "02de5f1a6bec2354dc9416eb107f7356c07d9edbe192fbb0d68c9ef08bedc485"
+      },
+      "r/R/utils.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/utils.R",
+        "sha256": "20506d2a30e4eb22723a6c5a9997ed44151d2161a1598983c3f62e2793bd0de3"
+      },
+      "r/R/vcov_unconditional.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/vcov_unconditional.R",
+        "sha256": "896cd6392c3441dc38adeea1124a7b6aa251ed9989d039b444c333bd806eab75"
+      },
+      "r/R/vcov_unconditional_sanitization.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/vcov_unconditional_sanitization.R",
+        "sha256": "02f6b41c750124d2951ca76388a4a230b9efd560eacc2c2b563425b7ab41d5ff"
+      },
+      "r/R/zzz.R": {
+        "url": "https://raw.githubusercontent.com/vincentarelbundock/marginaleffects/a4ac200424ec397862b434b67c8cd8fff131e972/r/R/zzz.R",
+        "sha256": "899a2114fbe43a9b310242dac605bcba0cfe98855a373636133e3a367b83f217"
+      }
+    }
+  },
+  "execution": "Pinned unmodified authors etwfe/emfx functions sourced directly, linear only; explicit feo/none coding; conditional vcov=TRUE; unconditional HC0 unit clustering.",
+  "exporter_sha256": "4ed81b0d58e668da86824dccc0d0d384dbc9a685acaa285c454e3596352ae12c",
+  "inputs": {
+    "richer_panel.csv": "04ce6b569959f43df732548362f4de713516c70c8cdb343a8c1eaaf8d7472dcd",
+    "richer_unbalanced_panel.csv": "e25620767fa35dc9a9e7cd67dbce056c4dd8a91cfe2b976b1e40e4a494a9f8c9",
+    "mpdta.csv": "2283bea1221a152420f98dfa20f633c5d054ea51d881115c8cd702a97bcd3167"
+  },
+  "outputs": {
+    "R_session.txt": "e32f0f75bfb7a50d51b8dc4521094e3cdfde740b0c99725f9ab580828cdf3d01",
+    "balanced_never_cohort_numeric_equal_0_conditional_calendar.csv": "867e9f076554f5376e6d1dc8739f2528301643bd66558be953d35c9cca070e82",
+    "balanced_never_cohort_numeric_equal_0_conditional_calendar_vcov.csv": "003dd28584f4c096f1883c7f7bb90721a1109eeb49fed2d8e27c7fe6f3547377",
+    "balanced_never_cohort_numeric_equal_0_conditional_cells.csv": "5c3c57f657c546eb97bfc54932b32c3515363098c80816daa650b250b8f356ff",
+    "balanced_never_cohort_numeric_equal_0_conditional_cells_vcov.csv": "674a1aee7d69624058cdac619269092bea83c720175ef764825e82f2ea0ad9a7",
+    "balanced_never_cohort_numeric_equal_0_conditional_event.csv": "ad82c2be1faa01892bf56f9be2b2908be57d531cb7338bc2d5281510bec7db29",
+    "balanced_never_cohort_numeric_equal_0_conditional_event_vcov.csv": "3677faeeabda41629b864d2b83e40cfea2cc158c324bb2c686ce0b17f74f111d",
+    "balanced_never_cohort_numeric_equal_0_conditional_group.csv": "fe77c07d0de22c584562d7e6aacbc161b18e67895d0ffd4219da13cd78aaa97a",
+    "balanced_never_cohort_numeric_equal_0_conditional_group_vcov.csv": "e1bb5230fe71e93c8dccf5988f71418bdbb317a23199baa1d5483be80ed9f630",
+    "balanced_never_cohort_numeric_equal_0_conditional_simple.csv": "d159db072e2590c38d7a240ba386746b3909638bb1892c9c9a2c73de84b67d26",
+    "balanced_never_cohort_numeric_equal_0_conditional_simple_vcov.csv": "f2ec9f074a1ebbc3cd36960025cdaa6168866ee72438abe1bd231efbdab9e664",
+    "balanced_never_cohort_numeric_equal_0_unconditional_calendar.csv": "1a203dfce071f50eada336d3da404bc0ade59455e5c162a94e8992187ff85d9a",
+    "balanced_never_cohort_numeric_equal_0_unconditional_calendar_vcov.csv": "fa2938ec4cba88d1ed65057e921b67d21ee4b87b03d0fe3a0b3c505105cc9133",
+    "balanced_never_cohort_numeric_equal_0_unconditional_cells.csv": "28b3f5c4013079b36aeb92d32c7ae471a442d2c722cab356bc1c16d9ed4ee895",
+    "balanced_never_cohort_numeric_equal_0_unconditional_cells_vcov.csv": "73c5a678a5c99e1e9fa5059ebdc1b0a758a35a274e10ba36e5d3d0018411c4ce",
+    "balanced_never_cohort_numeric_equal_0_unconditional_event.csv": "296169b9b3edf262710752f91ad92b0986ed19a70a43518aa72fbd0fceb22173",
+    "balanced_never_cohort_numeric_equal_0_unconditional_event_vcov.csv": "11b98386f4c306c260c571541b22c6c169462a69c467c7a3e706b49f5105db55",
+    "balanced_never_cohort_numeric_equal_0_unconditional_group.csv": "5290372316cb663bf1e53d926a2723f6fac184555e957946f808f5c78362e23c",
+    "balanced_never_cohort_numeric_equal_0_unconditional_group_vcov.csv": "f8ba0639179adfa99b97295e88425903eac0b3b88b6a2359ebfe36093b9b1716",
+    "balanced_never_cohort_numeric_equal_0_unconditional_simple.csv": "56a23bc40cee6410ac1cd19ec796640e403d60a09d9c2c0e28eb691dda1c1360",
+    "balanced_never_cohort_numeric_equal_0_unconditional_simple_vcov.csv": "5cf67a1525b4b407b7c04ce762f05b144f45612d734e4a5769bd9be0d98d960a",
+    "balanced_never_cohort_numeric_unit_0_conditional_calendar.csv": "e2c6a399e0edacd1913ab13bbd41e6f52dbee0fc6212777596efdfae433f90d8",
+    "balanced_never_cohort_numeric_unit_0_conditional_calendar_vcov.csv": "065345567d5a0c3e460d64429fa5281386fc23f8f26e950b8b5764b62d07ea61",
+    "balanced_never_cohort_numeric_unit_0_conditional_cells.csv": "1dfc83de97fc70bbebfc6a511e8a7bfb14c38103466105a1f029180e1a32b66c",
+    "balanced_never_cohort_numeric_unit_0_conditional_cells_vcov.csv": "daad88ebed29d46d82a1ef8fb350e29c0066d8a2d32fa32824d2cf72d35e2ec9",
+    "balanced_never_cohort_numeric_unit_0_conditional_event.csv": "16d5305fbc274bc3ea8877610e5bd0113005504a2b20fec1c6419bcb66eab8d0",
+    "balanced_never_cohort_numeric_unit_0_conditional_event_vcov.csv": "97aaa2b9d23c71ed2814055498e97acd30fbbdc9d67b7a0003dc359e4a4954fe",
+    "balanced_never_cohort_numeric_unit_0_conditional_group.csv": "761307c9d4f688a9402000528bd4ac5ab9e224086690783840c15c88df27d53d",
+    "balanced_never_cohort_numeric_unit_0_conditional_group_vcov.csv": "7dd99d1d021af3409c3803f3ae895914ffcdf53aa3f34f2f6bfcfd77b40455dc",
+    "balanced_never_cohort_numeric_unit_0_conditional_simple.csv": "000d19ae3305d6d39ab9a935d7d8da081dd33606074025207f0f2e19cb50f29a",
+    "balanced_never_cohort_numeric_unit_0_conditional_simple_vcov.csv": "944956c70dd483bab5ab08b6632c59114a888b91a0635973525644e8775d03dd",
+    "balanced_never_cohort_numeric_unit_0_unconditional_calendar.csv": "02454376c06d9d98c1ffe43102cf0e06930beeca09e75f81d35afcdbaaf8cc26",
+    "balanced_never_cohort_numeric_unit_0_unconditional_calendar_vcov.csv": "9d23a95016358ba67ba1500bce9c66a779efe104f631264716819b087240eb98",
+    "balanced_never_cohort_numeric_unit_0_unconditional_cells.csv": "072fa1686b52eef86a6b0d779606e9e8f7bc6fbf972f488522965b72569747f2",
+    "balanced_never_cohort_numeric_unit_0_unconditional_cells_vcov.csv": "c319d0d9794c9ee2536eff8bad6d005a9f7164fbe492424fa738bdfd69379133",
+    "balanced_never_cohort_numeric_unit_0_unconditional_event.csv": "0b3570bdc3618fbb85bd097755d54f7951e7eb08e144b9b29e4eba0ffc53fb58",
+    "balanced_never_cohort_numeric_unit_0_unconditional_event_vcov.csv": "8164f94dab75b9f5a7b3e3fa273d1501c4436f8a714b28c4be9447afb0d53d24",
+    "balanced_never_cohort_numeric_unit_0_unconditional_group.csv": "f1108eaf2e416af72912e8a977e448f4f9cb4574a65580120d44f34ce2f6442a",
+    "balanced_never_cohort_numeric_unit_0_unconditional_group_vcov.csv": "80950e651e9a7aae646786426dbef4664b4ff70fc2f4d154f03f9bf9e5872772",
+    "balanced_never_cohort_numeric_unit_0_unconditional_simple.csv": "c4f22bd3536e6ceae4e46f1f6432d6528b3fa82de06a09310cc180f3c8953ad7",
+    "balanced_never_cohort_numeric_unit_0_unconditional_simple_vcov.csv": "f4a4d47c09f1db04990b367434502138ac033a35c4f69682a31d1373f8fa58e0",
+    "balanced_never_cohort_numeric_varying_0_conditional_calendar.csv": "03f71e26be26b539b5ff5b59eaeb4485ae33e0da79755cf468caa5e21004dd78",
+    "balanced_never_cohort_numeric_varying_0_conditional_calendar_vcov.csv": "7e201891a782023122aef9233b00cd7b72cd5ce7ce1f881176d77324c27ccdc5",
+    "balanced_never_cohort_numeric_varying_0_conditional_cells.csv": "0da453a896c168644c6b869ac7084b505e210a3f18f34380603a0e749dcd5795",
+    "balanced_never_cohort_numeric_varying_0_conditional_cells_vcov.csv": "3c8de8bbc818e6316ee0d64b9fdf902c69ec5067eca3e847c1343ced5da116b1",
+    "balanced_never_cohort_numeric_varying_0_conditional_event.csv": "4ca7b3304e20655223ccf15ee8e1bea8517a2d839331f84397664b80327c6bc4",
+    "balanced_never_cohort_numeric_varying_0_conditional_event_vcov.csv": "5cd82abdb833f66aa607f07d609c03351dad0636167bb5c8f55373ab672b8531",
+    "balanced_never_cohort_numeric_varying_0_conditional_group.csv": "1f71abbb26322907bad35eea46317f2e221e6a0e4769e4b3dd47622dd594d324",
+    "balanced_never_cohort_numeric_varying_0_conditional_group_vcov.csv": "5c47dfa73ccee7f0612f85bba8c9ed1cfb141ee079bc7d283705884942db3703",
+    "balanced_never_cohort_numeric_varying_0_conditional_simple.csv": "ff0d1af80d322fc9b9837f6c8fe924f0b658c27bc914eb80e45672274ea3ae62",
+    "balanced_never_cohort_numeric_varying_0_conditional_simple_vcov.csv": "a127ca37620b9f9bc3965e26b0b09e70773b98107cf9ae4705849e840eeef9c6",
+    "balanced_never_cohort_numeric_varying_0_unconditional_calendar.csv": "2b4cce15bda6a052865e21ce0c9c7551a9b7718bdc5c9afea33226fc00efe4f8",
+    "balanced_never_cohort_numeric_varying_0_unconditional_calendar_vcov.csv": "363d8fda8fe3d188b57d320360786d2b490094b0c8c0d434e5ee8d40fa175e3a",
+    "balanced_never_cohort_numeric_varying_0_unconditional_cells.csv": "9a774f17722d6f0851a9bfec728ef851de7783fb82a7c4d5ffc17f6005431cf7",
+    "balanced_never_cohort_numeric_varying_0_unconditional_cells_vcov.csv": "802cee499f390944ce8212e395f20fa5840261300511a96b5ec74219f2043937",
+    "balanced_never_cohort_numeric_varying_0_unconditional_event.csv": "470a83eeaabee0450f5c972e33b3b68a27c064a0b800e21909a23056b3a0e480",
+    "balanced_never_cohort_numeric_varying_0_unconditional_event_vcov.csv": "d18a59ff74c93ce4cb0c41dced68b51a37172104e216522bbacd588675ef4bcf",
+    "balanced_never_cohort_numeric_varying_0_unconditional_group.csv": "92a83f1b768c6d1ec29a062e4bcd5ddb7abbab1236b532ea30b7f905115ce3f7",
+    "balanced_never_cohort_numeric_varying_0_unconditional_group_vcov.csv": "eb7252d84755af6dbadff2561e069ffb32b344672d8143fb1a8ba073088099b7",
+    "balanced_never_cohort_numeric_varying_0_unconditional_simple.csv": "ada7bae8480b62df52667306952df1e25d9ed1874ad3df3140283b81acc43176",
+    "balanced_never_cohort_numeric_varying_0_unconditional_simple_vcov.csv": "9db06a90cc5d140b247b1c72b05d92e68f74b39d737c8ace4787e99356c5b2b5",
+    "balanced_never_cohort_numeric_varying_1_conditional_calendar.csv": "cf5b5fd648280de01f3e591260e55394694609e6306e7d1610773eb19965e8f5",
+    "balanced_never_cohort_numeric_varying_1_conditional_calendar_vcov.csv": "c23d1a3f63bd826760fc10e9e34a55c781b9a6e028c7d2662e8b8c933e1eaa0d",
+    "balanced_never_cohort_numeric_varying_1_conditional_cells.csv": "903be5b31e5202cc152fdf7b1ffb4511725c9079ffbfdd711fe1b39ea5918ae8",
+    "balanced_never_cohort_numeric_varying_1_conditional_cells_vcov.csv": "2b3db9f3ac808634cffd5963cd04920f6f18fc5fe6c14248d41a553d0ae030be",
+    "balanced_never_cohort_numeric_varying_1_conditional_event.csv": "1617ad2d63beaba6504c0c8cbe6f4c3e71068659ea986b818e153bef7f6ce08e",
+    "balanced_never_cohort_numeric_varying_1_conditional_event_vcov.csv": "9566e2e50a4780a52a0b28d76c1948a3bf423eaa752b3dae2ab4ebb794684cff",
+    "balanced_never_cohort_numeric_varying_1_conditional_group.csv": "72e485693ae3edee3c86a9d984768205b04b411ed0bf3f523b9f81503000899f",
+    "balanced_never_cohort_numeric_varying_1_conditional_group_vcov.csv": "864c92703f4b19a1b54d693a8f7f2226634a225f0cefc21a95e01417d77d05e6",
+    "balanced_never_cohort_numeric_varying_1_conditional_simple.csv": "5399fd15a510061f8a597da006926e72953dad5d50162bddd9388ae0ea57e498",
+    "balanced_never_cohort_numeric_varying_1_conditional_simple_vcov.csv": "e73b7bfeacc5725543e97a6f9e361d06b8db8760f2ca7bdfd71f6d34b52d9a15",
+    "balanced_never_cohort_numeric_varying_1_unconditional_calendar.csv": "89b01e64015073577f50e7a1f9dc430bf2b098ca305bb1a128671c4a6586a862",
+    "balanced_never_cohort_numeric_varying_1_unconditional_calendar_vcov.csv": "1b6c13f1fd3bd3d8374e65468a7ffaa9bb1d1c2efe0a4b3180afcb32690b650f",
+    "balanced_never_cohort_numeric_varying_1_unconditional_cells.csv": "fc0488fd65534c01e9d718840d5eb60a64e44e58a012a3c2fbdf9bd78b564eeb",
+    "balanced_never_cohort_numeric_varying_1_unconditional_cells_vcov.csv": "b314ffdc6747979bc024d4888bdecc8116cdf8a823c7e3ce6478ca7008de2b26",
+    "balanced_never_cohort_numeric_varying_1_unconditional_event.csv": "b4390140146262dc8383e7abb94c808f74b0d2df16c08c65f6fc636522a57064",
+    "balanced_never_cohort_numeric_varying_1_unconditional_event_vcov.csv": "c54d4d9d4452c1cf8118cde1848c38a5c59e688a0158e76f9b94161a15d3b48d",
+    "balanced_never_cohort_numeric_varying_1_unconditional_group.csv": "389aa402080cd70cc9b2b6a9683e7fefbf977a4807219320708f0c69153bae31",
+    "balanced_never_cohort_numeric_varying_1_unconditional_group_vcov.csv": "d19dbefc96dce758698fa603a346daaa3e59892f75ee9883c806ff3b7f37a682",
+    "balanced_never_cohort_numeric_varying_1_unconditional_simple.csv": "1deb496737739aabfb2dc797cc05aeef9301e60ff6255b50fe780043439a85fc",
+    "balanced_never_cohort_numeric_varying_1_unconditional_simple_vcov.csv": "e1f9f1df866b2ad032bc9f49cc6f22c782d561d453b5e0df109ece3149c1e4c8",
+    "balanced_never_cohort_plain_equal_0_conditional_calendar.csv": "5a50d59f582e4f5ac882e057a31a31587b3c494fbc933154903e9a159af09dbc",
+    "balanced_never_cohort_plain_equal_0_conditional_calendar_vcov.csv": "240988c7284fa0be34ecc6a4248f7789c7b20a909ec7eadbfd43189476ab92fc",
+    "balanced_never_cohort_plain_equal_0_conditional_cells.csv": "a498a26c13b46770054c1b68c89a3f41777c980266a9712fca07f55b7524df89",
+    "balanced_never_cohort_plain_equal_0_conditional_cells_vcov.csv": "3c041b1d7d39afc23db12b283cfce65b64459d087ec7b021edbb90368b22a09e",
+    "balanced_never_cohort_plain_equal_0_conditional_event.csv": "29befa61e3438763b061127cd013fd5e5817bddb707b3e652ddc9ef60fe52e93",
+    "balanced_never_cohort_plain_equal_0_conditional_event_vcov.csv": "8c26f564aa346c395c6f4d53728de9c92e03af34e33385f31bc62e595698f4cf",
+    "balanced_never_cohort_plain_equal_0_conditional_group.csv": "3904bd967eacdbc04c84086e054d49021f9cec7cad6881ccb98e3de0d4490401",
+    "balanced_never_cohort_plain_equal_0_conditional_group_vcov.csv": "86cb9ed6bfe7376427d019b8bcb9e0f2e18d1f9825ed4f51c07d7b0a2598c5d1",
+    "balanced_never_cohort_plain_equal_0_conditional_simple.csv": "d58d1af732cb7442d88e79640f90a255284b098c9c5934dc2a30af3441ca7424",
+    "balanced_never_cohort_plain_equal_0_conditional_simple_vcov.csv": "6daddb8680b953ab73e9d17a88d1ad9b863b25e1706c1914f1e5913f0a86a991",
+    "balanced_never_cohort_plain_equal_0_unconditional_calendar.csv": "0f98e255f397eb1a3cca1c9f8345fbb78c3793155b027b173a5a8843f25f0406",
+    "balanced_never_cohort_plain_equal_0_unconditional_calendar_vcov.csv": "4385ca9e6babf1c03d2e3d72cb406d5998b2cf6ce97fada04ce9feef14ef2551",
+    "balanced_never_cohort_plain_equal_0_unconditional_cells.csv": "5ca05b4675721f07ae5fbfb523a157ded80f5819cdcb14ec325c728c8c6ac881",
+    "balanced_never_cohort_plain_equal_0_unconditional_cells_vcov.csv": "2d4cadf24e93916aafa3f94e8bb03bfb7e97ee030dad0dcbd7eb67d9559093ca",
+    "balanced_never_cohort_plain_equal_0_unconditional_event.csv": "02597339c620fae125dc0122abf2dd524ef26b94e2f6ea6912a12edf1f9cbc55",
+    "balanced_never_cohort_plain_equal_0_unconditional_event_vcov.csv": "4eb44570540dcd9e5c9e3d0156d88b5913eeb8955a95f4c61862ce2ed3b264ab",
+    "balanced_never_cohort_plain_equal_0_unconditional_group.csv": "269616b01d1257c52b06098678a059cbc6bdedd5145ac8f9b1eb1e41be73aab6",
+    "balanced_never_cohort_plain_equal_0_unconditional_group_vcov.csv": "c39b61ec711e5c74653d8f07829bd2fe22e28c1c9533231b76dbb98d05400b55",
+    "balanced_never_cohort_plain_equal_0_unconditional_simple.csv": "923a1dd086926b6971a2637c18437594352d9c9ba93fb18a822bba74ffbb5c18",
+    "balanced_never_cohort_plain_equal_0_unconditional_simple_vcov.csv": "9ec0f6f3dfb9662597c982f22ee64696f2a95a04f146273c08dcb4458c340bb0",
+    "balanced_never_unit_numeric_varying_0_conditional_calendar.csv": "df3751198b45b88b5dc735c917e61071cbbedfc1d24b059d1b118f171f537eac",
+    "balanced_never_unit_numeric_varying_0_conditional_calendar_vcov.csv": "ebb8fbbd3f28ac9c376b0aabbaf65c625ebcd45bfad314ed31871396cfd9b2e5",
+    "balanced_never_unit_numeric_varying_0_conditional_cells.csv": "da5a1b22deb12b584c9aa8f91d2978456de44ff120c9e692adb60888a8267d74",
+    "balanced_never_unit_numeric_varying_0_conditional_cells_vcov.csv": "af53c12e40ae069b8ba629b6e93006d7fb3de3286031097f1b91b93abc217512",
+    "balanced_never_unit_numeric_varying_0_conditional_event.csv": "5dd8542c4e457b858fa15e5d9dd7104cfed2bcf731de15750b61201434509934",
+    "balanced_never_unit_numeric_varying_0_conditional_event_vcov.csv": "f14049780dda0737159c82ab0d165b251c81a1bcd0610c81833d4c3fd31ad553",
+    "balanced_never_unit_numeric_varying_0_conditional_group.csv": "7c6e8b2a63ec7246990dab4869427dda0b46e596aa56f9aca96066a4a4f7cf67",
+    "balanced_never_unit_numeric_varying_0_conditional_group_vcov.csv": "6bf7505f1559a411e786f56e52631e959201c33798749cfc0bac8aef0a4d76d6",
+    "balanced_never_unit_numeric_varying_0_conditional_simple.csv": "d493472ea71c64fed1187d25da627d4bba51112d42208e960d065b4e3984e11b",
+    "balanced_never_unit_numeric_varying_0_conditional_simple_vcov.csv": "e4d51794a415d5c51cd113a4638c4d7e7c3735e51d5419e8a3bbc485a1d6fae8",
+    "balanced_never_unit_numeric_varying_0_unconditional_calendar.csv": "988476122c09ccaeb56654ececbab590cc2e85d82ab6b3bd8cd60b0aabf36bb9",
+    "balanced_never_unit_numeric_varying_0_unconditional_calendar_vcov.csv": "7bac3d598d9aa2fd7cea676cf254891530bbf138c57e3560136705d56a7484c0",
+    "balanced_never_unit_numeric_varying_0_unconditional_cells.csv": "12d2b6da8b738b9bb8245ca075c609c44f46a5e42e7990093e0fa86cb8836178",
+    "balanced_never_unit_numeric_varying_0_unconditional_cells_vcov.csv": "0fa071f6eca8d52d0b3da2b669dfc290296e648b5d07d7c30266baac7bafc4e8",
+    "balanced_never_unit_numeric_varying_0_unconditional_event.csv": "88e42a775a8549602dc1b8c1ac33d1ff0cac5ab7c8427bc7e72a5a2d4ae96bae",
+    "balanced_never_unit_numeric_varying_0_unconditional_event_vcov.csv": "c84f8667ad324d71b8d8c64f409d85a746a2d238fb93954b797d91fe993cd0de",
+    "balanced_never_unit_numeric_varying_0_unconditional_group.csv": "6eff094547f87eeffcf207112b7861f4e692461a27c1e889f3c3e4b7079b8e78",
+    "balanced_never_unit_numeric_varying_0_unconditional_group_vcov.csv": "279d7f27d714a0b6f4aac6ba3fff4f6258db70b28b18686393024aa11d67b4ad",
+    "balanced_never_unit_numeric_varying_0_unconditional_simple.csv": "2f2699eb2a7fa6d771a330dc25c91ae08ac7e6ab30998362418eb49d7d88cc13",
+    "balanced_never_unit_numeric_varying_0_unconditional_simple_vcov.csv": "3b00422dd8289d7fbea776c599deb4d003df036ec2ab3b2df06a2e7390224b45",
+    "balanced_never_unit_plain_equal_0_conditional_calendar.csv": "9ecfc1b5c72adc1e0d0312a4d6b9f20c8953b5b3652a0209451c86408cb9e085",
+    "balanced_never_unit_plain_equal_0_conditional_calendar_vcov.csv": "807b6f6fd38e224927ab3db9fa190bc454a85925d2c790ee90746cfa3f289294",
+    "balanced_never_unit_plain_equal_0_conditional_cells.csv": "6e9e7fc87379c14dc59c4844c21ca057aa69c310f1c5e7c3394cec70523bed9a",
+    "balanced_never_unit_plain_equal_0_conditional_cells_vcov.csv": "8cb38ac23edb1869a1282d5aa4da79350698f15e19343ae4d7d0553fcc206172",
+    "balanced_never_unit_plain_equal_0_conditional_event.csv": "1fd04a053da0215898f3bdaeb1cf03ae97ffe5cf2c228fe1ff64c4c8d02acdb4",
+    "balanced_never_unit_plain_equal_0_conditional_event_vcov.csv": "402f5afef4f30a3c51a41d26aa5020938beba1b203816c3f98087d1d67fdadf6",
+    "balanced_never_unit_plain_equal_0_conditional_group.csv": "2611992c42fea3eb80046da094af25fb7178cb388ae483e945abab3ba6d72cac",
+    "balanced_never_unit_plain_equal_0_conditional_group_vcov.csv": "c913d1b05e4fb175acda7c72bdd93d184b3827e502744f4f77b1e117c615f323",
+    "balanced_never_unit_plain_equal_0_conditional_simple.csv": "396e14916151a5f31423b63a1e126eedfc1e41d83ae520fbec3c14df1e20ce3e",
+    "balanced_never_unit_plain_equal_0_conditional_simple_vcov.csv": "791919b1368218027980962188602e5ecd4ea2fd86b8c23ab1c0db2b1651d791",
+    "balanced_never_unit_plain_equal_0_unconditional_calendar.csv": "918914b48388dbe842fa4c6950b9cef5458a0797700bdde76b26b90449ce09c7",
+    "balanced_never_unit_plain_equal_0_unconditional_calendar_vcov.csv": "aff61ff52b5d130ae5b4ca9863a2ab28467b553ea70be544ba9ae857b60600b0",
+    "balanced_never_unit_plain_equal_0_unconditional_cells.csv": "079634dbdbc0117c93e54ccdaf62c571033f6bc024562b650850c5847292af25",
+    "balanced_never_unit_plain_equal_0_unconditional_cells_vcov.csv": "23207f1b11447be65a88625347e49e1d9c81191ffcd1913582571cbb56ba5d21",
+    "balanced_never_unit_plain_equal_0_unconditional_event.csv": "e104b4f7b804fa8ad2a4277b3830f535f1f88ee24c3a8b9b4809adb2d1bb35dc",
+    "balanced_never_unit_plain_equal_0_unconditional_event_vcov.csv": "61b998a13e350e08a9b61c536a04f1fa204c43ac28068972899f583ff00fe461",
+    "balanced_never_unit_plain_equal_0_unconditional_group.csv": "037b836d100f3e670a1d61e53be3030a1722e9e49acc6267d0b3ed61a9e3048f",
+    "balanced_never_unit_plain_equal_0_unconditional_group_vcov.csv": "ce893fff40c61791bdda73783a6d7475ae05e8bf329ec1a2d573c2bf9a379721",
+    "balanced_never_unit_plain_equal_0_unconditional_simple.csv": "715c63e45033c877391b0e57cf55554b6df424b16d78370152edfb4f6b48e57e",
+    "balanced_never_unit_plain_equal_0_unconditional_simple_vcov.csv": "c5d6db525d2335bd6a361f54b932d6eb286aad6ceb98d18fe9b156f2ae7866db",
+    "balanced_notyet_cohort_numeric_equal_0_conditional_calendar.csv": "39803114c301447249410a6acb1a352580b6b029258efbc61f669d087f326774",
+    "balanced_notyet_cohort_numeric_equal_0_conditional_calendar_vcov.csv": "f6fd59dee60de25928e095af705d24d4b7a46c0a26c22cd97595ba122a9760d7",
+    "balanced_notyet_cohort_numeric_equal_0_conditional_cells.csv": "ec765b4b2afb71aa80efb3b905dc0811c1c618b87ca9c73bd0b2b36919a00966",
+    "balanced_notyet_cohort_numeric_equal_0_conditional_cells_vcov.csv": "5b83ba0a1fa8f3b4c244cb1eaa83dd682216f94bcfd82ce73b74002b9875b3ea",
+    "balanced_notyet_cohort_numeric_equal_0_conditional_event.csv": "88690c8606a4aeb088cb330873cb9b089cca0d4c83bec967adb3d0aadb49876f",
+    "balanced_notyet_cohort_numeric_equal_0_conditional_event_vcov.csv": "37ec0066820e3ed0011db234b428874430998f2b3ff4cc9733ad8b8b9f2b3b04",
+    "balanced_notyet_cohort_numeric_equal_0_conditional_group.csv": "2300c7c5aeff98ae0a445653e037f6c5e764d49ea20ad24e78bcbf1434c9b5f1",
+    "balanced_notyet_cohort_numeric_equal_0_conditional_group_vcov.csv": "887e27d9b50dce19f37f0a4dcff728448e56442a95ab297a25061343bc177ddc",
+    "balanced_notyet_cohort_numeric_equal_0_conditional_simple.csv": "d0b7edb8b1a47c14b8cdd444a529b4f26be23f69b7fff5578087b658e8bddbdc",
+    "balanced_notyet_cohort_numeric_equal_0_conditional_simple_vcov.csv": "83e707761d5d8fe7f82377ff3d952146b17f83a492d4ee0f3aec5ba181a8d80f",
+    "balanced_notyet_cohort_numeric_equal_0_unconditional_calendar.csv": "95d0b44968520ac4ade39f0331dfcda1c9c390b254274b66788f0c4bb1d37ff2",
+    "balanced_notyet_cohort_numeric_equal_0_unconditional_calendar_vcov.csv": "8b6100a4c5bb4dd896ce79055ffd685e55b6de73cbb48d43500199220781bd73",
+    "balanced_notyet_cohort_numeric_equal_0_unconditional_cells.csv": "7b83ad7363c42778691670a3d9b7c0a851da4ffecce839bd6a17c8dbf2656a9c",
+    "balanced_notyet_cohort_numeric_equal_0_unconditional_cells_vcov.csv": "08997d1ecd1a0d1a4890c151b66a5f7bbe732157d350fdeb1168061aa5768a5d",
+    "balanced_notyet_cohort_numeric_equal_0_unconditional_event.csv": "67112a56d0b0e485cb2370d639ae27182afbbce9f2d80c1f0cf50a0aed38d717",
+    "balanced_notyet_cohort_numeric_equal_0_unconditional_event_vcov.csv": "4faad8e153754bfcd5aa41ce59934a9a2e367421c39c0f964bab4561392724d6",
+    "balanced_notyet_cohort_numeric_equal_0_unconditional_group.csv": "0e94e62aa35a153872b208994e6832a77ab45403f9c27fc8466b2fde1808ba7d",
+    "balanced_notyet_cohort_numeric_equal_0_unconditional_group_vcov.csv": "35d2a49ab8420782f547d2ef5aeaf79c3c378ebcdf4dbc133e4773e8edbb3a22",
+    "balanced_notyet_cohort_numeric_equal_0_unconditional_simple.csv": "677283018f72de5859964ff1d4544d802dd05561e2698f77e63124b70243f74e",
+    "balanced_notyet_cohort_numeric_equal_0_unconditional_simple_vcov.csv": "05309f2a4d7442d1110d39f331fd4357e4a85f9daae103ebf7e6cf4688073353",
+    "balanced_notyet_cohort_numeric_unit_0_conditional_calendar.csv": "8282ab05995cc8471a16129ac053fec49287cabb4f1fafdc630792b372a9c16e",
+    "balanced_notyet_cohort_numeric_unit_0_conditional_calendar_vcov.csv": "c03c4468d7e39cb0aa75373c2e91ebe5c86f5900cb52d1516155398a0db747ff",
+    "balanced_notyet_cohort_numeric_unit_0_conditional_cells.csv": "2d1d2d8b0c36510d74422098fad70477f157a1f240e7839b7e68c57cfb3384a5",
+    "balanced_notyet_cohort_numeric_unit_0_conditional_cells_vcov.csv": "7bfffcde5eabad6159b5fb513b442c262262a7ab4e0e65659e88ddbc502f9982",
+    "balanced_notyet_cohort_numeric_unit_0_conditional_event.csv": "9da847ceeb2b4b005ca175b9fecb9a1bfa1839dba0835786fdc3b1e33d5c1e6d",
+    "balanced_notyet_cohort_numeric_unit_0_conditional_event_vcov.csv": "b0e5d34f4af1f923f86c62cb35ee7cf7de9a9d2ff89f041bf4ed2d486087df0d",
+    "balanced_notyet_cohort_numeric_unit_0_conditional_group.csv": "5d0191496637b1c80308db4a1c129ada5b509521ce22b5825038320c62ec6004",
+    "balanced_notyet_cohort_numeric_unit_0_conditional_group_vcov.csv": "6f569dadb363c932f4cd5eb52f9c7d30b3b05fa524e4d72e68e2b6cfc69d1e9e",
+    "balanced_notyet_cohort_numeric_unit_0_conditional_simple.csv": "01fb8c0c3d49e056696fd4641f18d249e1c6b2c494bdf2946f2f9ae034496bef",
+    "balanced_notyet_cohort_numeric_unit_0_conditional_simple_vcov.csv": "809309dcfff09f2efa65da0b56fedf0d17e64a004d309b29867206dbcbc3e7b1",
+    "balanced_notyet_cohort_numeric_unit_0_unconditional_calendar.csv": "c768cba9f4c4983555b16e97ea779d57ab7aef31d545e219ee6b7a3c2dfb9910",
+    "balanced_notyet_cohort_numeric_unit_0_unconditional_calendar_vcov.csv": "5b82e589dd535fa50f5ac36407ab9b913041ead43b407441a577d1ba34605b31",
+    "balanced_notyet_cohort_numeric_unit_0_unconditional_cells.csv": "ea3078599834bf2478b825ef0b869ce9b4ceed0882e6456430eaff9ef99007c4",
+    "balanced_notyet_cohort_numeric_unit_0_unconditional_cells_vcov.csv": "9c6131ec43d6b7b58c331e81da1c789261406f567baf18824b2481b36a84cdef",
+    "balanced_notyet_cohort_numeric_unit_0_unconditional_event.csv": "195134fdee0a4ec50e16f42ed99063029e9f10c0eb250c21b5b7749502261cbd",
+    "balanced_notyet_cohort_numeric_unit_0_unconditional_event_vcov.csv": "ee430058179a3ef3e07d6712d521a614bc1af0d21de55173eb3c50bebbc17d81",
+    "balanced_notyet_cohort_numeric_unit_0_unconditional_group.csv": "dc88aa745ebdcd3ca40e347d5a1908b64645c6200bbc8b383a00a98b8f290d96",
+    "balanced_notyet_cohort_numeric_unit_0_unconditional_group_vcov.csv": "9c671060262384ae96eed267084ed8e137d6cc7c9e4f2d03870ff423cc69c5de",
+    "balanced_notyet_cohort_numeric_unit_0_unconditional_simple.csv": "b21aaf8fd2865f24de9f7472b5ca6db236d63ffc90078a59c359a614869f7cc3",
+    "balanced_notyet_cohort_numeric_unit_0_unconditional_simple_vcov.csv": "c4b0a96f4ff400f9f0a1d8d87cc27e2497be340af3d51110e1298d1e081fa582",
+    "balanced_notyet_cohort_numeric_varying_0_conditional_calendar.csv": "29fa8fa801ea4fa0ca912d7f228d764311178842d9f749781bb2b0bb643eb4b0",
+    "balanced_notyet_cohort_numeric_varying_0_conditional_calendar_vcov.csv": "50faed3a881f60954c026e2190c099bed81b42b0c14aca5ad4252f6c7eaf1b05",
+    "balanced_notyet_cohort_numeric_varying_0_conditional_cells.csv": "fdb91539c264896ba2a060d494d01df3d2c22af01d16741a190aa06b5216ee64",
+    "balanced_notyet_cohort_numeric_varying_0_conditional_cells_vcov.csv": "d037f8b7cb3585b786a4a14e55565911a1af92fbc9b14851bd220fa8f96a1f33",
+    "balanced_notyet_cohort_numeric_varying_0_conditional_event.csv": "29ecc1687fa298be84ef82d6a5a7e38c10a9e8395e993501512efa54ab6e6b93",
+    "balanced_notyet_cohort_numeric_varying_0_conditional_event_vcov.csv": "7dc31a0e3eff97baf7c3b2d2320c832c4f5ca6e8e1641f959801de9d31d9c863",
+    "balanced_notyet_cohort_numeric_varying_0_conditional_group.csv": "9ff1f69b5099d6c7a780d81d4c199c3834284e5d4424365d53b596d5c5675044",
+    "balanced_notyet_cohort_numeric_varying_0_conditional_group_vcov.csv": "709fa54f83fe7244937263fa3b3e13226b01947911ea9d179189a288378927f1",
+    "balanced_notyet_cohort_numeric_varying_0_conditional_simple.csv": "bd677601e65744ea376114a1ad234e7aaccdfe8db4e77b84df19c69feedac070",
+    "balanced_notyet_cohort_numeric_varying_0_conditional_simple_vcov.csv": "8a949a82fb72f02a3836fbeaf1d4c8828a80b091f97c5b5214573d84c1072870",
+    "balanced_notyet_cohort_numeric_varying_0_unconditional_calendar.csv": "74e3cec44f357fae2fee2990d8d833865652413a77eb3ce93784df6b945a8fef",
+    "balanced_notyet_cohort_numeric_varying_0_unconditional_calendar_vcov.csv": "cad4c3020206ffa39bf63a3f565a1fc6d0f4e7c2d3974c8d6d9725fdb9b14cdf",
+    "balanced_notyet_cohort_numeric_varying_0_unconditional_cells.csv": "86aba176a7a4f4d0927f40d8666cb6562639ec499338b142cc6e6015f1ae6ee1",
+    "balanced_notyet_cohort_numeric_varying_0_unconditional_cells_vcov.csv": "d1b2188c8e4c733ebc6597ffe367dcd4f2415eeea751d8eb160d9df57269ab1b",
+    "balanced_notyet_cohort_numeric_varying_0_unconditional_event.csv": "cbdb2d1f9308fe44a8f3cc726839d951cf1e21cb2d79f6676e26a0c0d3970cb8",
+    "balanced_notyet_cohort_numeric_varying_0_unconditional_event_vcov.csv": "28b6f89b5dc801ffb7dcc6d4bb68688ee6f86d1ae3ee96e88d29a3c9727a2f2c",
+    "balanced_notyet_cohort_numeric_varying_0_unconditional_group.csv": "8701aa71b1c0b4bdb4a1100b9283bd7fdfc7bd91181e6834cd60d2752172248a",
+    "balanced_notyet_cohort_numeric_varying_0_unconditional_group_vcov.csv": "58fba9d345def62aaff26c6545591c422df3f2a131427564c199fc1880764897",
+    "balanced_notyet_cohort_numeric_varying_0_unconditional_simple.csv": "e3e04e3eba2894635235b4d745d293f9f388df55ec8bd52cf92127ac8db118b1",
+    "balanced_notyet_cohort_numeric_varying_0_unconditional_simple_vcov.csv": "295f41ca043bf7bbbecf55135b9c389054680df84d6a72936a54759fcc020b8f",
+    "balanced_notyet_cohort_numeric_varying_1_conditional_calendar.csv": "5488a0da8b186075169f5ebdee46220766755a81f7f4950c187d8f7a867fda6e",
+    "balanced_notyet_cohort_numeric_varying_1_conditional_calendar_vcov.csv": "6cf1b36bc8e93a8870487f7d7fa530384587c20084871f2e2f184ad1423e9d62",
+    "balanced_notyet_cohort_numeric_varying_1_conditional_cells.csv": "912b42b621e8161fa675e1eeb7fa0eff51e7b57bfe87236795b358c434858091",
+    "balanced_notyet_cohort_numeric_varying_1_conditional_cells_vcov.csv": "ae62b455657762bb403cb717112400b1c9827015d02f9a14432a75b46a3a84d1",
+    "balanced_notyet_cohort_numeric_varying_1_conditional_event.csv": "95553a6376095b3f1a6b0897bfc4e90ce15a6a25a761bbcd330bede79d5925d1",
+    "balanced_notyet_cohort_numeric_varying_1_conditional_event_vcov.csv": "2a20a7e7e790c90180aa8898d88d3e71ebceea638b6f172495e85799256c16b1",
+    "balanced_notyet_cohort_numeric_varying_1_conditional_group.csv": "e3a2cfe5f1447b1c101a3503c578afe7b8d746de3e6eb580a60c5582f453ba60",
+    "balanced_notyet_cohort_numeric_varying_1_conditional_group_vcov.csv": "848b0f87b14a940d718c1724d9c3f0334c5dd5cb1bcc68e32c83e593b0913a61",
+    "balanced_notyet_cohort_numeric_varying_1_conditional_simple.csv": "fef3da955a3b94dce1094ee71c5dd432a23ca21c5337204e3be81f80517165eb",
+    "balanced_notyet_cohort_numeric_varying_1_conditional_simple_vcov.csv": "7658c7a9179d2a43d863d45dc67437db28f570199f759728f5b1dc869539e0b6",
+    "balanced_notyet_cohort_numeric_varying_1_unconditional_calendar.csv": "54b97c04e71d432a3b4a5986326b039d8a218d9ecd25960e80927cc2873ffc80",
+    "balanced_notyet_cohort_numeric_varying_1_unconditional_calendar_vcov.csv": "533f526850f4177ed884f241824d76edc79a11e5173d535297fcad47cda559fa",
+    "balanced_notyet_cohort_numeric_varying_1_unconditional_cells.csv": "5852ffda57335eac6f7d55ce7ae825a3cec09d511dbf397939ee37dda89d1a77",
+    "balanced_notyet_cohort_numeric_varying_1_unconditional_cells_vcov.csv": "e984c9646f2051021402da87aa01cb6b5811f56fd5e7eb9339b5f043d20365d2",
+    "balanced_notyet_cohort_numeric_varying_1_unconditional_event.csv": "33ff4201cdbd17baf559b5e392aa4caf71d899a32d93b50bc8360d5e949a579d",
+    "balanced_notyet_cohort_numeric_varying_1_unconditional_event_vcov.csv": "73e7c14810ebcd3de7702d2d8e3783746dd15b36ea8ed5718e39b89adc1c52bc",
+    "balanced_notyet_cohort_numeric_varying_1_unconditional_group.csv": "6770fca9f6e3362a98958f3f698f1a74965792bfc567510d29f780c98e14a88e",
+    "balanced_notyet_cohort_numeric_varying_1_unconditional_group_vcov.csv": "5866bab36d85fc432fb9cbebae0c824a9df47dfbe767ae517dbb3704626ebd33",
+    "balanced_notyet_cohort_numeric_varying_1_unconditional_simple.csv": "c4abb272cf6d4a7745973db6103a8e9372bbfdad1c9083672ff3c2cb799d6d53",
+    "balanced_notyet_cohort_numeric_varying_1_unconditional_simple_vcov.csv": "59947d2080d8eeeb886afb63c44e650b64f5b170d96c212e0bdf39744eddf51c",
+    "balanced_notyet_cohort_plain_equal_0_conditional_calendar.csv": "acc9d9703fec2e1615cfddd25a782fa040aa5fe312c79e8e59c0a54c60a9e401",
+    "balanced_notyet_cohort_plain_equal_0_conditional_calendar_vcov.csv": "51927ad0f16f0b0c9110da817bd8d4ee31516dae7e770aa318f1a984aa2654f3",
+    "balanced_notyet_cohort_plain_equal_0_conditional_cells.csv": "740c57f4843fae314096ce904e7315da91b4dfc01299731d821585c29bb4d8f1",
+    "balanced_notyet_cohort_plain_equal_0_conditional_cells_vcov.csv": "7bc83a91ac9cef8941b8095e5a3d5ed8a195a98df6a6b2e4ee6deff7691d3c40",
+    "balanced_notyet_cohort_plain_equal_0_conditional_event.csv": "66b490ef8042cba47587a45371a5aa90f8f412510a29d02ae279f78663761d12",
+    "balanced_notyet_cohort_plain_equal_0_conditional_event_vcov.csv": "865577c7aab0a6508c5976fa4e83e3f12d9d19443d312ec8a7204c535eea1b5d",
+    "balanced_notyet_cohort_plain_equal_0_conditional_group.csv": "9c8248c8d7d0b1903db05b13be678a4ce60dc893b1b2bf850d7fe5ad49f028d1",
+    "balanced_notyet_cohort_plain_equal_0_conditional_group_vcov.csv": "0203eb11e5b7c4abf33255fad9745899a53eda8d3354db72d69ad24db10aae57",
+    "balanced_notyet_cohort_plain_equal_0_conditional_simple.csv": "ce8e607a202f25fa54885d0bbcd1103a4bdd12e743e3b81e320ff20188d9810d",
+    "balanced_notyet_cohort_plain_equal_0_conditional_simple_vcov.csv": "ac4d067f9b470fbd200ab00fba0885fd7da9cf341de5a53122f216202ea17494",
+    "balanced_notyet_cohort_plain_equal_0_unconditional_calendar.csv": "00ff332fba7815e394fc4053cfa50b2d8d94310d14a6c6450bee1ffc164386a7",
+    "balanced_notyet_cohort_plain_equal_0_unconditional_calendar_vcov.csv": "2a7933399c4bc8be0fa35a6c9ccc620be78f05a24543e6470821237f93dba549",
+    "balanced_notyet_cohort_plain_equal_0_unconditional_cells.csv": "52873a8892a919b6d327559c05d23992fd9002eedb2592751f6e2164445b22c5",
+    "balanced_notyet_cohort_plain_equal_0_unconditional_cells_vcov.csv": "7d09b6a27c9ccdff0ddb02c13397c10fb4fbfbb773c8b2ea3edb82747bbf4c26",
+    "balanced_notyet_cohort_plain_equal_0_unconditional_event.csv": "cbc274b4a0f8b89871dede57cb217d2775b3c73c6b560bda123165c810c5915e",
+    "balanced_notyet_cohort_plain_equal_0_unconditional_event_vcov.csv": "e5299f37836c6792ca23b1d8d50b54af832b500b5e92f87599f944b1fc2b9eb1",
+    "balanced_notyet_cohort_plain_equal_0_unconditional_group.csv": "a6ce1a8cc8cf30e9de295bcc1cd8bf3f1c2d703512db52a8a8be993aecb56d55",
+    "balanced_notyet_cohort_plain_equal_0_unconditional_group_vcov.csv": "0cf33409ad68baaff251e4d28ca99e8d35082983519ade36f36563028a638e07",
+    "balanced_notyet_cohort_plain_equal_0_unconditional_simple.csv": "e8b49642cfb34fb52fbc8a22d362617c79d44d3659c74fd073d91396096c9f1c",
+    "balanced_notyet_cohort_plain_equal_0_unconditional_simple_vcov.csv": "d079144a83c706f3d2933bf4128ba95c695e9af122b4aa622f6d3e5582379b98",
+    "balanced_notyet_unit_numeric_varying_0_conditional_calendar.csv": "cdc83bad4e6fbfcff42b00ab0e7151cf264abc10a47413e4bde304d10f1c03b0",
+    "balanced_notyet_unit_numeric_varying_0_conditional_calendar_vcov.csv": "8aaf30c7366e164262b442dacf46bb77b75b1cc55bc97ac8a40c664d56023e47",
+    "balanced_notyet_unit_numeric_varying_0_conditional_cells.csv": "8138b5d601df807d26664729eb38c7d490b98e13a27188584062296ae93fb4be",
+    "balanced_notyet_unit_numeric_varying_0_conditional_cells_vcov.csv": "5f565e744d1a78ddbd5c226a9db88fcb7a961587418fc2f6a08aad2be1207aba",
+    "balanced_notyet_unit_numeric_varying_0_conditional_event.csv": "d3fc8d7e35e5686470cedc45b456e8d746dc976d801cbaf2162bb01949f50a93",
+    "balanced_notyet_unit_numeric_varying_0_conditional_event_vcov.csv": "560faac0cec582e2a4a430894436217b88083b5f8b891128dcf71ad81c20a238",
+    "balanced_notyet_unit_numeric_varying_0_conditional_group.csv": "0850b66b7c7ad3d11bf09c7dddd0d58de7991aba4cddcde53b814d0fd8262702",
+    "balanced_notyet_unit_numeric_varying_0_conditional_group_vcov.csv": "0d13fc0ab978a636900931126c0648a143c65cad4a238921e5d9110540f8a594",
+    "balanced_notyet_unit_numeric_varying_0_conditional_simple.csv": "b70c81610f5cdfe3a38bb464dbecbae770a57b2c75e69e1ff3735f7be493b36d",
+    "balanced_notyet_unit_numeric_varying_0_conditional_simple_vcov.csv": "886d88fb035c1041ed17d11327a53e940e451f2856070a2fc1d9ae3fb2b0e866",
+    "balanced_notyet_unit_numeric_varying_0_unconditional_calendar.csv": "7fe3bc31982a1dfa9fb587d29adafbc12c5402cf2db445c83f88ec15c3c44951",
+    "balanced_notyet_unit_numeric_varying_0_unconditional_calendar_vcov.csv": "55c49288a2facfe15e98806b5d69da41b41c5859758101bc9f724c7f323d6415",
+    "balanced_notyet_unit_numeric_varying_0_unconditional_cells.csv": "4ee9733aabc70fa104e36a51ef11ea1da23d369839be706f376ac7d86069179a",
+    "balanced_notyet_unit_numeric_varying_0_unconditional_cells_vcov.csv": "d5d4c8cf433965e7540aa4916f68f5c5b14aad485b2f5e926231ed1be82560c6",
+    "balanced_notyet_unit_numeric_varying_0_unconditional_event.csv": "97a20641be2573a07f3812f7ad3dd9e64fe6751f7188a36d84c0182695fb3ed5",
+    "balanced_notyet_unit_numeric_varying_0_unconditional_event_vcov.csv": "f1e707490b970402fdc21a44d37d68dd32c1955755834fdfe1f87fca424e117c",
+    "balanced_notyet_unit_numeric_varying_0_unconditional_group.csv": "853d4ee9a9602754d07eb2de464f56a00f44ddb2509f5cb083973dc7d866957c",
+    "balanced_notyet_unit_numeric_varying_0_unconditional_group_vcov.csv": "70fa3de9029854806243b5acaf02f830e332604ac44dcae5d9a484cd62c5434d",
+    "balanced_notyet_unit_numeric_varying_0_unconditional_simple.csv": "23847b35e1bb649f20ce0cad13f249881c6935c50b2b0fbbce19aeda0c8aacb0",
+    "balanced_notyet_unit_numeric_varying_0_unconditional_simple_vcov.csv": "2c400269e88550124e06060070df158b651406339d664899ecadf3234a60db7d",
+    "balanced_notyet_unit_plain_equal_0_conditional_calendar.csv": "d90e5ee21db91918c1959e71e48c1cd4ac000e4a2d212f37fee27e559c1e7595",
+    "balanced_notyet_unit_plain_equal_0_conditional_calendar_vcov.csv": "da6c71c05d78fc1519ed25ac6acb53cd3ea00f05d823105e8f4882f89c292e6b",
+    "balanced_notyet_unit_plain_equal_0_conditional_cells.csv": "e41d3d5f1693b982edbc295ca982ca55a1eac14a096dc56793dfd7bd6cf4a7d2",
+    "balanced_notyet_unit_plain_equal_0_conditional_cells_vcov.csv": "a489dd738ce76d3cff157487adac31f9648ce3d5384be5c50631a2504a46154c",
+    "balanced_notyet_unit_plain_equal_0_conditional_event.csv": "8fa003be0c446e54806fb7433391139a7d6e71a961bd46e6e855adf6070d15e1",
+    "balanced_notyet_unit_plain_equal_0_conditional_event_vcov.csv": "df99db9b0440456609f895e25f5992880233c7da0b6438586e9a7d12695041eb",
+    "balanced_notyet_unit_plain_equal_0_conditional_group.csv": "566076a3358c25b0a3ac0116e1060a701f7e23f87b67a751fd883adf7ae83aed",
+    "balanced_notyet_unit_plain_equal_0_conditional_group_vcov.csv": "265a962df5870af16268232071ff47ab4208838d75b280bf31c74f1bad26106a",
+    "balanced_notyet_unit_plain_equal_0_conditional_simple.csv": "b79dc64caa8e36e7dd94584f28cc079f2e0d848220ca93268b534c1d20db852f",
+    "balanced_notyet_unit_plain_equal_0_conditional_simple_vcov.csv": "12e4541dab39c2bf69f47c2a63c17e635c671673d67438b3f0c60d2d3a937783",
+    "balanced_notyet_unit_plain_equal_0_unconditional_calendar.csv": "4989d231f849089f6ada647a5e394ece44407ce4fe1140b5d1a5e4f36d6b7046",
+    "balanced_notyet_unit_plain_equal_0_unconditional_calendar_vcov.csv": "c4ba1f75b2da77893f26d4ef12201200e41274cad7ab36dde1801d7c6a7953f1",
+    "balanced_notyet_unit_plain_equal_0_unconditional_cells.csv": "7b5d529c769413b46214275928f55964796d51c65dadfa8abb6b331e8d1eb18d",
+    "balanced_notyet_unit_plain_equal_0_unconditional_cells_vcov.csv": "657fe6c29077896cc18dcf1922cd5f7b5d319abeaea2796365027ecccd4cdd97",
+    "balanced_notyet_unit_plain_equal_0_unconditional_event.csv": "fc54d4d7ae8bdd26a834a6cb3317bde344c14b30da14389cf4d97aaa31c1fb84",
+    "balanced_notyet_unit_plain_equal_0_unconditional_event_vcov.csv": "8406e6c431463c2cce4e4e142f5630bf7905d3fbaa7d7f4e31059b5c79698647",
+    "balanced_notyet_unit_plain_equal_0_unconditional_group.csv": "dc1110e0b79f4d708674a90eb5f1b2fa7a20aa8e30a1a8ddfd3198a7a7ae87b9",
+    "balanced_notyet_unit_plain_equal_0_unconditional_group_vcov.csv": "46c3dece42cff6c8376591bb107bd75c61afc331c7e9eaf59a3100fb14406aea",
+    "balanced_notyet_unit_plain_equal_0_unconditional_simple.csv": "e5b164274bab7df15f112753717ddbab70b593b1e44144239d209b9909178480",
+    "balanced_notyet_unit_plain_equal_0_unconditional_simple_vcov.csv": "6385b00e80b21dd9f8492306fe116a99d9744b6c7d2a298f773852607f1b460e",
+    "mpdta_never_cohort_mpdta_0_conditional_calendar.csv": "0c09e6e3001bb1bbbbe1ed4ba1279f9c19f5f28f96113bdc032ec8b8179f4d84",
+    "mpdta_never_cohort_mpdta_0_conditional_calendar_vcov.csv": "a592074e2a2c21ac0ea8dc6dd05211afacc48ccb87848787b840cb12ede26f20",
+    "mpdta_never_cohort_mpdta_0_conditional_cells.csv": "6c6151d9846c2b3656edf6eeecdbf09f2821df7de79d29fcb56c49670578d5ea",
+    "mpdta_never_cohort_mpdta_0_conditional_cells_vcov.csv": "180b8003567734d9149029b88abac400d8a805d194b79a3864f540d86c458d2f",
+    "mpdta_never_cohort_mpdta_0_conditional_event.csv": "ab8f56a66dd44b37b7bafb678f4839eee6baa9a76f60e342729f3422de86ee9b",
+    "mpdta_never_cohort_mpdta_0_conditional_event_vcov.csv": "a1e9bf6fb38f5dc3e79c7676cc5dcf3919c6b826a07095833cc187bcac018fa0",
+    "mpdta_never_cohort_mpdta_0_conditional_group.csv": "650cf6f4b75d6c2c171c73fdab4f77eed49fcb6309f465f650c8602e5869a749",
+    "mpdta_never_cohort_mpdta_0_conditional_group_vcov.csv": "f1fd949403c8bbbdef55d61bc508a5551610afa04db580b17a03d5cbcb50bbd7",
+    "mpdta_never_cohort_mpdta_0_conditional_simple.csv": "d5004bec82f36f522a68387d7778d083706616285c9317b923521466e3792b7b",
+    "mpdta_never_cohort_mpdta_0_conditional_simple_vcov.csv": "6ceb11691e22da66a631b964387c5951ddfdf48a836df43be48e22d86824f2dd",
+    "mpdta_never_cohort_mpdta_0_unconditional_calendar.csv": "7c808786301d354e2dbdbbfbf7de040b383cd8f0fc49c7db370f0de333a90d24",
+    "mpdta_never_cohort_mpdta_0_unconditional_calendar_vcov.csv": "0fba7df5cfb86807bab1a0936541c3b9c613592ee41fb27b33d8d2c075aff7d0",
+    "mpdta_never_cohort_mpdta_0_unconditional_cells.csv": "ac399448ccb2a185ee17f7aac58e58663f88dfda6739094398e2a949b3c1f16b",
+    "mpdta_never_cohort_mpdta_0_unconditional_cells_vcov.csv": "b38c99f998fdd08986c377cccc8195b64081410002560abeaefc4600e0b20e39",
+    "mpdta_never_cohort_mpdta_0_unconditional_event.csv": "fe8be52811ff1ef113604dd34b84eea98c28174692eeb3ac914683896788d663",
+    "mpdta_never_cohort_mpdta_0_unconditional_event_vcov.csv": "bbe4c652254987ea01466020b2e36f603936896c649b6502753774144dcbc4fc",
+    "mpdta_never_cohort_mpdta_0_unconditional_group.csv": "ab29189db286986856f6683b83ccf6567b6704136af50a2cdd5ccc12d6541057",
+    "mpdta_never_cohort_mpdta_0_unconditional_group_vcov.csv": "9548b3842f46f967c010ada299c66010c876f68ef998e4d1a6a98f5b7e1045ee",
+    "mpdta_never_cohort_mpdta_0_unconditional_simple.csv": "11597c145ab33d72617e43f19c5b902aff4c5632f409b621122a24d6348d6db1",
+    "mpdta_never_cohort_mpdta_0_unconditional_simple_vcov.csv": "f3f187ed1ee12616eca64788bff2863438c99bf557ba20216c6f5eac192231c7",
+    "mpdta_notyet_cohort_mpdta_0_conditional_calendar.csv": "8ef42c84d87752477d4b14877c2777ddf0f5d998bf975575b4151dce108b1b7f",
+    "mpdta_notyet_cohort_mpdta_0_conditional_calendar_vcov.csv": "055b04b1d9d447c2b2b6b20b85c87660c7181ea7bc7c7f498e0d4cb3dbdc60a4",
+    "mpdta_notyet_cohort_mpdta_0_conditional_cells.csv": "24476f72ffd7e3097f287b3b272b5daee607cc61b1bcc736b28ee900a637eab8",
+    "mpdta_notyet_cohort_mpdta_0_conditional_cells_vcov.csv": "9b873a29fbdbe4b2f14c2394f8e533d668a73fb4cb836081862602165415d488",
+    "mpdta_notyet_cohort_mpdta_0_conditional_event.csv": "039b0605b5ab5324f4fe47fb260a8444f3ae9e9a8d7913d4b3ef998b9ecfb0f3",
+    "mpdta_notyet_cohort_mpdta_0_conditional_event_vcov.csv": "5d8a102bdb99bb72a5f75c2fcdd7f30cfd8d301dc69f5a2bc088ebec55b5f9c2",
+    "mpdta_notyet_cohort_mpdta_0_conditional_group.csv": "69e0bc5cfb93b7cac76cb45afd53f628a23c102418aa13fc7c9c18b272f93740",
+    "mpdta_notyet_cohort_mpdta_0_conditional_group_vcov.csv": "13bec2ce421cd256741d1dc8168789031eb7205814eba8f131e0b0eed76b7497",
+    "mpdta_notyet_cohort_mpdta_0_conditional_simple.csv": "3832245ad8334c5c92d70737510de47e522733cfb03e414830e2068bc64358bd",
+    "mpdta_notyet_cohort_mpdta_0_conditional_simple_vcov.csv": "ab2bfdea9e8c24b8700bbd3866ace3572a66b30926d49957e014a2eae8eed8a0",
+    "mpdta_notyet_cohort_mpdta_0_unconditional_calendar.csv": "7197aa6f92716de5cd4635dc2c3c0cc2ff66787c91c7e72ccc9414a8ce3358e7",
+    "mpdta_notyet_cohort_mpdta_0_unconditional_calendar_vcov.csv": "9f9f09fb49a8962ad1917e0c6a0484e3fcc8dbfc33ba2212de6d5e5ef791abfe",
+    "mpdta_notyet_cohort_mpdta_0_unconditional_cells.csv": "7c058108ba111a55c3ff54b120693b97510994a25ccdec43416a1e087bf65698",
+    "mpdta_notyet_cohort_mpdta_0_unconditional_cells_vcov.csv": "3e54e2ceef866b6b67ca389e35d028b7afe759f6f96c2d883a0f2ec8500c07c5",
+    "mpdta_notyet_cohort_mpdta_0_unconditional_event.csv": "8001ba6065c261bc90d62bf87d7b23be34b3f9a6989db2aa224f16482c36840c",
+    "mpdta_notyet_cohort_mpdta_0_unconditional_event_vcov.csv": "9278310461fa1015f9b0bcc613b845442dbd8db552caea890bb9da47d4e77abc",
+    "mpdta_notyet_cohort_mpdta_0_unconditional_group.csv": "aa911fd3c988e092275363b080b5860aea6d284ad8004b41ef5f3948b7d889ef",
+    "mpdta_notyet_cohort_mpdta_0_unconditional_group_vcov.csv": "4936ff4cd5ef76bd170f19f46daeb41648685aebc093a6d273bb8563508eb2ef",
+    "mpdta_notyet_cohort_mpdta_0_unconditional_simple.csv": "09564e49e03dad3a0107316f8c33e7dd5f735a7a6a5318654ba0f2aed03de060",
+    "mpdta_notyet_cohort_mpdta_0_unconditional_simple_vcov.csv": "9dc623d0cb36caa43024382d099b061fd0fd61aaec1cb8d5788fab4d944f59e5",
+    "unbalanced_never_cohort_numeric_equal_0_conditional_calendar.csv": "e7945938e788b99c94ae78ba458e60c7c11ad5dd19d6ca61260df077c4a16bdf",
+    "unbalanced_never_cohort_numeric_equal_0_conditional_calendar_vcov.csv": "c10a6051ce0a15b2eb80e417858f5603cccbd8c3e69be9baffee3aeeb7926767",
+    "unbalanced_never_cohort_numeric_equal_0_conditional_cells.csv": "12e1003ba6ef2abc6e93f8688191a29e5914d566b475dd519f45253f49aa4ffe",
+    "unbalanced_never_cohort_numeric_equal_0_conditional_cells_vcov.csv": "ce79e1333fe9c1f11febbfeaa032311c28dc29fd7496417d9755a32ec56c7989",
+    "unbalanced_never_cohort_numeric_equal_0_conditional_event.csv": "7e9450542a9be1dc1108b0d226a4c793c111ee31e3c53d2fa675ea5df43311b0",
+    "unbalanced_never_cohort_numeric_equal_0_conditional_event_vcov.csv": "535e4d52e4dfd50d046c6069525b58b4c4004471943475a9c5de9cd3f18c574e",
+    "unbalanced_never_cohort_numeric_equal_0_conditional_group.csv": "042ee997254f4154e98f2e4742e3e697fb624dd0484c56a052f1c848e304dd55",
+    "unbalanced_never_cohort_numeric_equal_0_conditional_group_vcov.csv": "7eafdd30f7cc7a7c81516366a08f161382b3e322f9a9eebd86c2904d31c103e4",
+    "unbalanced_never_cohort_numeric_equal_0_conditional_simple.csv": "1e71061db787f38090f4c36427f41996c42a622775ea2dbe405bdb5bf7e6f4c8",
+    "unbalanced_never_cohort_numeric_equal_0_conditional_simple_vcov.csv": "126177f509d3da8c1f8310063d55262782dcb5354a59014b4a8ca7e66c164d67",
+    "unbalanced_never_cohort_numeric_equal_0_unconditional_calendar.csv": "0a4aac6b2a907d2039376aa47939bb8ff837c1b7f97f8e3a50e1e849736fd801",
+    "unbalanced_never_cohort_numeric_equal_0_unconditional_calendar_vcov.csv": "9a403e1b7143992e687e7264a8ef04381e5a78c51e8e7ee53f6f42c6fd5f3716",
+    "unbalanced_never_cohort_numeric_equal_0_unconditional_cells.csv": "e92e7aab82941c246376b9e57e497977ac88a6e994bc0e621bd0a14e27baa60f",
+    "unbalanced_never_cohort_numeric_equal_0_unconditional_cells_vcov.csv": "4a1552075781764486fcf7ddcfd04ad85d79cf9ef95961006e913a86318257f7",
+    "unbalanced_never_cohort_numeric_equal_0_unconditional_event.csv": "ed9fcf689ac059ab4ac19dfb4a85c05de9140944489d79704268b9e197cd4bfc",
+    "unbalanced_never_cohort_numeric_equal_0_unconditional_event_vcov.csv": "671639a31fb94e2597da502838f51a909868251fe3161810a8e64db6c6fb2b83",
+    "unbalanced_never_cohort_numeric_equal_0_unconditional_group.csv": "d93cca7d69e012563fb0cd4ae04a4435c02c961601a9ec955ebe830998d0eb0d",
+    "unbalanced_never_cohort_numeric_equal_0_unconditional_group_vcov.csv": "9512888f9ed2703c14322820a37fa8bc1af824df7b429ada151f8172c69242be",
+    "unbalanced_never_cohort_numeric_equal_0_unconditional_simple.csv": "218ad822326ba2d56ef7c735bad209cf567919cf866c93ca11c280a94e082bea",
+    "unbalanced_never_cohort_numeric_equal_0_unconditional_simple_vcov.csv": "09359a123cb67f7a19267b2ab55cdceb6c80ac99d20047189d8eb6b6c5c6d589",
+    "unbalanced_never_cohort_numeric_unit_0_conditional_calendar.csv": "a15da4d3d534cab19c516f318d27f6da2fc481fc9ce1d8ab161a5165b1850ef9",
+    "unbalanced_never_cohort_numeric_unit_0_conditional_calendar_vcov.csv": "9c8b8e7e41dc1d14e350f875feee32cc946972d49f75a5b0b1dbf9a3022d0a56",
+    "unbalanced_never_cohort_numeric_unit_0_conditional_cells.csv": "368f075870bc2dc4fc249251d2600653b5505653bdb98c6314e98ae315ee50bd",
+    "unbalanced_never_cohort_numeric_unit_0_conditional_cells_vcov.csv": "445fb259d7f79f24185cc2127ca0d1c092a75dbe67205bc0bf558ae0a07e4b00",
+    "unbalanced_never_cohort_numeric_unit_0_conditional_event.csv": "8c84c6af5c2e3d38e36af6f2cc9938c565c62679585ddbaeb06d6a0dd043d4e5",
+    "unbalanced_never_cohort_numeric_unit_0_conditional_event_vcov.csv": "21394b48b7c57170a2e3f3cbcf7d816375421936c5b39ae556292ba76ed6d14e",
+    "unbalanced_never_cohort_numeric_unit_0_conditional_group.csv": "28ae133c37b04a0c8bc9a18ba56fa867b0ae93ce867da5d4cdce683f0f1c8a64",
+    "unbalanced_never_cohort_numeric_unit_0_conditional_group_vcov.csv": "e8301f27a962cacde7e04cf872e406bfd4ea6bbf4c50dfdf3563259f24b5e0bd",
+    "unbalanced_never_cohort_numeric_unit_0_conditional_simple.csv": "da59c9a0e1f17704aa07737147fe6d7f944372ca087ff1a9ab1abd326aafd680",
+    "unbalanced_never_cohort_numeric_unit_0_conditional_simple_vcov.csv": "246f7e6d102c29b7c3f44732ef4b0ba47bb46d3753c7bc6b0320630752a59900",
+    "unbalanced_never_cohort_numeric_unit_0_unconditional_calendar.csv": "5941e07793d1e6ee0998b9b2f8f2816c315c25152b099621a8148bdd2a566ada",
+    "unbalanced_never_cohort_numeric_unit_0_unconditional_calendar_vcov.csv": "0fdbee1dfdb48e62926301e12e01c048e5dd7dac081a06f8e6a112a49cc9e388",
+    "unbalanced_never_cohort_numeric_unit_0_unconditional_cells.csv": "724b7cc386b3f141c64c08f2e16e63e89f3e5dbdaf6608d2679f50d98b9f9e35",
+    "unbalanced_never_cohort_numeric_unit_0_unconditional_cells_vcov.csv": "d7c533e3d5c506a72f57ee93937a6a78647333e4df7cfcd9c819030161b4c58f",
+    "unbalanced_never_cohort_numeric_unit_0_unconditional_event.csv": "7a162162cd7357466e52211e5792e12229bf7ce91393239386ace3cc945b876c",
+    "unbalanced_never_cohort_numeric_unit_0_unconditional_event_vcov.csv": "d29c4a971d4bd17760234f25337d1356d1550d41c001ce84585973f88697abcc",
+    "unbalanced_never_cohort_numeric_unit_0_unconditional_group.csv": "45dad6c3ea6751f8e4a287572e2728204d2169cec103785227ae830d7236f56d",
+    "unbalanced_never_cohort_numeric_unit_0_unconditional_group_vcov.csv": "ce1303bb2156f609cfd1f2e9d118253620b2ca00d14aa0905bbb1dd2476fc72b",
+    "unbalanced_never_cohort_numeric_unit_0_unconditional_simple.csv": "e128ec213cb46eb892f69271dea269e69b540520a56c509ca3c30c288c3c655b",
+    "unbalanced_never_cohort_numeric_unit_0_unconditional_simple_vcov.csv": "94e9bc23194c2b689e26c0b7d861aec66fe0ed5cd191965d096541abb17a5dfc",
+    "unbalanced_never_cohort_numeric_varying_0_conditional_calendar.csv": "ee285879319d5d676b427e22db49e20823660e19e6021b2827888931cc254387",
+    "unbalanced_never_cohort_numeric_varying_0_conditional_calendar_vcov.csv": "fa5870ab11ded77cd972cff7ef1b0d674fd8859c8351ac683ba7d903d675e2e5",
+    "unbalanced_never_cohort_numeric_varying_0_conditional_cells.csv": "d9fa9ecb90947c307280ca6f9e55cf765c734cd79d0b3cd8b65ce79020e459a7",
+    "unbalanced_never_cohort_numeric_varying_0_conditional_cells_vcov.csv": "97cada3964160e1e785397724934bb0203e67ca4bfe4c1be2e6a57d162e5833c",
+    "unbalanced_never_cohort_numeric_varying_0_conditional_event.csv": "63d15cd4880d87b0492be8d2f912184fd16b314774aba016d4ab4ef59b32bb55",
+    "unbalanced_never_cohort_numeric_varying_0_conditional_event_vcov.csv": "8648d9deb8af80f4128c8cb2794699e315b8a83c69e3b0b225918612d97c2027",
+    "unbalanced_never_cohort_numeric_varying_0_conditional_group.csv": "aa5e30d96ad31fc231d9f71dab45017b31ef6fc322a507cfff2bb9d1303f1721",
+    "unbalanced_never_cohort_numeric_varying_0_conditional_group_vcov.csv": "28f3c59770d8d81e440acf363e91cb56dd58e8c8fe858bc2be401a5cbf4d6e60",
+    "unbalanced_never_cohort_numeric_varying_0_conditional_simple.csv": "87ec8973b74fd6aa174c62b71c3b3a34d42818ca9eb1017c7b727a6ebe86f9c7",
+    "unbalanced_never_cohort_numeric_varying_0_conditional_simple_vcov.csv": "678c2dc4f020015e0da12438f7e76a6ef2b607678226d6a6f3e5c6a537c26f69",
+    "unbalanced_never_cohort_numeric_varying_0_unconditional_calendar.csv": "b3f0684ac17743f6bf7ea97fda850f66e731018a95294a6d8f709c90d24aef42",
+    "unbalanced_never_cohort_numeric_varying_0_unconditional_calendar_vcov.csv": "6565478dc79c1fe5bc8499502b97ded625063e27c08c5bfb84592e2e3f5f6083",
+    "unbalanced_never_cohort_numeric_varying_0_unconditional_cells.csv": "71a40be4c979db8d8a38040a39fa3ab8d5bd8faf03caa704e5fd8594fef3dfd4",
+    "unbalanced_never_cohort_numeric_varying_0_unconditional_cells_vcov.csv": "6e97f3c2f5310d9e2b714771e841467e24f4cf21f2a25b90d89847c2cbc03ac6",
+    "unbalanced_never_cohort_numeric_varying_0_unconditional_event.csv": "0c2354a83e6551a5fbc0066ef3ea2078b3784609af4d4abfb57d1aa72d535c4e",
+    "unbalanced_never_cohort_numeric_varying_0_unconditional_event_vcov.csv": "3dd494c11d0f45eb27befae5aa8d49359e2b7604a9f0745c9f639d7f42e821c1",
+    "unbalanced_never_cohort_numeric_varying_0_unconditional_group.csv": "c297abf8f5c87d2534cb7b3ecb33e89d1123b04589a942226879c95ceb74d458",
+    "unbalanced_never_cohort_numeric_varying_0_unconditional_group_vcov.csv": "e3524d0bb595e01e658cc9cad77ba61b7e22f3c6b5017f2f65e6b9b271ecb9e5",
+    "unbalanced_never_cohort_numeric_varying_0_unconditional_simple.csv": "81b963fed4596b02694b1c3b2c971135dea73c08e0a03d69797160e47c191cf5",
+    "unbalanced_never_cohort_numeric_varying_0_unconditional_simple_vcov.csv": "5736b8c4c176f1e25ef97c280fa56719d03967d160c22d11cdc238bced2b7a2a",
+    "unbalanced_never_cohort_numeric_varying_1_conditional_calendar.csv": "4acb296caa94b6c4a75de1767a4936d5ed921c6256f74512db6f069daea2b4d9",
+    "unbalanced_never_cohort_numeric_varying_1_conditional_calendar_vcov.csv": "746aac77ee51d4e43e05dd65fddade6e94c4385a579019b46688154740d5e0d6",
+    "unbalanced_never_cohort_numeric_varying_1_conditional_cells.csv": "903dd36c05d46a92135338b11aae9e4ed82c41b1c8a67ecfa617f25db77e9492",
+    "unbalanced_never_cohort_numeric_varying_1_conditional_cells_vcov.csv": "384e85ea7e788c2fafbc4cb330e264d7a5a9f073c0b680e62ad79d0a55f61f77",
+    "unbalanced_never_cohort_numeric_varying_1_conditional_event.csv": "fe7bcc74630ec207e7d493fc7015a78337f5a24ac1804b3ee86889f4fe85742f",
+    "unbalanced_never_cohort_numeric_varying_1_conditional_event_vcov.csv": "36c7f0255a9540d80f687836877db75bf64576f7918a194c92251da80dd78fb1",
+    "unbalanced_never_cohort_numeric_varying_1_conditional_group.csv": "4ffa18e797c82b515312b3a5edfc3cd72ce25020acab34f32b77b1d9c61923bd",
+    "unbalanced_never_cohort_numeric_varying_1_conditional_group_vcov.csv": "05119711dfc5401612337d8d99e1c275280dafeeed34c4ea2b63ccc51a33bf7b",
+    "unbalanced_never_cohort_numeric_varying_1_conditional_simple.csv": "65122abdc77133cc9c279137aac81127d4575456e10d28411a047e0b46fc6d50",
+    "unbalanced_never_cohort_numeric_varying_1_conditional_simple_vcov.csv": "c10aad44d3fd7e9a5e09063275e40295029976c06970f80657dbe04dd36e6cab",
+    "unbalanced_never_cohort_numeric_varying_1_unconditional_calendar.csv": "94517b52f75bf2dbc38646f155487d91dc883d446d53e2659cc261ec32e3390d",
+    "unbalanced_never_cohort_numeric_varying_1_unconditional_calendar_vcov.csv": "7673e265e930556096aa72d4ef3c4b959d353084dec2e398d03490942c4221d0",
+    "unbalanced_never_cohort_numeric_varying_1_unconditional_cells.csv": "c1eedf7ff5ea45d5bfcec52030fad46f39f2f92c8e1bf929d1d4d1bb0de6c5b0",
+    "unbalanced_never_cohort_numeric_varying_1_unconditional_cells_vcov.csv": "cd51dd52d0914f780812928391f0a01121db8f8b014ca4f096986be854cd8da0",
+    "unbalanced_never_cohort_numeric_varying_1_unconditional_event.csv": "dc03490c21b92ec9d4a6f8f99057ee5073a281acd4306f28daea96231ce7ca7a",
+    "unbalanced_never_cohort_numeric_varying_1_unconditional_event_vcov.csv": "0cda8ca09ddfc980d4e0d08c589e9e8894ce68fe42209c7129a77297c23070ce",
+    "unbalanced_never_cohort_numeric_varying_1_unconditional_group.csv": "c50e721437f995ff426fe50f2e55394aaa749d3397f019f462dba3ed61eb3ac1",
+    "unbalanced_never_cohort_numeric_varying_1_unconditional_group_vcov.csv": "58d3fb80679ec3e7bb8d142c7042ae4e99f7a8856945f5b0e5e465363b7a06ea",
+    "unbalanced_never_cohort_numeric_varying_1_unconditional_simple.csv": "1eeab996f8601bef54b2c60ad577c0f80029b647746660842bfeda5d09362cb0",
+    "unbalanced_never_cohort_numeric_varying_1_unconditional_simple_vcov.csv": "30995e61b2c0588a294a2c6acb17206b02e313db572e5edb74b124adccd44459",
+    "unbalanced_never_cohort_plain_equal_0_conditional_calendar.csv": "8b3e860cfdd97bb765f936f46add3a31b1b0eeb3107ac9e7ec18f054d4ebebf7",
+    "unbalanced_never_cohort_plain_equal_0_conditional_calendar_vcov.csv": "1ffb14eb81d77711ee7f6b6f8d247117d9598b627332ba607d7a1c2b8f9a84d5",
+    "unbalanced_never_cohort_plain_equal_0_conditional_cells.csv": "198c62860d73541aa639305310c2b465e29b9fef48444377d257e7bb920b8fcf",
+    "unbalanced_never_cohort_plain_equal_0_conditional_cells_vcov.csv": "ae27c7dbb9dcdf14a394091131d27efffee9a73b8a3d12e01611dc493b70def1",
+    "unbalanced_never_cohort_plain_equal_0_conditional_event.csv": "3ae4263cd4388911e941a00d769802f25404fef9c75415a8449dbd13e9754625",
+    "unbalanced_never_cohort_plain_equal_0_conditional_event_vcov.csv": "05cd81bb8f01da4875ae81a08aa494b6d49baab2ed85026eb8cb283d3e1aeac3",
+    "unbalanced_never_cohort_plain_equal_0_conditional_group.csv": "6a48e641618dc0aa7439f73d5c126e6a0b6143ebd9066f9eddb6914f6c98d364",
+    "unbalanced_never_cohort_plain_equal_0_conditional_group_vcov.csv": "052df7b7b678d76128e0db7e87f30a8c39c1e3f8baa111363130de5d2ad9d1a2",
+    "unbalanced_never_cohort_plain_equal_0_conditional_simple.csv": "5c5b80c2a33c7bfe42ae17623293b2ebead6fb0c9fb9ffa8621741ad7090fb50",
+    "unbalanced_never_cohort_plain_equal_0_conditional_simple_vcov.csv": "9b129a60a3267f90bc300c1a924efe2f8482554492803748f76e0576d3656b3d",
+    "unbalanced_never_cohort_plain_equal_0_unconditional_calendar.csv": "34dc1e9f367035acd094f2793fc17b6f28fbce1f81700587a0496aa57c16f087",
+    "unbalanced_never_cohort_plain_equal_0_unconditional_calendar_vcov.csv": "086684663fa5d8ab7870a5870e522feef1b3329b89e5112e76e2373baa1556b6",
+    "unbalanced_never_cohort_plain_equal_0_unconditional_cells.csv": "0986f8f1f05d14432d12d8d4536b630bc63e25c90b27f1cbe8c81df8bb87eed2",
+    "unbalanced_never_cohort_plain_equal_0_unconditional_cells_vcov.csv": "bddf03281a6da3d78a3a856fc908f574ea2560351081c62bd80065fe76f0117f",
+    "unbalanced_never_cohort_plain_equal_0_unconditional_event.csv": "40c27b92208d5495ce569a9d9ce1db1b81de5f8dd069f65e086b8862682d331f",
+    "unbalanced_never_cohort_plain_equal_0_unconditional_event_vcov.csv": "d0114695d0f4de6cf09513c0068f5b96fa07121386f71e1409187f13db9d02e5",
+    "unbalanced_never_cohort_plain_equal_0_unconditional_group.csv": "4c6dfcf1b6d04e499f0493da4fd271ee5b99aa550d3cc87c036b875de23bc730",
+    "unbalanced_never_cohort_plain_equal_0_unconditional_group_vcov.csv": "b94064d7b71ca53cb4132650751fd93f4128bcc5db95d3383af5ea1ae44bdfa7",
+    "unbalanced_never_cohort_plain_equal_0_unconditional_simple.csv": "00444d31b68d6a53d8a1ce97b555f07af906e7a236b5247099873b4fe18ff75d",
+    "unbalanced_never_cohort_plain_equal_0_unconditional_simple_vcov.csv": "8159d48b85802677c122d57ec3e63235178f3c73ba1e4e62e1f1875f9dd66f56",
+    "unbalanced_never_unit_numeric_varying_0_conditional_calendar.csv": "21bb32cc29d94dcad771fb8b67aeb09b269ecfae84ffec7829dfb2f54d128c73",
+    "unbalanced_never_unit_numeric_varying_0_conditional_calendar_vcov.csv": "a69f37736879773f88f9636f7fd510884210cab982e005ad45134be6f1f0d437",
+    "unbalanced_never_unit_numeric_varying_0_conditional_cells.csv": "014f4cbd9b28bc6cada80fe900079057573676c8048509824d6b3f6e67b84410",
+    "unbalanced_never_unit_numeric_varying_0_conditional_cells_vcov.csv": "8bbfb9166e02bb44f0152d86c6194c8ec6942d45265ac805452e12c9923e1941",
+    "unbalanced_never_unit_numeric_varying_0_conditional_event.csv": "1533cb07070aa0803a080ecae50274f2aa6fb466611bd14220528b92efb7d65d",
+    "unbalanced_never_unit_numeric_varying_0_conditional_event_vcov.csv": "a9ff3935324745a9e9c698714dc4614cd3dd7c67000f4bb0ff2425b7e9b3bd74",
+    "unbalanced_never_unit_numeric_varying_0_conditional_group.csv": "ebaab6ceaa4d8971ff51cc22e94fcf76fcdde961687bffe86d11ef399501652d",
+    "unbalanced_never_unit_numeric_varying_0_conditional_group_vcov.csv": "a6d220c40075a177066d6ee2beb9d2b85f74bdb50d1b2e1e1bc9900f57c05aed",
+    "unbalanced_never_unit_numeric_varying_0_conditional_simple.csv": "eb19b008ef1a157a9709cbe2c187b70c9fe379970b48953d5fc7e408f8c9cf76",
+    "unbalanced_never_unit_numeric_varying_0_conditional_simple_vcov.csv": "2965f4d7133c0de447db3d48f1f260fb60ce946e7f9c0580bd4ab5ff00d2bb46",
+    "unbalanced_never_unit_numeric_varying_0_unconditional_calendar.csv": "be9d86a5e034635c01e5b1797aba8600c7fd1c394fc19820fd0edc628b06022e",
+    "unbalanced_never_unit_numeric_varying_0_unconditional_calendar_vcov.csv": "8cc06c998412acf23bc0982f660c6ace215a20828f12167da7bf907f9a4125ee",
+    "unbalanced_never_unit_numeric_varying_0_unconditional_cells.csv": "b85090fe12ecf7cf9d209a79d73b4b89938b88c58439377baa40efb91e633ea3",
+    "unbalanced_never_unit_numeric_varying_0_unconditional_cells_vcov.csv": "e3814f77a0510c8bbfbec7e9a3ef4f4e98048cf6186b18f461881237dbce5930",
+    "unbalanced_never_unit_numeric_varying_0_unconditional_event.csv": "c409795020f5e8333e7338bbed926106f0ecb90dac5f896bc0ca0acc6b831abf",
+    "unbalanced_never_unit_numeric_varying_0_unconditional_event_vcov.csv": "2d6f80fc290765c37410247545bf5bca42310cc014d045554780d3c731a31e6d",
+    "unbalanced_never_unit_numeric_varying_0_unconditional_group.csv": "f446a690ceb48bd2c1702ca7dde64f4fdc4f87d33ae35ec2b31f97669ce14ea3",
+    "unbalanced_never_unit_numeric_varying_0_unconditional_group_vcov.csv": "98439fb9f720865d0f82f9ebc36086de5525799cf5ba1c9dcd373bc90a253272",
+    "unbalanced_never_unit_numeric_varying_0_unconditional_simple.csv": "226d3ee0a87a6a58dc525fec0cb88a32f13e0c74ca9b3a2e4beaf86c57baaa98",
+    "unbalanced_never_unit_numeric_varying_0_unconditional_simple_vcov.csv": "d3c291ba2e091017e93711c07c6c4ecbf5bec614a5fe682f646ddcadeacac15d",
+    "unbalanced_never_unit_plain_equal_0_conditional_calendar.csv": "b4910530b0a12751117c575e19018645598d2e1b252faf2ee37dce56f208d369",
+    "unbalanced_never_unit_plain_equal_0_conditional_calendar_vcov.csv": "fa802aa9c660cc855be5531b20c311c9ee9cd4aa7b384cb2c09638430b7ce72c",
+    "unbalanced_never_unit_plain_equal_0_conditional_cells.csv": "a7d2089162039e40342944750bad5c567e095f9f507a9ee0d0a6a4f4f66386d8",
+    "unbalanced_never_unit_plain_equal_0_conditional_cells_vcov.csv": "7d0a9c003b75144fe94656292ccb95791f3774bec6b47280198bea41cef058f7",
+    "unbalanced_never_unit_plain_equal_0_conditional_event.csv": "fcc39d304808fa49b30ccfa4c0108531a7be50114b8bcdc81e42abdb620a4bc2",
+    "unbalanced_never_unit_plain_equal_0_conditional_event_vcov.csv": "86d1df7dff35a3f0bfa0fa6632e716acc4b7e73d94abd4eb65165c4b2b2564d0",
+    "unbalanced_never_unit_plain_equal_0_conditional_group.csv": "7953516adadb3b4a48af9e6d0a413c32d07724af7eb5e8e329a3fd6d2da5d8a7",
+    "unbalanced_never_unit_plain_equal_0_conditional_group_vcov.csv": "09cb436d1921c4dfacaca136d2a9e81879929027d3149d63d58e2eea80844c9b",
+    "unbalanced_never_unit_plain_equal_0_conditional_simple.csv": "d85abfad1284f276b79abb8bf0e545ef7dd510931011da2fc4584e04e6a35207",
+    "unbalanced_never_unit_plain_equal_0_conditional_simple_vcov.csv": "2834b26461e3dbf70f41be7c71f45e47c4576326b217d0cffc810a5cc65b7e4a",
+    "unbalanced_never_unit_plain_equal_0_unconditional_calendar.csv": "4ebd5b24b34555d146a4b8cffb525be42ef27b227189dfed164926a7870ef4b5",
+    "unbalanced_never_unit_plain_equal_0_unconditional_calendar_vcov.csv": "bfdea26541a31edf05ba4244142a78f746a55d52062969e1ebcbc808ee2dde17",
+    "unbalanced_never_unit_plain_equal_0_unconditional_cells.csv": "b90684e4d9a31931d4045a251e68dc4c77eb4cbd81680840c73156e2b33774b4",
+    "unbalanced_never_unit_plain_equal_0_unconditional_cells_vcov.csv": "ee9ed2fc18749a15aad9dc651600c5d6679d86a51448656b7debfbd725419e48",
+    "unbalanced_never_unit_plain_equal_0_unconditional_event.csv": "92b4dccf51162f63d3fdb255e89a7889debfe38d8f1fd73d4431e41f4dd94415",
+    "unbalanced_never_unit_plain_equal_0_unconditional_event_vcov.csv": "7d682d7577c0aba5c83a9af85a1d094405050222e76fc092cb1c1d5be4931bd3",
+    "unbalanced_never_unit_plain_equal_0_unconditional_group.csv": "d783a93a1dfbd1a5b7861268855b02aa6010b672c7af7fb4da441205d893fe91",
+    "unbalanced_never_unit_plain_equal_0_unconditional_group_vcov.csv": "d610c8814316467d9ebc2e73934fc36d55c69beb87d9adaecfed502e39dc627b",
+    "unbalanced_never_unit_plain_equal_0_unconditional_simple.csv": "755f5b321b9268181909eb525ab4a8909df4694e533a7442261f36570c3faea9",
+    "unbalanced_never_unit_plain_equal_0_unconditional_simple_vcov.csv": "93919d9d2394af425ebf8abcbaa9238f46e6e0f0450a13b7cac67845954a3309",
+    "unbalanced_notyet_cohort_numeric_equal_0_conditional_calendar.csv": "e1c90bee7c04a254d21e2cbd77680c589d7224d47c29af6cfef87cd031aabcd7",
+    "unbalanced_notyet_cohort_numeric_equal_0_conditional_calendar_vcov.csv": "942b1a7459bfbab17133882fb78791355eea96451e4c7626e476274980cdb26d",
+    "unbalanced_notyet_cohort_numeric_equal_0_conditional_cells.csv": "fc9308e5cfae0e00b9216b12d15398b2fe75211d8ffd558a3d5b365a3622cdb5",
+    "unbalanced_notyet_cohort_numeric_equal_0_conditional_cells_vcov.csv": "c226954b99a7ff60f32a9f265e388af4fb446bbe09023cf059c89ab957da61a2",
+    "unbalanced_notyet_cohort_numeric_equal_0_conditional_event.csv": "0e531fb12db402a88964bea872233a2d56df0c46321061a9c52e2433228fe3a4",
+    "unbalanced_notyet_cohort_numeric_equal_0_conditional_event_vcov.csv": "d6f4174bd902e6a0607e60d499ae5f0d0c0a5dea48852203a93784fdefde44f9",
+    "unbalanced_notyet_cohort_numeric_equal_0_conditional_group.csv": "ce815c618a3c36dd5e50f45ab875f599da2e02a12c089011de9c1a5e40aa215f",
+    "unbalanced_notyet_cohort_numeric_equal_0_conditional_group_vcov.csv": "7753f7e580a5095535729ad6623a4cf4cda77b82fc13fce74ecd161176426ca2",
+    "unbalanced_notyet_cohort_numeric_equal_0_conditional_simple.csv": "09bdf579adf846831b0a21ed1b47fab1daa0fd63e1119bb125443be87967f456",
+    "unbalanced_notyet_cohort_numeric_equal_0_conditional_simple_vcov.csv": "7c3c302b6fb541502ef0532117d99b35d0bf91c61c8a27cbcc931bfde9d7d02c",
+    "unbalanced_notyet_cohort_numeric_equal_0_unconditional_calendar.csv": "977cf6f7bee57837d53c561b1052f8a62bfd9ce867a4c7ec40092bddf38c2216",
+    "unbalanced_notyet_cohort_numeric_equal_0_unconditional_calendar_vcov.csv": "3dfa1f93e19e27a9a0a34be73639311a15c64b5049b85489d189a71799072f2a",
+    "unbalanced_notyet_cohort_numeric_equal_0_unconditional_cells.csv": "ad996c1db741ea4598365c3b8be03d051629dad8f569d97a5a0523f30a037a1f",
+    "unbalanced_notyet_cohort_numeric_equal_0_unconditional_cells_vcov.csv": "ff5773b910981a36dee9bec7b21d95b266c675e67d46d577b5981a1f46de6c3d",
+    "unbalanced_notyet_cohort_numeric_equal_0_unconditional_event.csv": "af6b99716acfe9e700be041a2ad29ec277b975f3c4096a99e85b5fe2174f6b9b",
+    "unbalanced_notyet_cohort_numeric_equal_0_unconditional_event_vcov.csv": "5ab204aa2f3e489c953d014ee31a2ac83d7d4a3fadabb9f9ac36c1c5aa187e4b",
+    "unbalanced_notyet_cohort_numeric_equal_0_unconditional_group.csv": "34c3670bdff332c1128f6ecec5225c46fe31e3f7594009a9c3c92c1877f6ff2d",
+    "unbalanced_notyet_cohort_numeric_equal_0_unconditional_group_vcov.csv": "a03c2f35d574d96b14a08c70e800c0490061ff8ace0a604a3084f0daa9b18caa",
+    "unbalanced_notyet_cohort_numeric_equal_0_unconditional_simple.csv": "9c20d7fb6273448514782d3630532a8e9362a750a8b6480faf61bc2476bcb13e",
+    "unbalanced_notyet_cohort_numeric_equal_0_unconditional_simple_vcov.csv": "a6a04cec28a8c3d2e790db458655f90b34561e0c691ecff968176a1d472da4a9",
+    "unbalanced_notyet_cohort_numeric_unit_0_conditional_calendar.csv": "e2859696a49753504cde7fa9d068fb48c5821c6506c8f645255c26dad2cd5a15",
+    "unbalanced_notyet_cohort_numeric_unit_0_conditional_calendar_vcov.csv": "d8d64e2de8e084fd89304c696989113b630c4d0f5c1c5e79198abfecf118523d",
+    "unbalanced_notyet_cohort_numeric_unit_0_conditional_cells.csv": "d55dc1616e31cbf3fc094b2482e067e15d3c75ce871973289735383bb3d143b1",
+    "unbalanced_notyet_cohort_numeric_unit_0_conditional_cells_vcov.csv": "f249fd415a9c146926fbd6056ae13c4ad854f408d7e1292d9dec18fe1df627da",
+    "unbalanced_notyet_cohort_numeric_unit_0_conditional_event.csv": "fcd75ae2853f70777652e709dda0310636d16c3adc97808c754936c2f423d834",
+    "unbalanced_notyet_cohort_numeric_unit_0_conditional_event_vcov.csv": "32579d9dec56ce520d38c84d4a0ba3fa91d3102c341c529163b447fbbdedfac8",
+    "unbalanced_notyet_cohort_numeric_unit_0_conditional_group.csv": "65ec4d844b298f31a2656b19ceb8891f8bce244c1bbca9a301a8bb56f45f2811",
+    "unbalanced_notyet_cohort_numeric_unit_0_conditional_group_vcov.csv": "b215c8a8f09dace5dadab5d2bbec2d72e27088c5185a35025c9fb05e3397d44d",
+    "unbalanced_notyet_cohort_numeric_unit_0_conditional_simple.csv": "8601bf0a703c7d49039fe6d844bd59c081a5903628856f5af25b0fab24f372f4",
+    "unbalanced_notyet_cohort_numeric_unit_0_conditional_simple_vcov.csv": "cccd2eb5c76a9f7a6a72b362aa912b616f1dfd180f4e26339a2738fa25ac6bb7",
+    "unbalanced_notyet_cohort_numeric_unit_0_unconditional_calendar.csv": "937732ba9cd8bccc9dc13cdef0688f80a57551a1962d5149b4bea96f362b1703",
+    "unbalanced_notyet_cohort_numeric_unit_0_unconditional_calendar_vcov.csv": "712988965f2e1b15f8f7da19921e5ca654ef47a60d12ca5bf96ee13f4c64fa48",
+    "unbalanced_notyet_cohort_numeric_unit_0_unconditional_cells.csv": "439b63dd52adc0a0d3f00c3e45a6f81e92e01bcddb31831adc87de09bd913757",
+    "unbalanced_notyet_cohort_numeric_unit_0_unconditional_cells_vcov.csv": "ed93ef063078cb408c7b91d53c6a1b48e524b3dcc3bbb0563693fd24aed245bd",
+    "unbalanced_notyet_cohort_numeric_unit_0_unconditional_event.csv": "b349a5f40649f118f1a45e2181822e601e61547ac5be8b07eefd7f99426f6005",
+    "unbalanced_notyet_cohort_numeric_unit_0_unconditional_event_vcov.csv": "e1697f9eb308741ba3e47308facdbf2748a9a696e55b076141e3b61f45c4a3eb",
+    "unbalanced_notyet_cohort_numeric_unit_0_unconditional_group.csv": "8025660ee88fcabbf923abe113052bf23ab92595555fa4501fe66aa2d4c594e2",
+    "unbalanced_notyet_cohort_numeric_unit_0_unconditional_group_vcov.csv": "967e5ad37e0b32235e0e4c700c8a624ed49d020bd0d217c35d5833aea5e49323",
+    "unbalanced_notyet_cohort_numeric_unit_0_unconditional_simple.csv": "772291c70768e86c6a6a3a9e2091938ba0916013326b6c04d8d1f1a53079e9b9",
+    "unbalanced_notyet_cohort_numeric_unit_0_unconditional_simple_vcov.csv": "9e52f12265ad84632d89f501321d8d099eb590c4324f57be47cff198be63456c",
+    "unbalanced_notyet_cohort_numeric_varying_0_conditional_calendar.csv": "9b3215e5c71f7a287bce66aa1382892c91effe0e0378e0bf7e9fb656f42bc14a",
+    "unbalanced_notyet_cohort_numeric_varying_0_conditional_calendar_vcov.csv": "bce8074108681fb15ed3ddd67a13491f3448987a9fa9f08da9432b59a1316455",
+    "unbalanced_notyet_cohort_numeric_varying_0_conditional_cells.csv": "053cd25d20355fc07c498d86139d706aa85c1b3e9282a7744c41336d6504b313",
+    "unbalanced_notyet_cohort_numeric_varying_0_conditional_cells_vcov.csv": "12699c013e1891a4c49cb00f6a588aadd7b9cc89d23abc004a14d1ec1614ce35",
+    "unbalanced_notyet_cohort_numeric_varying_0_conditional_event.csv": "ea59f39a0158dacb21a382da26333af42e73b182da53e3b618208004555aa414",
+    "unbalanced_notyet_cohort_numeric_varying_0_conditional_event_vcov.csv": "4e6a11ade1267ffce429fa19be32c865fffcddf47254f8e4000482640e951ddc",
+    "unbalanced_notyet_cohort_numeric_varying_0_conditional_group.csv": "0fa319d7f2c85a74622cbc6b5b33dd5f5e84089c2dca788b298862d2b0781ac9",
+    "unbalanced_notyet_cohort_numeric_varying_0_conditional_group_vcov.csv": "8dc34e2ba677f87c57d61a739693edd7689a607830431e77bc1a385e6fb28f5d",
+    "unbalanced_notyet_cohort_numeric_varying_0_conditional_simple.csv": "189af2715f7d7e3f3625c00529308551a0f6674024cbf4cefe72dce5f3af92e7",
+    "unbalanced_notyet_cohort_numeric_varying_0_conditional_simple_vcov.csv": "408dcd3ad5d778b61b28b672a4094479ea070f89d59e16c1fed15da84bcdb3e3",
+    "unbalanced_notyet_cohort_numeric_varying_0_unconditional_calendar.csv": "2b549f57dd26eed82f564ea85895a56b507a08124b5672fa35cbbce47c2d45b2",
+    "unbalanced_notyet_cohort_numeric_varying_0_unconditional_calendar_vcov.csv": "8374faa572e6dcf6c7ca08a7ff2844283a5dd71a4e03c1ab7b25c38dbf7fcaa0",
+    "unbalanced_notyet_cohort_numeric_varying_0_unconditional_cells.csv": "3782f0383b1e99e91e812406baf0908e397512b60aed8efe2679c669bd2507fc",
+    "unbalanced_notyet_cohort_numeric_varying_0_unconditional_cells_vcov.csv": "055d387e048f2c7e460728baee13a2203150e2c5ddd871c9a04ee0b5056d8680",
+    "unbalanced_notyet_cohort_numeric_varying_0_unconditional_event.csv": "3a6fd2e47cd175fc063e1da78ed0ae33d15e1f2194f517a8f4d8a51228c0e6d2",
+    "unbalanced_notyet_cohort_numeric_varying_0_unconditional_event_vcov.csv": "d8698bbd01db1af044c5792e2d5c884413880bc303974a6ec4567cf4128acc8e",
+    "unbalanced_notyet_cohort_numeric_varying_0_unconditional_group.csv": "3e0d044f5e024f1ebe73cfb495480aa51abfc3e926795acfa3fb449ba0af5d91",
+    "unbalanced_notyet_cohort_numeric_varying_0_unconditional_group_vcov.csv": "a0b29470564e9b830f32841f2d57218addc79544fc6e32c09cd0b92b87dceb0f",
+    "unbalanced_notyet_cohort_numeric_varying_0_unconditional_simple.csv": "60f5bdda431bd749c1cc3a881ff788506579d943b7fc7736315d73c18a9efb78",
+    "unbalanced_notyet_cohort_numeric_varying_0_unconditional_simple_vcov.csv": "58debe7cdc43ccadca02a25dc1e5cf4ea603f7520b0ca0eace8a53a299cf05de",
+    "unbalanced_notyet_cohort_numeric_varying_1_conditional_calendar.csv": "a703f72760e9b0d2e3a631b20467433f4e8d8ddac389202f2e5495f061b1ba93",
+    "unbalanced_notyet_cohort_numeric_varying_1_conditional_calendar_vcov.csv": "0e9470d0c0c0b66a4b1ac95661228b283f84ce285a1bc07321848cdf86e40bb2",
+    "unbalanced_notyet_cohort_numeric_varying_1_conditional_cells.csv": "645a885ce23a86a3e29e6fd05429c1cf6129453bd6e08864b3ae7ed1d6fcd11e",
+    "unbalanced_notyet_cohort_numeric_varying_1_conditional_cells_vcov.csv": "59fab8e0279eb55174a86a1806efc54b7f5daf170bf1b60702bb64439ed9f0f4",
+    "unbalanced_notyet_cohort_numeric_varying_1_conditional_event.csv": "6aa94a983e7b3f2763659a340f2849f345467547e303d3744944571522525503",
+    "unbalanced_notyet_cohort_numeric_varying_1_conditional_event_vcov.csv": "5f658dd1ca09967838beb65b4af308084ffa4c65f05174ccdc328158da6d2893",
+    "unbalanced_notyet_cohort_numeric_varying_1_conditional_group.csv": "00b5d099cee24d97a5ffad57d6f00bd893b839b61854b44d831e4e0e02882435",
+    "unbalanced_notyet_cohort_numeric_varying_1_conditional_group_vcov.csv": "c93e70ab5c6f8e9035e98ea62da5fe9eb86d68500af39bcae3ceb9837c9afdfb",
+    "unbalanced_notyet_cohort_numeric_varying_1_conditional_simple.csv": "0039609bda5cb461ef08302881c15b70dd74cfb5138abfc4fa1ce39b28583250",
+    "unbalanced_notyet_cohort_numeric_varying_1_conditional_simple_vcov.csv": "fd0fe501424ed667a11576692e9a7b57db25647a4d78cc302dbd5e920669111d",
+    "unbalanced_notyet_cohort_numeric_varying_1_unconditional_calendar.csv": "838d339afbde2f4b5207dec24371f78b3fda22912c32b089d068450b9e865b76",
+    "unbalanced_notyet_cohort_numeric_varying_1_unconditional_calendar_vcov.csv": "066c611cedaab96147faf7061b286899d63e231d9ba4a0b1b590e91a0c32ea2c",
+    "unbalanced_notyet_cohort_numeric_varying_1_unconditional_cells.csv": "952454737596a8e1f37c411e1f8698964e1a97afb7a0223a740c4e86afed4221",
+    "unbalanced_notyet_cohort_numeric_varying_1_unconditional_cells_vcov.csv": "78ef77353765cdb20c6c7c6457c1208a5373125c5715144f51feceaab55694d7",
+    "unbalanced_notyet_cohort_numeric_varying_1_unconditional_event.csv": "8680b23c18888720333f4e23e5314595d6ad22a10b3bf0749bea7e6b3064fbea",
+    "unbalanced_notyet_cohort_numeric_varying_1_unconditional_event_vcov.csv": "7f389d73a667528a693da6142777cae24a4405ca2768a5b7533da50d78952ede",
+    "unbalanced_notyet_cohort_numeric_varying_1_unconditional_group.csv": "22007ff94b66c1a82347f4d7258e68e2628744ac61f1aae73a36b8eed5f08988",
+    "unbalanced_notyet_cohort_numeric_varying_1_unconditional_group_vcov.csv": "caf071d4c93497b09e51ae15b5cb6361e85795df8887b305d89e82936eb8890e",
+    "unbalanced_notyet_cohort_numeric_varying_1_unconditional_simple.csv": "167c310972aae881e75a4f67ba84581f39e0ee173859c86477af23b090bcb8bf",
+    "unbalanced_notyet_cohort_numeric_varying_1_unconditional_simple_vcov.csv": "49919a2bc3be28185a824931006fa18ff839c6f3bcd8a3e807e89c934cca7e32",
+    "unbalanced_notyet_cohort_plain_equal_0_conditional_calendar.csv": "5edd3df28d8b1bf1ec643ba616dfab2f144c3b97c33637e309cbddda05695917",
+    "unbalanced_notyet_cohort_plain_equal_0_conditional_calendar_vcov.csv": "e88473a193433718104865b44dea7ea48afda869b59148d010a3a5030687192c",
+    "unbalanced_notyet_cohort_plain_equal_0_conditional_cells.csv": "856bf44b10f96b93bd6688d0aac601ca1dd2c16f1107c8bc1035f0a7d8013e3a",
+    "unbalanced_notyet_cohort_plain_equal_0_conditional_cells_vcov.csv": "fb2996160e16372d5d6b85cc42a7819d6948129ab80d19be84ca86109b1f9a25",
+    "unbalanced_notyet_cohort_plain_equal_0_conditional_event.csv": "59a0bd80a5af54f4c6801ee384d8f93e2e71809cea995555a43519dfa846df0c",
+    "unbalanced_notyet_cohort_plain_equal_0_conditional_event_vcov.csv": "a97fb0ccbbe74cc1317c6dfa60ae2d4780b9f3a76d28a16098118499205e9c66",
+    "unbalanced_notyet_cohort_plain_equal_0_conditional_group.csv": "75ccd00e1eafeb114b18b51eb6e271dd4b95e8aaf0a089ad241af7ed150d984c",
+    "unbalanced_notyet_cohort_plain_equal_0_conditional_group_vcov.csv": "e5e1c2382af9bf4162b771a6ff20b9aed4c71edeeba33b2725702273936de321",
+    "unbalanced_notyet_cohort_plain_equal_0_conditional_simple.csv": "52593dff13f9af43b55826df75e2cb158dfedd84d2c52246e1560b5afb6a698f",
+    "unbalanced_notyet_cohort_plain_equal_0_conditional_simple_vcov.csv": "f5ff699cd345b966f8ede64a4cf31c41e10ddf5314a1a6925c9176ae9e894c19",
+    "unbalanced_notyet_cohort_plain_equal_0_unconditional_calendar.csv": "027a720b57d8877bfbd2a08825eb45b90d6a87e2e1e6defa60642de72d0f7afa",
+    "unbalanced_notyet_cohort_plain_equal_0_unconditional_calendar_vcov.csv": "df0e84da6411b4a82cb44a1132ecd4cd94510e5f3667ef787a557ed79b7b4fe1",
+    "unbalanced_notyet_cohort_plain_equal_0_unconditional_cells.csv": "972b7feabb721bf8101a0d1eb15f43c144928a15249b6ae19f45b3314e996cbe",
+    "unbalanced_notyet_cohort_plain_equal_0_unconditional_cells_vcov.csv": "b88d9c45b1553214e2e935c65beeba2fe71ea6b97e5674b577aceffdb53dfbdf",
+    "unbalanced_notyet_cohort_plain_equal_0_unconditional_event.csv": "4baa165c5b41508fed77a0fe6c318b9257149f83fdc589479a29a00ebab6c29e",
+    "unbalanced_notyet_cohort_plain_equal_0_unconditional_event_vcov.csv": "02081dcde8c4d6f34c2524e958a31e2435050f191cc388319bb06229432e530e",
+    "unbalanced_notyet_cohort_plain_equal_0_unconditional_group.csv": "5889c9ece128faacebc6f9fab473b054e3f8dca533bf928ecbdb783aac6188a7",
+    "unbalanced_notyet_cohort_plain_equal_0_unconditional_group_vcov.csv": "b15f30f427370309db0e4f3625af42c7521c0313fa41a28758c4f7ecf155cb13",
+    "unbalanced_notyet_cohort_plain_equal_0_unconditional_simple.csv": "622d5fcd0c579c1b1091c9e70a6a1fb047ce37abfc1b9d23e6cb5961be5adcc6",
+    "unbalanced_notyet_cohort_plain_equal_0_unconditional_simple_vcov.csv": "4efae99f17a4f51bbab9f2bce5bf9daf32050628f5d6aa4a3c86f7417e00c1c3",
+    "unbalanced_notyet_unit_numeric_varying_0_conditional_calendar.csv": "c9e0e8975ebe0cc7aeb7a5d8e7daa1c72e0249a8b58f662554ab528415d308e3",
+    "unbalanced_notyet_unit_numeric_varying_0_conditional_calendar_vcov.csv": "fbb19be47529f43cd4f556c0464c3158ed4a81a96fdcb2c5f35db109cbd843ae",
+    "unbalanced_notyet_unit_numeric_varying_0_conditional_cells.csv": "2c663a0f6fb6b66cad692538c20c6325cac758c0f22e3989d8b6b830d93c570e",
+    "unbalanced_notyet_unit_numeric_varying_0_conditional_cells_vcov.csv": "197b6ae3830c104db36e82bd75feb567bdf79eefed1b5ed58d8ee7b96cdea16f",
+    "unbalanced_notyet_unit_numeric_varying_0_conditional_event.csv": "d7dd3cdfe281a62c6c2099f704bba4087f0620a7ee5a00a67694260b5de2368c",
+    "unbalanced_notyet_unit_numeric_varying_0_conditional_event_vcov.csv": "022e7df5467e9c175599e9f567888bee88171c296f18da62dc97a109288d7f99",
+    "unbalanced_notyet_unit_numeric_varying_0_conditional_group.csv": "c3ad1968dd63e2787cc3f72c15850655ab22c1fadf0907bcc02cfe4b3f495ebc",
+    "unbalanced_notyet_unit_numeric_varying_0_conditional_group_vcov.csv": "0343f5c5fc729b8c717537a6f14b1cb878206ca7b47b98ee4137150f7f2dd124",
+    "unbalanced_notyet_unit_numeric_varying_0_conditional_simple.csv": "4ffc9bb744fa87bf372534ee5effb42fa42c535fa2683e1839bfefbd65998ca8",
+    "unbalanced_notyet_unit_numeric_varying_0_conditional_simple_vcov.csv": "7b124d405f1650bf4ab93d01e607938bc17326f73cca663317011e9175fe51f5",
+    "unbalanced_notyet_unit_numeric_varying_0_unconditional_calendar.csv": "5670af3726e5a9a443bee67acbd6e080ace8ecb316cae026520b740589a9f4f2",
+    "unbalanced_notyet_unit_numeric_varying_0_unconditional_calendar_vcov.csv": "2c67316727d16db7ebc21c1bde41ff7bc9fe26763dd1cd3b0d5f075658075b8b",
+    "unbalanced_notyet_unit_numeric_varying_0_unconditional_cells.csv": "1d3d4564b8054dd2dcfb3fad836c8abbce9788aab0b3cd423da34aa5cf5c1c4f",
+    "unbalanced_notyet_unit_numeric_varying_0_unconditional_cells_vcov.csv": "80edab2b35945bbca4627b38049bdedf224c449aa0fa8f313c01958e88b691a4",
+    "unbalanced_notyet_unit_numeric_varying_0_unconditional_event.csv": "87062cead31e6e8dab6587605456eb82b04a74a070ce93db1a7f64aca5056d12",
+    "unbalanced_notyet_unit_numeric_varying_0_unconditional_event_vcov.csv": "e2e47fb269139b34c6ffd1e07cefa8e29c76e1be34306f7513935a864fcf3a61",
+    "unbalanced_notyet_unit_numeric_varying_0_unconditional_group.csv": "23b85d26667a8557bb0c35def58507552f28fb8a92ec6c52b4bf005cf9e7d7ac",
+    "unbalanced_notyet_unit_numeric_varying_0_unconditional_group_vcov.csv": "80b0090b2830e561f42b77268be193236dab97e95937f840996a3e61a9105430",
+    "unbalanced_notyet_unit_numeric_varying_0_unconditional_simple.csv": "fc27d7769fc27d0ca6621bfafff00fafcfeab97a17fac4d8517f8bf61503121f",
+    "unbalanced_notyet_unit_numeric_varying_0_unconditional_simple_vcov.csv": "5e99b25a4f937b2646c654e3bbe66d55722ef8972fac3a962f4d8dbb07cdb5dc",
+    "unbalanced_notyet_unit_plain_equal_0_conditional_calendar.csv": "3be92b9a514b4a965a785203ef127598eff441fc7cd13c5fc65290c61da22bc0",
+    "unbalanced_notyet_unit_plain_equal_0_conditional_calendar_vcov.csv": "3623211a8b28148cb7c34682e52ff506055799b8af38251557121b0b61ccad0c",
+    "unbalanced_notyet_unit_plain_equal_0_conditional_cells.csv": "f3496d4587af82184218a79101ec15a789534054b9af3f4e2a2e979a1e04d288",
+    "unbalanced_notyet_unit_plain_equal_0_conditional_cells_vcov.csv": "b2f88d4a952d734b00403e0133d411311dc94f09bf732e4cc21aa49c29070a59",
+    "unbalanced_notyet_unit_plain_equal_0_conditional_event.csv": "3fdcd73feae2f24ea807a2b019288e2ba2c5e54394dde068df0a526f0acee107",
+    "unbalanced_notyet_unit_plain_equal_0_conditional_event_vcov.csv": "522f8f7a23b355779c081fa629be1c0562633eed299c53685a100becad654a0e",
+    "unbalanced_notyet_unit_plain_equal_0_conditional_group.csv": "93f8b2c024f277e6395352c552f0d612b1a21918a8c7353bc91ccd45d68c4939",
+    "unbalanced_notyet_unit_plain_equal_0_conditional_group_vcov.csv": "c88133a82e1843d129edd9250515bd198de70c45c4dd772ae66d490167c4c2ef",
+    "unbalanced_notyet_unit_plain_equal_0_conditional_simple.csv": "7f436f729bcd0d79ea5a0db5fbbf4fdcbd843866e4b4e9b062e874f66243ceda",
+    "unbalanced_notyet_unit_plain_equal_0_conditional_simple_vcov.csv": "65fc8d2b823a89d4398ac9b5c4a36119b9c9a9c4e957ffc323ddc426e6327a2a",
+    "unbalanced_notyet_unit_plain_equal_0_unconditional_calendar.csv": "6b04c09be69a5c5e433e12c79f8dd5abeeaf9ded50a410be6bce84096aa4b026",
+    "unbalanced_notyet_unit_plain_equal_0_unconditional_calendar_vcov.csv": "c9f86ceee57d081ca5e11fca74b65c97d8919c4da322c55076353ff4dd51d269",
+    "unbalanced_notyet_unit_plain_equal_0_unconditional_cells.csv": "798d5bba34d6ee58645bd98e2f8126012999251fa66b42737f3cb8770fa07379",
+    "unbalanced_notyet_unit_plain_equal_0_unconditional_cells_vcov.csv": "8e70727898372260eba900e9cee7d0ddf0f69723fafbfd900d3ba96deba7f16f",
+    "unbalanced_notyet_unit_plain_equal_0_unconditional_event.csv": "c28dc0df80c5fb0e4e5cc91ff2c1e39db01c7bfdb9cc85237eaf37b386d3e98d",
+    "unbalanced_notyet_unit_plain_equal_0_unconditional_event_vcov.csv": "737f0eb36d4ac21003e72400d583a0e6ff91f875de3240ac5e8d60d1465b9c93",
+    "unbalanced_notyet_unit_plain_equal_0_unconditional_group.csv": "a50434a22816bc6bdf2b623fb0d506ab6fb9a1d91f95e16e485af56c056e1ec3",
+    "unbalanced_notyet_unit_plain_equal_0_unconditional_group_vcov.csv": "be1acaa3a43a9d3ab5379778b66558d0279ee052d3adb0de675586e2646fec4f",
+    "unbalanced_notyet_unit_plain_equal_0_unconditional_simple.csv": "dfa81f8f94de4f93fa50344b3475d85ccda2cb68f46a6ec9dfad147d2b1a0260",
+    "unbalanced_notyet_unit_plain_equal_0_unconditional_simple_vcov.csv": "c62f664be98b9516de43240295226aeb38eed6955388baaa0a6ad1e37e9aad83"
+  }
+}

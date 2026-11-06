@@ -1,0 +1,13 @@
+{
+  "name": "unbalanced_large_offset_ipw",
+  "scenario": "large_offset",
+  "method": "ipw",
+  "panel_mode": "unbalanced",
+  "outcome_scale": 1.0,
+  "expected_refusal": true,
+  "canonical_input_sha256": "c3587bdd87408cbf7cd2209d782e745112cd5d22e26794a7fcb11e1b27a1fbdd",
+  "status": "refused",
+  "error": "ValueError: propensity logit: singular or ill-conditioned nuisance design",
+  "wall_s": 0.04825855899252929,
+  "expected_outcome": true
+}

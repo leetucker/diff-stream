@@ -1,0 +1,47 @@
+{
+  "date": "2026-11-04",
+  "library_sha256": "8b636767661f0c8ee960af8a566c1f93a514b8eb752c730e3c51c1f48ed6c436",
+  "full_suite": {
+    "passed": 1076,
+    "skipped": 1,
+    "warnings": 177
+  },
+  "minimum_polars": {
+    "version": "1.37.0",
+    "new_checks_passed": 190
+  },
+  "reference_audit": {
+    "fits": 168,
+    "comparisons": 532,
+    "passed": true
+  },
+  "resource_matrix": {
+    "cases": 10,
+    "passed": true,
+    "same_library_hash": true,
+    "enforcement": "sampled process-tree RSS plus process high-water mark; no kernel cap"
+  },
+  "kernel_gate": "pending writable delegated memory cgroup; existing integration test explicitly skipped",
+  "ruff": "passed check and format",
+  "docs": "passed warnings-as-errors",
+  "example": "passed",
+  "copied_core_hashes": "unchanged",
+  "sibling_sources_changed": false,
+  "source_distribution": {
+    "path": "/tmp/diff-rich-dist/diff_stream-0.1.0.dev0.tar.gz",
+    "required_files": [
+      "diff_stream/linear.py",
+      "diff_stream/_core/within.py",
+      "benchmarks/richer_validation.py",
+      "benchmarks/richer_resources.py",
+      "benchmarks/external/richer_reference.R",
+      "tests/test_richer_models.py",
+      "tests/data/richer_panel.csv",
+      "tests/data/richer_reference/PROVENANCE.json",
+      "docs/richer_models.md",
+      "examples/richer_models.py"
+    ],
+    "passed": true
+  },
+  "stata_execution_for_new_specs": false
+}

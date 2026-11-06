@@ -1,0 +1,51 @@
+{
+  "reference": "Unmodified R did/DRDID on identical unit-pairs draws; base R sd/quantile(type=7)/qnorm",
+  "draws": 9,
+  "seed": 29,
+  "coverage_claim": false,
+  "files": {
+    "benchmarks/external/refit_bootstrap_reference.R": "ebaad37d1becb69d32627fd90661a245374409538938d8c92cd7010b03ae31dc",
+    "benchmarks/refit_bootstrap_validation.py": "0110c31f46c4b03c233dec74aac394b08c17430b22b6604f7a13e1d8351f39d7",
+    "tests/data/refit_bootstrap_reference/balanced_dr_draws.csv": "f18393880ce135047eb5bf873a9cdacd94a4f52c72a06a9b49184d1ff3cca12f",
+    "tests/data/refit_bootstrap_reference/unbalanced_last_ipw_draws.csv": "2a50dacc4eb02634cc13e0e11617581a47025ad0919606030da70bccadea48b7",
+    "tests/data/refit_bootstrap_reference/unbalanced_last_reg_summary.csv": "42fde0c3edf8c25d3b52ad4fc4d4bd8238f50031c2e8045ac10e299a58c4e569",
+    "tests/data/refit_bootstrap_reference/balanced_reg_draws.csv": "6f8d80ef6210fe801c97c1ce8f3d7ff38d2fa790e7d189d2e781ee675ef0887c",
+    "tests/data/refit_bootstrap_reference/balanced_ipw_draws.csv": "27c478c14bb165fceae40a3ff5d4825a879bfbc93873baaa9606e657b0b9022b",
+    "tests/data/refit_bootstrap_reference/balanced_reg_summary.csv": "1727845bd583ed7a9ea554782640b0d6904fa5cc91fb19b2a0b029d258234652",
+    "tests/data/refit_bootstrap_reference/balanced_dr_summary.csv": "153337ccbee5f8994423ce0e80139e04898c07306da1a09cfd7a23d4914b0096",
+    "tests/data/refit_bootstrap_reference/unbalanced_last_reg_draws.csv": "e74f6f125f919a186a5205d2f7a0276193c0bc85b2be6c4364221af23271a4d7",
+    "tests/data/refit_bootstrap_reference/balanced_ipw_summary.csv": "17864a8e23de0c76a3b1a7fedcb00226c104741b1c92eabe90360b69bf1b9ce3",
+    "tests/data/refit_bootstrap_reference/unbalanced_last_dr_summary.csv": "8714741252edab901a4320d7484aff34b09949a40e91d7314355077dc513888c",
+    "tests/data/refit_bootstrap_reference/unbalanced_last_dr_draws.csv": "211b3a74e39d97d78c282b26ecc5a27b4ccea76f83f0833644395662bafabe25",
+    "tests/data/refit_bootstrap_reference/unbalanced_last_ipw_summary.csv": "a5e1125db5ac0aaf81e5f50d6c1457f19f9c2488e760eccf8dea3a7f8989a2b2",
+    "tests/data/refit_bootstrap_reference/balanced/sample_6.csv": "e84af44be5570e9084817df34c80b5836fabaea0e6249bbbd4823a54aa3c4e2c",
+    "tests/data/refit_bootstrap_reference/balanced/sample_1.csv": "913a6d6c18ff9a1edbb24a1940c261f37011885962e9972ba1504bb5e034e57e",
+    "tests/data/refit_bootstrap_reference/balanced/sample_4.csv": "1fe8553d5c6d6df694f03aabfdf278a1eb933cb7f6e46f82c03b65878a8e8d42",
+    "tests/data/refit_bootstrap_reference/balanced/sample_5.csv": "16fca7cdff4745db1f30e11ea63ea2977b59f956bbc1e58b0141aab42bef6897",
+    "tests/data/refit_bootstrap_reference/balanced/sample_2.csv": "4c58d420da0d9d74c7a9787c6d53faf1a0b5a538713b950536499171a34f9445",
+    "tests/data/refit_bootstrap_reference/balanced/sample_8.csv": "8a5b7831151ffa1a2f2431faf9c8b726a5e8d391287fb6551a5f625c67f6d496",
+    "tests/data/refit_bootstrap_reference/balanced/sample_9.csv": "3270313d4a6ce7023dd3e8336aef31ba9c92709b1d50e117190da2c751977171",
+    "tests/data/refit_bootstrap_reference/balanced/sample_7.csv": "d2c3663134cd0916902ad2459d5e71ac08818baf8e5fb47a54042b2b41422399",
+    "tests/data/refit_bootstrap_reference/balanced/sample_3.csv": "afbc8028e3a7b1aef83f14deb973afa067d238f3d39b1b187146535d150cc8ac",
+    "tests/data/refit_bootstrap_reference/balanced/sample_0.csv": "e85b13b1647d19e089b3b941dc7928b609d42d1e011ec032e0b5da7f23676edd",
+    "tests/data/refit_bootstrap_reference/unbalanced_last/sample_6.csv": "f0e8a662248fb61955ca9ad162dcd048bdc6c6c0d8fe0d5001e0ea90eba3e79e",
+    "tests/data/refit_bootstrap_reference/unbalanced_last/sample_1.csv": "4d57f5099f9820829436b7250e95a254f298d25f9b8c3369af3445efd6a2d9cd",
+    "tests/data/refit_bootstrap_reference/unbalanced_last/sample_4.csv": "0deff1c896411033a9b34310b7f097cbc2917bf624f8b7f662059ad10fd844f8",
+    "tests/data/refit_bootstrap_reference/unbalanced_last/sample_5.csv": "c131a30bca1bda2235083a8477e671e132450d3dcb8656562212803a39cfd49a",
+    "tests/data/refit_bootstrap_reference/unbalanced_last/sample_2.csv": "daff8e2de67a74f7641706e469ce5bc85b46c935e03f39f5ffd5f33dd775fa3e",
+    "tests/data/refit_bootstrap_reference/unbalanced_last/sample_8.csv": "2ea6a7fc1e9c0ab3c1b23070b1affa08eaea9028bc1d294b6a6bab60e719c17b",
+    "tests/data/refit_bootstrap_reference/unbalanced_last/sample_9.csv": "3e3bc89117ffe3377af8fcbd9a97b5ad2b10f1d09e66db21ab9a44d7654a7c83",
+    "tests/data/refit_bootstrap_reference/unbalanced_last/sample_7.csv": "f5f36b321f3caff25afc9cac06918db3166b9393c18a1218588c99830ed7a8c6",
+    "tests/data/refit_bootstrap_reference/unbalanced_last/sample_3.csv": "bf9052d501c1ea7e525430c3516e1a94a3981c857aadd8109a24136b8a872a6d",
+    "tests/data/refit_bootstrap_reference/unbalanced_last/sample_0.csv": "1a57ec1896a9c0c28da5fa39b00705cdeb999797619aa59940261f5b64489841",
+    "tests/data/refit_bootstrap_reference/R_session.txt": "9893a1fa6063c60365120ea425404755a2acd0350b9d05298f6aaff0a361f9cf"
+  },
+  "post_generation_edits": [
+    {
+      "file": "benchmarks/refit_bootstrap_validation.py",
+      "date": "2026-11-05",
+      "generated_with_sha256": "2365d6150fe05bb8b44837890f8d1a2c38e46c2e151451d376d089f78a0c6da2",
+      "change": "--rscript default: a local absolute Rscript path replaced by DIFF_RSCRIPT, then Rscript on PATH. Command-line default only; no change to draws, fits or comparisons. References were not regenerated."
+    }
+  ]
+}

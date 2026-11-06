@@ -1,0 +1,13 @@
+{
+  "repository": "https://github.com/kylebutts/did2s",
+  "commit": "3adaf985980d4b46205de2e1856f93ba075baefe",
+  "source_url": "https://raw.githubusercontent.com/kylebutts/did2s/3adaf985980d4b46205de2e1856f93ba075baefe/data/castle.rda",
+  "description": "did2s public data from Cheng and Hoekstra (2013); SA reanalysis, not reproduction of every original paper specification",
+  "download_date": "2026-11-04",
+  "package_license": "MIT + file LICENSE; original data provenance retained without relicensing",
+  "sha256": {
+    "LICENSE.txt": "230f3c155edacd840e0763582d564f9a9b61af76e2670d8663fca6e68c42e4eb",
+    "DESCRIPTION.txt": "18dd4859f6efef4931f6b3e1c2726509fa89935869afb7e6801ed5497c029403",
+    "castle.rda": "dd46656a115acff7994793dac149c612e28f3b574696dc344419620fcc6238f5"
+  }
+}

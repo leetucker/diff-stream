@@ -1,0 +1,13 @@
+{
+  "name": "unbalanced_singular_ipw",
+  "scenario": "singular",
+  "method": "ipw",
+  "panel_mode": "unbalanced",
+  "outcome_scale": 1.0,
+  "expected_refusal": true,
+  "canonical_input_sha256": "f0e593424dc27713659cf7dd75a0a7d039f759eccd9b46ba66171904a4e3e0ee",
+  "status": "refused",
+  "error": "ValueError: propensity logit: singular or ill-conditioned nuisance design",
+  "wall_s": 0.04657922399928793,
+  "expected_outcome": true
+}

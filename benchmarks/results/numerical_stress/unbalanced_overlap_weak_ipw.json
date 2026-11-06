@@ -1,0 +1,506 @@
+{
+  "name": "unbalanced_overlap_weak_ipw",
+  "scenario": "overlap_weak",
+  "method": "ipw",
+  "panel_mode": "unbalanced",
+  "outcome_scale": 1.0,
+  "expected_refusal": false,
+  "canonical_input_sha256": "caf67002a6f23b48aa4e4aca8fca94ad242e03c5c33ac045ca70deab6633fe25",
+  "status": "ok",
+  "fit": {
+    "cells": [
+      [
+        3,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        4
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        5,
+        3
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        5,
+        5
+      ]
+    ],
+    "beta": [
+      0.3182126262186992,
+      1.1591603009346025,
+      1.3694401854745786,
+      1.6237465046865442,
+      0.3912999938428906,
+      0.022214807402503617,
+      0.19519512248638504,
+      1.579348351617499
+    ],
+    "vcov": [
+      [
+        0.019555433127341468,
+        -0.009491260767488192,
+        -0.007720897938063251,
+        -0.011359677655803806,
+        0.010660245653745775,
+        -0.005832781988285431,
+        0.003209882205074196,
+        -0.003246213356256151
+      ],
+      [
+        -0.009491260767488192,
+        0.017368457938234005,
+        0.007975759071751895,
+        0.010563219145463432,
+        -0.005922427264434902,
+        0.01088026891678016,
+        -0.005056956109465331,
+        0.0007389105510176054
+      ],
+      [
+        -0.007720897938063251,
+        0.007975759071751895,
+        0.02101432951051204,
+        0.009944112342163768,
+        -0.0048855827904338,
+        0.005815075705677758,
+        0.003496363897116396,
+        -0.005000279753698587
+      ],
+      [
+        -0.011359677655803806,
+        0.010563219145463432,
+        0.009944112342163768,
+        0.02061666129693172,
+        -0.006163404801086703,
+        0.007216031011170286,
+        -0.0032891952054621104,
+        0.005153309271308319
+      ],
+      [
+        0.010660245653745775,
+        -0.005922427264434902,
+        -0.0048855827904338,
+        -0.006163404801086703,
+        0.030556711860259517,
+        -0.013932888314102302,
+        0.0014775940946459099,
+        -0.002124463999146196
+      ],
+      [
+        -0.005832781988285431,
+        0.01088026891678016,
+        0.005815075705677758,
+        0.007216031011170286,
+        -0.013932888314102302,
+        0.02852489283160726,
+        -0.011001023366174425,
+        -0.0025263473108741194
+      ],
+      [
+        0.003209882205074196,
+        -0.005056956109465331,
+        0.003496363897116396,
+        -0.0032891952054621104,
+        0.0014775940946459099,
+        -0.011001023366174425,
+        0.02736048754798838,
+        -0.013117220847604031
+      ],
+      [
+        -0.003246213356256151,
+        0.0007389105510176054,
+        -0.005000279753698587,
+        0.005153309271308319,
+        -0.002124463999146196,
+        -0.0025263473108741194,
+        -0.013117220847604031,
+        0.03128758802699622
+      ]
+    ],
+    "att": 1.4870372437427903,
+    "se": 0.1083210555721333,
+    "diagnostics": {
+      "pretrends": 0,
+      "bootstrap_reps": 0,
+      "bootstrap_seed": null,
+      "bootstrap_weights": null,
+      "bootstrap_unit_order": null,
+      "sampling_weights": "w",
+      "weight_convention": "positive time-invariant unit sampling weights",
+      "weight_scale": 1.0,
+      "total_unit_weight": 2400.0,
+      "cohort_weight_totals": {
+        "0": 1014.0,
+        "3": 319.0,
+        "5": 1067.0
+      },
+      "anticipation": 0,
+      "reference_event_time": -1,
+      "cohort_sizes": {
+        "0": 1014,
+        "3": 319,
+        "5": 1067
+      },
+      "time_min": 1,
+      "time_max": 5,
+      "panel_mode": "unbalanced",
+      "balanced_sample": false,
+      "input_units": 2400,
+      "input_rows": 10800,
+      "dropped_units": 0,
+      "dropped_rows": 0,
+      "omitted_cells": [],
+      "control_group": "nevertreated",
+      "base_period": "varying",
+      "inference": "unit clustered; observed-row analytic scores",
+      "periods": 5,
+      "batch_units": 137,
+      "preprocess_mb": 4,
+      "partitions": 1,
+      "max_decoded_leaf_bytes": 873457,
+      "warnings": [
+        "Propensity trimming removed control contributions; inspect comparisons.",
+        "Some propensity probabilities were capped at 1-1e-6 under the R DRDID convention."
+      ],
+      "est_method": "ipw",
+      "covariate_names": [
+        "Intercept",
+        "x",
+        "z"
+      ],
+      "covariate_convention": "observed-date covariates; repeated-cross-section functionals",
+      "nuisance_systems": 0,
+      "propensity_models": 8,
+      "nuisance_source_passes": 12,
+      "trim_level": 0.8,
+      "comparisons": [
+        {
+          "cohort": 3,
+          "time": 2,
+          "base": 1,
+          "trimmed_controls": 15,
+          "capped_probabilities": 0,
+          "n_control_pre": 1014,
+          "n_control_post": 757,
+          "n_treated_pre": 319,
+          "n_treated_post": 234,
+          "propensity_range": [
+            3.223576647071746e-05,
+            0.9663690779478763
+          ],
+          "effective_controls": [
+            279.7085893330559,
+            194.80076109382443
+          ],
+          "logit_iterations": 6
+        },
+        {
+          "cohort": 3,
+          "time": 3,
+          "base": 2,
+          "trimmed_controls": 16,
+          "capped_probabilities": 0,
+          "n_control_pre": 757,
+          "n_control_post": 1014,
+          "n_treated_pre": 234,
+          "n_treated_post": 319,
+          "propensity_range": [
+            3.056360265369246e-05,
+            0.9884011289015393
+          ],
+          "effective_controls": [
+            180.2322723146906,
+            287.7555788790076
+          ],
+          "logit_iterations": 6
+        },
+        {
+          "cohort": 3,
+          "time": 4,
+          "base": 2,
+          "trimmed_controls": 13,
+          "capped_probabilities": 0,
+          "n_control_pre": 757,
+          "n_control_post": 757,
+          "n_treated_pre": 234,
+          "n_treated_post": 234,
+          "propensity_range": [
+            1.3812964942668316e-05,
+            0.974875390731009
+          ],
+          "effective_controls": [
+            165.99180211457787,
+            200.5664256748647
+          ],
+          "logit_iterations": 6
+        },
+        {
+          "cohort": 3,
+          "time": 5,
+          "base": 2,
+          "trimmed_controls": 11,
+          "capped_probabilities": 0,
+          "n_control_pre": 757,
+          "n_control_post": 1014,
+          "n_treated_pre": 234,
+          "n_treated_post": 319,
+          "propensity_range": [
+            2.877906004871543e-05,
+            0.9830961153400232
+          ],
+          "effective_controls": [
+            173.88951051176517,
+            281.226141125571
+          ],
+          "logit_iterations": 6
+        },
+        {
+          "cohort": 5,
+          "time": 2,
+          "base": 1,
+          "trimmed_controls": 50,
+          "capped_probabilities": 44,
+          "n_control_pre": 1014,
+          "n_control_post": 757,
+          "n_treated_pre": 1067,
+          "n_treated_post": 809,
+          "propensity_range": [
+            1.270051785526837e-09,
+            0.999999
+          ],
+          "effective_controls": [
+            121.84624073637042,
+            99.74547908820216
+          ],
+          "logit_iterations": 8
+        },
+        {
+          "cohort": 5,
+          "time": 3,
+          "base": 2,
+          "trimmed_controls": 48,
+          "capped_probabilities": 44,
+          "n_control_pre": 757,
+          "n_control_post": 1014,
+          "n_treated_pre": 809,
+          "n_treated_post": 1067,
+          "propensity_range": [
+            1.103919838985224e-09,
+            0.999999
+          ],
+          "effective_controls": [
+            92.22587523142411,
+            135.51059339647585
+          ],
+          "logit_iterations": 8
+        },
+        {
+          "cohort": 5,
+          "time": 4,
+          "base": 3,
+          "trimmed_controls": 51,
+          "capped_probabilities": 49,
+          "n_control_pre": 1014,
+          "n_control_post": 757,
+          "n_treated_pre": 1067,
+          "n_treated_post": 809,
+          "propensity_range": [
+            3.2607407827816593e-10,
+            0.999999
+          ],
+          "effective_controls": [
+            121.60128609727214,
+            91.75746956746356
+          ],
+          "logit_iterations": 8
+        },
+        {
+          "cohort": 5,
+          "time": 5,
+          "base": 4,
+          "trimmed_controls": 55,
+          "capped_probabilities": 44,
+          "n_control_pre": 757,
+          "n_control_post": 1014,
+          "n_treated_pre": 809,
+          "n_treated_post": 1067,
+          "propensity_range": [
+            2.627638245871325e-10,
+            0.999999
+          ],
+          "effective_controls": [
+            82.31973800679563,
+            137.14167192311467
+          ],
+          "logit_iterations": 8
+        }
+      ]
+    }
+  },
+  "wall_s": 0.24100567700224929,
+  "expected_outcome": true,
+  "reference": {
+    "name": "unbalanced_overlap_weak_ipw",
+    "status": "ok",
+    "warnings": [
+      "overlap condition violated for group 5 in time period 2",
+      "overlap condition violated for group 5 in time period 3",
+      "overlap condition violated for group 5 in time period 4",
+      "overlap condition violated for group 5 in time period 5"
+    ],
+    "fit": {
+      "cells": [
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          5,
+          5
+        ]
+      ],
+      "beta": [
+        0.3182126262186945,
+        1.1591603009346074,
+        1.3694401854745935,
+        1.6237465046865514,
+        0.3912999937856312,
+        0.022214806438904555,
+        0.19519512616125156,
+        1.5793483523095935
+      ],
+      "vcov": [
+        [
+          0.019555433127340677,
+          -0.00949126076748795,
+          -0.007720897938062596,
+          -0.011359677655803384,
+          0.010660245603598581,
+          -0.00583278196802287,
+          0.003209882142616556,
+          -0.003246213306127786
+        ],
+        [
+          -0.00949126076748795,
+          0.017368457938233033,
+          0.00797575907175097,
+          0.010563219145463073,
+          -0.005922427239906815,
+          0.010880268857809013,
+          -0.0050569560700909925,
+          0.0007389105429577648
+        ],
+        [
+          -0.007720897938062596,
+          0.00797575907175097,
+          0.021014329510506188,
+          0.009944112342162179,
+          -0.004885582768165365,
+          0.005815075668775133,
+          0.003496363884411984,
+          -0.005000279729354034
+        ],
+        [
+          -0.011359677655803384,
+          0.010563219145463073,
+          0.009944112342162179,
+          0.020616661296930648,
+          -0.006163404773899652,
+          0.00721603097016163,
+          -0.0032891951339804617,
+          0.005153309215707377
+        ],
+        [
+          0.010660245603598581,
+          -0.005922427239906815,
+          -0.004885582768165365,
+          -0.006163404773899652,
+          0.030556711481455386,
+          -0.01393288817815602,
+          0.0014775940630796947,
+          -0.0021244639519283812
+        ],
+        [
+          -0.00583278196802287,
+          0.010880268857809013,
+          0.005815075668775133,
+          0.00721603097016163,
+          -0.01393288817815602,
+          0.028524892395050395,
+          -0.011001023168937037,
+          -0.002526347208949294
+        ],
+        [
+          0.003209882142616556,
+          -0.0050569560700909925,
+          0.003496363884411984,
+          -0.0032891951339804617,
+          0.0014775940630796947,
+          -0.011001023168937037,
+          0.02736048678479115,
+          -0.013117220586456611
+        ],
+        [
+          -0.003246213306127786,
+          0.0007389105429577648,
+          -0.005000279729354034,
+          0.005153309215707377,
+          -0.0021244639519283812,
+          -0.002526347208949294,
+          -0.013117220586456611,
+          0.0312875872671024
+        ]
+      ],
+      "att": 1.4870372441076487,
+      "se": 0.10832105456740891
+    }
+  },
+  "comparison": {
+    "beta_max_abs": 3.674866522196396e-09,
+    "vcov_max_abs": 7.631972311072932e-10,
+    "att_abs": 3.6485836574229324e-10,
+    "se_abs": 1.0047243870214828e-09,
+    "passed": true
+  }
+}

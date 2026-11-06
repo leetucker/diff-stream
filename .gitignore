@@ -1,0 +1,52 @@
+__pycache__/
+*.py[cod]
+*.nbc
+*.nbi
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+docs/_build/
+examples/output/
+*.bak
+# the sibling packages do not track it either
+uv.lock
+
+# simulated data, scratch space and local reference environments
+benchmarks/data/
+benchmarks/work/
+benchmarks/results/work/
+benchmarks/external/.r/
+
+# run logs, captured output and per-run histories carry the paths and state of
+# the machine they ran on (Stata's logs included, as in the sibling packages)
+*.log
+*.stdout
+*.stderr
+benchmarks/results/logs/
+benchmarks/results/**/history/
+benchmarks/results/**/.driver.lock
+
+# local development resource probes: machine-specific runs that record absolute
+# work directories; published resource figures come from the EC2 benchmarks
+benchmarks/results/*_resources/
+benchmarks/results/complexity_checks/
+benchmarks/results/kernel_memory_checks/
+benchmarks/results/memory_checks/
+benchmarks/results/resource_checks/
+benchmarks/results/shared_core_migration/
+benchmarks/results/bounded_cs_*.json
+
+# EC2 benchmark tooling: its settings name the AWS account's bucket and
+# profile (as in hdfe-stream)
+benchmarks/ec2/
+
+# instructions, state and working notes for the sessions that build the package
+CLAUDE.md
+PLAN.md
+NEXT.md
+DESIGN_NOTES.md
+SHARED_INFRASTRUCTURE.md
+TWFE_WEIGHTS_PLAN.md

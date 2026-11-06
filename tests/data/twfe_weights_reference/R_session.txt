@@ -1,0 +1,34 @@
+Native TwoWayFEWeights feTR; fixest fixef.rm=none, fixef.tol=1e-10.
+2.1.0 requires weights as a numeric vector despite its column-name documentation.
+R version 4.5.3 (2026-03-11)
+Platform: x86_64-conda-linux-gnu
+Running under: Ubuntu 24.04.2 LTS
+
+Matrix products: default
+BLAS/LAPACK: <R prefix>/lib/libopenblasp-r0.3.34.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       
+ [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   
+ [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          
+[10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   
+
+time zone: UTC
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] TwoWayFEWeights_2.1.0
+
+loaded via a namespace (and not attached):
+ [1] Formula_1.2-6       numDeriv_2016.8-1.1 fixest_0.14.2      
+ [4] lattice_0.23-1      magrittr_2.0.5      stringmagic_1.3.0  
+ [7] glue_1.8.1          zoo_1.9-0           tibble_3.3.1       
+[10] pkgconfig_2.0.3     lifecycle_1.0.5     cli_3.6.6          
+[13] dreamerr_1.5.0      vctrs_0.7.3         grid_4.5.3         
+[16] sandwich_3.1-3      data.table_1.18.6.1 compiler_4.5.3     
+[19] forcats_1.0.1       haven_2.5.5         tools_4.5.3        
+[22] hms_1.1.4           nlme_3.1-170        pillar_1.11.1      
+[25] Rcpp_1.1.2          rlang_1.3.0        

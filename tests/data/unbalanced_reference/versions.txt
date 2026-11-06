@@ -1,0 +1,5 @@
+R 4.5.3
+did 2.5.1
+DRDID 1.4.0
+fixest 0.14.2
+Actual did allow_unbalanced_panel=TRUE; observed-date covariates; unit clustering.

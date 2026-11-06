@@ -1,0 +1,12 @@
+{
+  "beta_max_abs": 1.1091683127517626e-12,
+  "vcov_max_abs": 1.641603519786372e-12,
+  "dynamic_beta_max_abs": 8.666956041736285e-13,
+  "dynamic_vcov_max_abs": 1.641603519786372e-12,
+  "simple_beta_max_abs": 1.5576429035490946e-13,
+  "simple_vcov_max_abs": 1.848798891757042e-13,
+  "cohort_beta_max_abs": 1.8784973576657649e-13,
+  "cohort_vcov_max_abs": 1.085284639934514e-12,
+  "calendar_beta_max_abs": 2.3359092438113294e-13,
+  "calendar_vcov_max_abs": 4.833911049217932e-13
+}

@@ -1,0 +1,19 @@
+{
+  "input": "benchmarks/data/unbalanced_10000.parquet",
+  "import_baseline_mib": 195.7265625,
+  "formula_imports_mib": 335.9453125,
+  "warmed_rss_mib": 481.26953125,
+  "n_units": 10000,
+  "n_obs": 40771,
+  "checksum": 11.77221739033379,
+  "wall_s": 0.23995278000074904,
+  "phase_peaks_mib": {
+    "preparation": 591.03515625,
+    "_pass0_code": 538.3046875,
+    "_pass1_cells": 573.07421875,
+    "_solve": 562.60546875,
+    "_assemble": 573.13671875,
+    "_pass2": 595.3046875
+  },
+  "final_rss_mib": 583.37109375
+}

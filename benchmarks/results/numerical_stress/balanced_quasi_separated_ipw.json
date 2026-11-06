@@ -1,0 +1,13 @@
+{
+  "name": "balanced_quasi_separated_ipw",
+  "scenario": "quasi_separated",
+  "method": "ipw",
+  "panel_mode": "balanced",
+  "outcome_scale": 1.0,
+  "expected_refusal": true,
+  "canonical_input_sha256": "f1069912419b35d12dfa3112452ccd3dc2fbf8cb2f43a9ed69841724de083497",
+  "status": "refused",
+  "error": "ValueError: propensity logit did not converge; possible quasi-separation / poor overlap",
+  "wall_s": 0.5960750110098161,
+  "expected_outcome": true
+}

@@ -1,0 +1,6 @@
+R 4.5.3
+did 2.5.1
+fixest 0.14.2
+Universal-base CS: actual anticipation option. Varying-base CS: affected-onset labels, anticipation=0; restore original cohort/event labels.
+This avoids the installed did varying-base switch-at-g behavior inside anticipation windows of length >=2.
+Post-actual-treatment aggregations use universal-base actual-anticipation did results.

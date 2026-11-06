@@ -1,0 +1,23 @@
+{
+  "issue": "Raw coefficient convergence depends on covariate units",
+  "source_sha256": "8674a55089d5242be73a3244ae97ec361b9720779d1b6568e4e26ae982b7e827",
+  "expected_rescaled_slope": 1.3862943611198906,
+  "observed_before_fix": [
+    {
+      "covariate_scale": 1.0,
+      "rescaled_slope": 1.386294360914586,
+      "passes": 6
+    },
+    {
+      "covariate_scale": 100000000.0,
+      "rescaled_slope": 1.3769319849824784,
+      "passes": 4
+    },
+    {
+      "covariate_scale": 1000000000000.0,
+      "rescaled_slope": 0.0,
+      "passes": 2
+    }
+  ],
+  "status": "reproduced before fix"
+}

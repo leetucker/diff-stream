@@ -1,0 +1,9 @@
+R 4.5.3
+did 2.5.1
+DRDID 1.4.0
+fixest 0.14.2
+Actual did default time-varying weights: earlier comparison date in balanced panel; observed-date row weights in native unbalanced panel.
+CS aggregation unit anchor: first period balanced; mean observed weight unbalanced, matching did.
+SA: actual fixest joint covariate/extra-FE regression. CRV0, no degrees-of-freedom adjustment.
+BJS/clean placebos: independent dense R full-unit-dummy WLS and published smart/leave-out scores; NOT authors Stata execution.
+Varying-base anticipation references shift onset to avoid the installed did anticipation switch-at-g corner case.

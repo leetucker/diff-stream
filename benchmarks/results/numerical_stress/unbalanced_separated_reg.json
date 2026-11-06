@@ -1,0 +1,13 @@
+{
+  "name": "unbalanced_separated_reg",
+  "scenario": "separated",
+  "method": "reg",
+  "panel_mode": "unbalanced",
+  "outcome_scale": 1.0,
+  "expected_refusal": true,
+  "canonical_input_sha256": "171674a8cebd8421fcaca69e675ff123cd4f72cc2a7a451195e545739b85b989",
+  "status": "refused",
+  "error": "ValueError: stratified outcome regression (system 0, 804 observations, 3 columns): singular or ill-conditioned nuisance design",
+  "wall_s": 0.02550323800824117,
+  "expected_outcome": true
+}

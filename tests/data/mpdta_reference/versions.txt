@@ -1,0 +1,12 @@
+R 4.5.3
+did 2.5.1
+DRDID 1.4.0
+did package license GPL-3
+mpdta from installed did package; 500 counties, 2500 rows, consecutive annual 2003-2007; original column names and calendar years retained.
+Published documented example: https://bcallaway11.github.io/did/articles/did-basics.html ; data subset from Callaway and SantAnna (2021).
+24 analytic specifications: constant/lpop x reg/ipw/dr x never/notyet controls x varying/universal base.
+Unit clustering, CRV0, no weights, anticipation=0. Analytic reference SEs disable package bootstrap.
+Full joint aggregate covariance uses actual R aggte influence functions.
+Two canonical DR/never/varying models use common Rademacher draws, seed 815, 999 repetitions, sorted county IDs.
+Process-local R draw generator replacement; actual mboot IQR SE and type-1 critical-value code unchanged. Not same-seed R RNG reproduction.
+This reproduces documented empirical specifications; it is not the complete paper replication and does not execute Stata.

@@ -1,0 +1,53 @@
+{
+  "python": "3.12.3",
+  "platform": "Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "versions": {
+    "diff-stream": "0.1.0.dev0",
+    "hdfe-stream": "0.8.0",
+    "polars": "2.1.0",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "numba": "0.68.1",
+    "pyarrow": "26.0.0",
+    "psutil": "7.2.2"
+  },
+  "available_memory_gb": 21.347782656,
+  "cpu_count": 8,
+  "driver_sha256": "5f8960d180ba41b5f8e4ae49b0e635bc52d18eda9107d768cbc42ad5417bde02",
+  "network_required": false,
+  "clock": "monotonic",
+  "date": "2026-11-04",
+  "notes": [
+    "Sequential fresh fit processes; data generation excluded from fit measurements.",
+    "GB is decimal; MiB is binary. Process-tree RSS is sampled, not a cgroup guarantee.",
+    "Imports and first-use initialization are included; preload case isolates formula imports."
+  ],
+  "library_sha256": {
+    "diff_stream/__init__.py": "b618b4dec60fe60bf21e5847ee137ae0e9b9b97f96426ae2800e93ef5c4031e7",
+    "diff_stream/_core/__init__.py": "c25c36ffe5fa07af9303f1159b8a694250a0f25aeb16248b1f11ecd7b75afe8e",
+    "diff_stream/_core/contrasts.py": "b8d2a695fbe042317ac72d6996d6a9b975d0c2d44b299ad046e964dfd45b5ab5",
+    "diff_stream/_core/design.py": "a237eae9d14a4ce7b18fa9c8da291fbab09aafa42c5ccd35515f2abb39211662",
+    "diff_stream/_core/functionals.py": "aa83c9a543a063772830c685708ec398deac734f4ed6a006af8d13e9ec978761",
+    "diff_stream/_core/influence.py": "d324aeb3260c03287223d2c34682e14080e6fe6fec60447fc6961bc287de1405",
+    "diff_stream/_core/ipw.py": "00082a809e73d0975df33e183db75a5e1d71b5508c46b209a8af94f5661fa4d0",
+    "diff_stream/_core/mestimation.py": "c2ca26bab830a5a4df44d290daa670eacc9626ffd31cc741b3fd69c38da0a07d",
+    "diff_stream/_core/multiplier.py": "29e3e77e47dc53beb2a1e08d81acdfb98dc4e3717424b05f6ff41bcc1cff18e0",
+    "diff_stream/_core/nuisance.py": "d3aa81bb00485e6c6c5dd2df1ede9713d6eb5cba6e6e19ffc4530be90c5e1873",
+    "diff_stream/_core/partition.py": "681dbb082b18a68cce853028328671465d789c4a276c2f2831090e365736fe7b",
+    "diff_stream/_core/weights.py": "a4ee49fa79891c937f40a2df62ad4dd1531409a6da5dc0013204a88f728bbb8e",
+    "diff_stream/aggregation.py": "e91491da9e82e2c706640d6be3336ff4cf3128ba00691f6327c7d08211c53e22",
+    "diff_stream/api.py": "e569eab957b04c9d4701cbfdc932722b2d6c29d630634a507f5dda47edc72ba6",
+    "diff_stream/bacon.py": "f479bf3aff5be0426af472f4d44c98355d2209abdc00d18be7ab96d256f505f8",
+    "diff_stream/bjs.py": "7bf24ed5114c815863df9014b2600a5403b4ff18cc56c0d71e58729f2d9752bd",
+    "diff_stream/bjs_placebo.py": "56b6b9dce1b5bded8ba055dfd3cd8d953604699df01902fc2dcb9e9b4cac7f86",
+    "diff_stream/cs.py": "6c8ba55b6e30947fe2c7f8465f1c505548d01cf39c31a08dd75efd4efa06b76a",
+    "diff_stream/cs_unbalanced.py": "ac94f9f355123b3556e6fe12bf805f6d2039b9ee139d16222b9454f20157caa1",
+    "diff_stream/estimators.py": "955f0af8386d1adaf4f994a6e742f8d7ebb5bb1bebd3a4562f4197e669a5f3e4",
+    "diff_stream/pretrend.py": "3f08f709dde789a7986bf940dfa69b3bfbc8f0b4c3f4e1ffcae0c92e2d656dc0",
+    "diff_stream/results.py": "b57b2c2c28d6f7d87892290410c1d3d917fa711e88eea81fcbb44a7fd9558644",
+    "diff_stream/simulate.py": "92b482d2badf9737dc33b6920ff89d4243aebf1d5a282884eb196bf2efc154e6",
+    "diff_stream/store.py": "d220951233cf77a83dae366a74b7ff74c09ccd7b4c4d794d2489beb861624087",
+    "diff_stream/unbalanced.py": "4f46de3b69d619bba48e85615d0e4bba0dfa0f23db0c97cc16cdc489a4545ee7"
+  },
+  "r_exporter_sha256": "5afcc1aee99e8cde5272e5902a26af97b16fd95780e8edc943a9dcfedbfe0715"
+}

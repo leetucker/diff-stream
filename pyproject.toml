@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diff-stream"
+version = "0.1.0.dev0"
+description = "Disk-backed staggered difference-in-differences estimation"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE.md"]
+authors = [{name = "Lee Tucker"}]
+dependencies = ["hdfe-stream[formula]>=0.8.0", "stream-limits>=0.1.1", "polars>=1.37,!=1.41.*", "numpy>=1.24", "scipy>=1.11", "numba>=0.59", "pyarrow>=14"]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "stream-limits[testing]>=0.2.0.dev0"]
+benchmark = ["stream-limits[launcher]>=0.2.0.dev0", "matplotlib>=3.7", "psutil>=5.9", "pandas>=2"]
+docs = ["sphinx>=8", "myst-parser>=4", "furo>=2024.8.6", "sphinx-copybutton>=0.5", "sphinx-design>=0.6"]
+
+[tool.setuptools.packages.find]
+include = ["diff_stream*"]
+
+[tool.setuptools.package-data]
+diff_stream = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+

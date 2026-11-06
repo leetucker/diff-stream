@@ -1,0 +1,455 @@
+{
+  "status": "passed",
+  "specifications": 24,
+  "units": 500,
+  "rows": 2500,
+  "years": [
+    2003,
+    2004,
+    2005,
+    2006,
+    2007
+  ],
+  "columns": [
+    "year",
+    "countyreal",
+    "lpop",
+    "lemp",
+    "first.treat",
+    "treat"
+  ],
+  "cohort_sizes": [
+    {
+      "cohort": 0,
+      "n_units": 309
+    },
+    {
+      "cohort": 2004,
+      "n_units": 20
+    },
+    {
+      "cohort": 2006,
+      "n_units": 40
+    },
+    {
+      "cohort": 2007,
+      "n_units": 131
+    }
+  ],
+  "tolerance": 2e-08,
+  "max_abs_difference": {
+    "cell_estimates": 4.432929023856502e-11,
+    "cell_se": 5.867910324308667e-12,
+    "cell_covariance": 4.1518676517637854e-13,
+    "aggregate_estimates": 4.432929023856502e-11,
+    "aggregate_se": 5.867806240900109e-12,
+    "aggregate_covariance": 4.1518676517637854e-13,
+    "pretrend_statistic": 1.2158807294326834e-10,
+    "pretrend_pvalue": 9.518025256838314e-12,
+    "bootstrap_draws": 5.240032713293985e-11,
+    "bootstrap_se": 3.101278955863762e-11,
+    "bootstrap_critical": 4.2492898089108166e-10,
+    "bootstrap_bounds": 8.949652130496588e-11
+  },
+  "reference_versions": [
+    "R 4.5.3",
+    "did 2.5.1",
+    "DRDID 1.4.0",
+    "did package license GPL-3",
+    "mpdta from installed did package; 500 counties, 2500 rows, consecutive annual 2003-2007; original column names and calendar years retained.",
+    "Published documented example: https://bcallaway11.github.io/did/articles/did-basics.html ; data subset from Callaway and SantAnna (2021).",
+    "24 analytic specifications: constant/lpop x reg/ipw/dr x never/notyet controls x varying/universal base.",
+    "Unit clustering, CRV0, no weights, anticipation=0. Analytic reference SEs disable package bootstrap.",
+    "Full joint aggregate covariance uses actual R aggte influence functions.",
+    "Two canonical DR/never/varying models use common Rademacher draws, seed 815, 999 repetitions, sorted county IDs.",
+    "Process-local R draw generator replacement; actual mboot IQR SE and type-1 critical-value code unchanged. Not same-seed R RNG reproduction.",
+    "This reproduces documented empirical specifications; it is not the complete paper replication and does not execute Stata."
+  ],
+  "files": {
+    "tests/data/mpdta.csv": "2283bea1221a152420f98dfa20f633c5d054ea51d881115c8cd702a97bcd3167",
+    "benchmarks/external/mpdta_reference.R": "6c531ad3c47eac22dffc813b14c69bd116a96ca9b06218fcfffa59c6707a8d5b",
+    "benchmarks/mpdta_replication.py": "ae0a875c7d91590b6c2f3252a7b0f8db069b45995abf3ed9017d29facdec0860",
+    "tests/data/mpdta_reference/versions.txt": "1398f56686d9559c5c6a44c5b8dfb04942884164390a92df72393b17ce5ae6f7",
+    "tests/data/mpdta_reference/multipliers.csv.gz": "5328486beaee5a8548d10f956f3e264ba10c8bacb270d8a638ee20dc9d196bc5"
+  },
+  "python_version": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "numpy_version": "2.5.4",
+  "polars_version": "2.1.0",
+  "bootstrap": {
+    "reps": 999,
+    "seed": 815,
+    "weights": "rademacher",
+    "common_draws": true
+  },
+  "stata_executed": false,
+  "results": [
+    {
+      "case": "constant_nevertreated_varying_reg",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 7.039074184644889e-15,
+        "cell_se": 4.0245584642661925e-16,
+        "cell_covariance": 2.3418766925686896e-17,
+        "aggregate_estimates": 7.039074184644889e-15,
+        "aggregate_se": 4.0245584642661925e-16,
+        "aggregate_covariance": 2.3418766925686896e-17,
+        "pretrend_statistic": 3.2240876635114546e-13,
+        "pretrend_pvalue": 1.837419105754634e-14
+      },
+      "pretrend_pvalue": 0.16812249492387862
+    },
+    {
+      "case": "constant_nevertreated_varying_ipw",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 7.049048844631756e-15,
+        "cell_se": 4.0245584642661925e-16,
+        "cell_covariance": 2.3418766925686896e-17,
+        "aggregate_estimates": 7.049048844631756e-15,
+        "aggregate_se": 4.0245584642661925e-16,
+        "aggregate_covariance": 2.3418766925686896e-17,
+        "pretrend_statistic": 3.126388037344441e-13,
+        "pretrend_pvalue": 1.837419105754634e-14
+      },
+      "pretrend_pvalue": 0.16812249492387862
+    },
+    {
+      "case": "constant_nevertreated_varying_dr",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 2.3592239273284576e-15,
+        "cell_se": 3.885780586188048e-16,
+        "cell_covariance": 2.2551405187698492e-17,
+        "aggregate_estimates": 2.3592239273284576e-15,
+        "aggregate_se": 3.885780586188048e-16,
+        "aggregate_covariance": 2.2551405187698492e-17,
+        "bootstrap_draws": 2.7824964554667986e-15,
+        "bootstrap_se": 1.4224732503009818e-15,
+        "bootstrap_critical": 1.9184653865522705e-13,
+        "bootstrap_bounds": 6.938893903907228e-15,
+        "pretrend_statistic": 3.561595462997502e-13,
+        "pretrend_pvalue": 2.0622392682412283e-14
+      },
+      "pretrend_pvalue": 0.16812249492387638
+    },
+    {
+      "case": "constant_nevertreated_universal_reg",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 7.039074184644889e-15,
+        "cell_se": 4.0245584642661925e-16,
+        "cell_covariance": 2.3418766925686896e-17,
+        "aggregate_estimates": 7.039074184644889e-15,
+        "aggregate_se": 4.0245584642661925e-16,
+        "aggregate_covariance": 2.3418766925686896e-17,
+        "pretrend_statistic": 3.126388037344441e-13,
+        "pretrend_pvalue": 1.8762769116165146e-14
+      },
+      "pretrend_pvalue": 0.16812249492387923
+    },
+    {
+      "case": "constant_nevertreated_universal_ipw",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 7.049048844631756e-15,
+        "cell_se": 4.0245584642661925e-16,
+        "cell_covariance": 2.3418766925686896e-17,
+        "aggregate_estimates": 7.049048844631756e-15,
+        "aggregate_se": 4.0245584642661925e-16,
+        "aggregate_covariance": 2.3418766925686896e-17,
+        "pretrend_statistic": 3.126388037344441e-13,
+        "pretrend_pvalue": 1.8762769116165146e-14
+      },
+      "pretrend_pvalue": 0.16812249492387923
+    },
+    {
+      "case": "constant_nevertreated_universal_dr",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 7.039074184644889e-15,
+        "cell_se": 4.0245584642661925e-16,
+        "cell_covariance": 2.3418766925686896e-17,
+        "aggregate_estimates": 7.039074184644889e-15,
+        "aggregate_se": 4.0245584642661925e-16,
+        "aggregate_covariance": 2.3418766925686896e-17,
+        "pretrend_statistic": 3.028688411177427e-13,
+        "pretrend_pvalue": 1.7763568394002505e-14
+      },
+      "pretrend_pvalue": 0.16812249492387923
+    },
+    {
+      "case": "constant_notyettreated_varying_reg",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 6.980527267330672e-15,
+        "cell_se": 3.608224830031759e-16,
+        "cell_covariance": 2.688821387764051e-17,
+        "aggregate_estimates": 6.0084315994801685e-15,
+        "aggregate_se": 3.608224830031759e-16,
+        "aggregate_covariance": 2.688821387764051e-17,
+        "pretrend_statistic": 3.206324095117452e-13,
+        "pretrend_pvalue": 1.8762769116165146e-14
+      },
+      "pretrend_pvalue": 0.16814065857580024
+    },
+    {
+      "case": "constant_notyettreated_varying_ipw",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 6.980527267330672e-15,
+        "cell_se": 3.608224830031759e-16,
+        "cell_covariance": 2.688821387764051e-17,
+        "aggregate_estimates": 5.998456939493302e-15,
+        "aggregate_se": 3.608224830031759e-16,
+        "aggregate_covariance": 2.688821387764051e-17,
+        "pretrend_statistic": 3.1086244689504383e-13,
+        "pretrend_pvalue": 1.8762769116165146e-14
+      },
+      "pretrend_pvalue": 0.16814065857580024
+    },
+    {
+      "case": "constant_notyettreated_varying_dr",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 6.980527267330672e-15,
+        "cell_se": 3.608224830031759e-16,
+        "cell_covariance": 2.688821387764051e-17,
+        "aggregate_estimates": 6.0084315994801685e-15,
+        "aggregate_se": 3.608224830031759e-16,
+        "aggregate_covariance": 2.688821387764051e-17,
+        "pretrend_statistic": 3.1086244689504383e-13,
+        "pretrend_pvalue": 1.8762769116165146e-14
+      },
+      "pretrend_pvalue": 0.16814065857580024
+    },
+    {
+      "case": "constant_notyettreated_universal_reg",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 6.980527267330672e-15,
+        "cell_se": 3.608224830031759e-16,
+        "cell_covariance": 2.688821387764051e-17,
+        "aggregate_estimates": 6.0084315994801685e-15,
+        "aggregate_se": 3.608224830031759e-16,
+        "aggregate_covariance": 2.688821387764051e-17,
+        "pretrend_statistic": 3.161915174132446e-13,
+        "pretrend_pvalue": 1.8512968935624485e-14
+      },
+      "pretrend_pvalue": 0.1681272687033395
+    },
+    {
+      "case": "constant_notyettreated_universal_ipw",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 6.980527267330672e-15,
+        "cell_se": 3.608224830031759e-16,
+        "cell_covariance": 2.688821387764051e-17,
+        "aggregate_estimates": 5.998456939493302e-15,
+        "aggregate_se": 3.608224830031759e-16,
+        "aggregate_covariance": 2.688821387764051e-17,
+        "pretrend_statistic": 3.161915174132446e-13,
+        "pretrend_pvalue": 1.8512968935624485e-14
+      },
+      "pretrend_pvalue": 0.1681272687033395
+    },
+    {
+      "case": "constant_notyettreated_universal_dr",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 6.980527267330672e-15,
+        "cell_se": 3.608224830031759e-16,
+        "cell_covariance": 2.688821387764051e-17,
+        "aggregate_estimates": 6.0084315994801685e-15,
+        "aggregate_se": 3.608224830031759e-16,
+        "aggregate_covariance": 2.688821387764051e-17,
+        "pretrend_statistic": 3.064215547965432e-13,
+        "pretrend_pvalue": 1.8512968935624485e-14
+      },
+      "pretrend_pvalue": 0.1681272687033395
+    },
+    {
+      "case": "lpop_nevertreated_varying_reg",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 2.42861286636753e-15,
+        "cell_se": 3.2959746043559335e-16,
+        "cell_covariance": 2.667137344314341e-17,
+        "aggregate_estimates": 2.42861286636753e-15,
+        "aggregate_se": 3.400058012914542e-16,
+        "aggregate_covariance": 2.667137344314341e-17,
+        "pretrend_statistic": 3.7569947153315297e-13,
+        "pretrend_pvalue": 2.833844270355712e-14
+      },
+      "pretrend_pvalue": 0.23116360385947166
+    },
+    {
+      "case": "lpop_nevertreated_varying_ipw",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 4.4329276360777214e-11,
+        "cell_se": 4.500157191333898e-12,
+        "cell_covariance": 3.183514649812702e-13,
+        "aggregate_estimates": 4.4329276360777214e-11,
+        "aggregate_se": 4.5002543358485525e-12,
+        "aggregate_covariance": 3.183514649812702e-13,
+        "pretrend_statistic": 1.0455902810235784e-10,
+        "pretrend_pvalue": 8.230971459965986e-12
+      },
+      "pretrend_pvalue": 0.23604076664987902
+    },
+    {
+      "case": "lpop_nevertreated_varying_dr",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 1.0269590733358314e-11,
+        "cell_se": 5.867910324308667e-12,
+        "cell_covariance": 4.1518676517637854e-13,
+        "aggregate_estimates": 1.0269590733358314e-11,
+        "aggregate_se": 5.867806240900109e-12,
+        "aggregate_covariance": 4.1518676517637854e-13,
+        "bootstrap_draws": 5.240032713293985e-11,
+        "bootstrap_se": 3.101278955863762e-11,
+        "bootstrap_critical": 4.2492898089108166e-10,
+        "bootstrap_bounds": 8.949652130496588e-11,
+        "pretrend_statistic": 4.9631410092843e-12,
+        "pretrend_pvalue": 3.8596903451093567e-13
+      },
+      "pretrend_pvalue": 0.23267228057367897
+    },
+    {
+      "case": "lpop_nevertreated_universal_reg",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 2.42861286636753e-15,
+        "cell_se": 3.2959746043559335e-16,
+        "cell_covariance": 2.667137344314341e-17,
+        "aggregate_estimates": 2.42861286636753e-15,
+        "aggregate_se": 3.400058012914542e-16,
+        "aggregate_covariance": 2.667137344314341e-17,
+        "pretrend_statistic": 3.5083047578154947e-13,
+        "pretrend_pvalue": 2.6673108166619386e-14
+      },
+      "pretrend_pvalue": 0.23116360385947232
+    },
+    {
+      "case": "lpop_nevertreated_universal_ipw",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 4.4329276360777214e-11,
+        "cell_se": 4.500157191333898e-12,
+        "cell_covariance": 3.183514649812702e-13,
+        "aggregate_estimates": 4.4329276360777214e-11,
+        "aggregate_se": 4.5002543358485525e-12,
+        "aggregate_covariance": 3.183514649812702e-13,
+        "pretrend_statistic": 1.0456968624339424e-10,
+        "pretrend_pvalue": 8.231970660688148e-12
+      },
+      "pretrend_pvalue": 0.23604076664987902
+    },
+    {
+      "case": "lpop_nevertreated_universal_dr",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 1.0269590733358314e-11,
+        "cell_se": 5.867910324308667e-12,
+        "cell_covariance": 4.1518676517637854e-13,
+        "aggregate_estimates": 1.0269590733358314e-11,
+        "aggregate_se": 5.867806240900109e-12,
+        "aggregate_covariance": 4.1518676517637854e-13,
+        "pretrend_statistic": 4.936495656693296e-12,
+        "pretrend_pvalue": 3.846645224570011e-13
+      },
+      "pretrend_pvalue": 0.23267228057367867
+    },
+    {
+      "case": "lpop_notyettreated_varying_reg",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 2.3175905639050143e-15,
+        "cell_se": 3.226585665316861e-16,
+        "cell_covariance": 3.0574501264091225e-17,
+        "aggregate_estimates": 2.3175905639050143e-15,
+        "aggregate_se": 4.0939474033052647e-16,
+        "aggregate_covariance": 3.0574501264091225e-17,
+        "pretrend_statistic": 3.7569947153315297e-13,
+        "pretrend_pvalue": 2.8504976157250894e-14
+      },
+      "pretrend_pvalue": 0.2301425787071675
+    },
+    {
+      "case": "lpop_notyettreated_varying_ipw",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 4.432929023856502e-11,
+        "cell_se": 1.7602794222248974e-12,
+        "cell_covariance": 1.157904067766724e-13,
+        "aggregate_estimates": 4.432929023856502e-11,
+        "aggregate_se": 1.7602794222248974e-12,
+        "aggregate_covariance": 1.157904067766724e-13,
+        "pretrend_statistic": 6.396394525154392e-11,
+        "pretrend_pvalue": 5.042660733423077e-12
+      },
+      "pretrend_pvalue": 0.23645381802109233
+    },
+    {
+      "case": "lpop_notyettreated_varying_dr",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 1.0269590733358314e-11,
+        "cell_se": 1.946616479120422e-12,
+        "cell_covariance": 1.978868457985783e-13,
+        "aggregate_estimates": 1.0269590733358314e-11,
+        "aggregate_se": 1.946616479120422e-12,
+        "aggregate_covariance": 1.978868457985783e-13,
+        "pretrend_statistic": 2.284394895468722e-12,
+        "pretrend_pvalue": 1.7763568394002505e-13
+      },
+      "pretrend_pvalue": 0.23325935984227664
+    },
+    {
+      "case": "lpop_notyettreated_universal_reg",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 2.3175905639050143e-15,
+        "cell_se": 3.226585665316861e-16,
+        "cell_covariance": 3.0574501264091225e-17,
+        "aggregate_estimates": 2.3175905639050143e-15,
+        "aggregate_se": 4.0939474033052647e-16,
+        "aggregate_covariance": 3.0574501264091225e-17,
+        "pretrend_statistic": 3.5793590313915047e-13,
+        "pretrend_pvalue": 2.6950663922775675e-14
+      },
+      "pretrend_pvalue": 0.22814670326918304
+    },
+    {
+      "case": "lpop_notyettreated_universal_ipw",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 4.432929023856502e-11,
+        "cell_se": 1.7602794222248974e-12,
+        "cell_covariance": 1.157904067766724e-13,
+        "aggregate_estimates": 4.432929023856502e-11,
+        "aggregate_se": 1.7602794222248974e-12,
+        "aggregate_covariance": 1.157904067766724e-13,
+        "pretrend_statistic": 1.2158807294326834e-10,
+        "pretrend_pvalue": 9.518025256838314e-12
+      },
+      "pretrend_pvalue": 0.23445675458017098
+    },
+    {
+      "case": "lpop_notyettreated_universal_dr",
+      "status": "passed",
+      "max_abs_difference": {
+        "cell_estimates": 1.0269590733358314e-11,
+        "cell_se": 1.946616479120422e-12,
+        "cell_covariance": 1.978868457985783e-13,
+        "aggregate_estimates": 1.0269590733358314e-11,
+        "aggregate_se": 1.946616479120422e-12,
+        "aggregate_covariance": 1.978868457985783e-13,
+        "pretrend_statistic": 1.787103798278622e-11,
+        "pretrend_pvalue": 1.381172953784926e-12
+      },
+      "pretrend_pvalue": 0.23083371622915216
+    }
+  ]
+}

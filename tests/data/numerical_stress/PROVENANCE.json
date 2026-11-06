@@ -1,0 +1,13 @@
+{
+  "scope": "Actual R did/DRDID conditional-CS stress references, balanced/observed-row, weighted reg/ipw/dr",
+  "reference_cases": 18,
+  "versions": "R 4.5.3\ndid 2.5.1\nDRDID 1.4.0\n",
+  "exporter_sha256": "5afcc1aee99e8cde5272e5902a26af97b16fd95780e8edc943a9dcfedbfe0715",
+  "input_sha256": {
+    "overlap_very_weak": "4e7c917679233328d8b11553e9076345db4e08a52bc08ed192196754cf53d1de",
+    "weights_wide": "46a6987f8cc6cc275c10e679127673a8ff68154a8c3149d935db272f374d84ab",
+    "collinear_border": "afe9a18f4f1d25b490fc98011a5ec77312b8e9a2c8f06495fc84b95d4c5c021f"
+  },
+  "trimming": "overlap_very_weak uses .8 through custom actual DRDID estimators; other cases default .995",
+  "units": "Canonical covariate/outcome units, no finite-sample variance correction"
+}

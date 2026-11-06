@@ -1,0 +1,20 @@
+{
+  "full_suite": {
+    "passed": 858,
+    "polars": "2.1.0",
+    "log": "/tmp/diff-stress-full-tests.log"
+  },
+  "minimum_polars_targeted": {
+    "passed": 99,
+    "polars": "1.37.0",
+    "log": "/tmp/diff-stress-polars137-tests.log"
+  },
+  "documentation": "Sphinx HTML build with warnings treated as errors passes",
+  "source_distribution": "New compressed inputs, reference JSON, provenance and report verified in source archive",
+  "copied_core_sha256": {
+    "ipw.py": "00082a809e73d0975df33e183db75a5e1d71b5508c46b209a8af94f5661fa4d0",
+    "influence.py": "d324aeb3260c03287223d2c34682e14080e6fe6fec60447fc6961bc287de1405",
+    "mestimation.py": "c2ca26bab830a5a4df44d290daa670eacc9626ffd31cc741b3fd69c38da0a07d"
+  },
+  "source_library_hashes_match_final_numerical_run": true
+}

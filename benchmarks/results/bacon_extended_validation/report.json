@@ -1,0 +1,342 @@
+{
+  "cases": 48,
+  "passed": true,
+  "rows": [
+    {
+      "case": "plain",
+      "controlled": false,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": -4.440892098500626e-16
+    },
+    {
+      "case": "plain",
+      "controlled": false,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 8.881784197001252e-16
+    },
+    {
+      "case": "plain",
+      "controlled": false,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 8.881784197001252e-16
+    },
+    {
+      "case": "plain",
+      "controlled": true,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": 8.881784197001252e-16
+    },
+    {
+      "case": "plain",
+      "controlled": true,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 1.554312234475219e-14
+    },
+    {
+      "case": "plain",
+      "controlled": true,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 4.440892098500626e-15
+    },
+    {
+      "case": "always",
+      "controlled": false,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": -8.881784197001252e-16
+    },
+    {
+      "case": "always",
+      "controlled": false,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 2.220446049250313e-16
+    },
+    {
+      "case": "always",
+      "controlled": false,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 8.881784197001252e-16
+    },
+    {
+      "case": "always",
+      "controlled": true,
+      "weights": "equal",
+      "package_status": "error",
+      "reconstruction_error": 4.440892098500626e-16
+    },
+    {
+      "case": "always",
+      "controlled": true,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 1.4432899320127035e-14
+    },
+    {
+      "case": "always",
+      "controlled": true,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 7.549516567451064e-15
+    },
+    {
+      "case": "always_no_never",
+      "controlled": false,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": -9.992007221626409e-16
+    },
+    {
+      "case": "always_no_never",
+      "controlled": false,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 1.0547118733938987e-15
+    },
+    {
+      "case": "always_no_never",
+      "controlled": false,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": -6.661338147750939e-16
+    },
+    {
+      "case": "always_no_never",
+      "controlled": true,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": 7.105427357601002e-15
+    },
+    {
+      "case": "always_no_never",
+      "controlled": true,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": -1.2156942119645464e-14
+    },
+    {
+      "case": "always_no_never",
+      "controlled": true,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 9.547918011776346e-15
+    },
+    {
+      "case": "shifted_always",
+      "controlled": false,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": -8.881784197001252e-16
+    },
+    {
+      "case": "shifted_always",
+      "controlled": false,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 2.220446049250313e-16
+    },
+    {
+      "case": "shifted_always",
+      "controlled": false,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 8.881784197001252e-16
+    },
+    {
+      "case": "shifted_always",
+      "controlled": true,
+      "weights": "equal",
+      "package_status": "error",
+      "reconstruction_error": 4.440892098500626e-16
+    },
+    {
+      "case": "shifted_always",
+      "controlled": true,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 1.4432899320127035e-14
+    },
+    {
+      "case": "shifted_always",
+      "controlled": true,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 7.549516567451064e-15
+    },
+    {
+      "case": "complete",
+      "controlled": false,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": 4.440892098500626e-16
+    },
+    {
+      "case": "complete",
+      "controlled": false,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 0.0
+    },
+    {
+      "case": "complete",
+      "controlled": false,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 0.0
+    },
+    {
+      "case": "complete",
+      "controlled": true,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": -8.881784197001252e-16
+    },
+    {
+      "case": "complete",
+      "controlled": true,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 1.8207657603852567e-14
+    },
+    {
+      "case": "complete",
+      "controlled": true,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 3.1086244689504383e-15
+    },
+    {
+      "case": "future",
+      "controlled": false,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": -4.440892098500626e-16
+    },
+    {
+      "case": "future",
+      "controlled": false,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 8.881784197001252e-16
+    },
+    {
+      "case": "future",
+      "controlled": false,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 8.881784197001252e-16
+    },
+    {
+      "case": "future",
+      "controlled": true,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": 8.881784197001252e-16
+    },
+    {
+      "case": "future",
+      "controlled": true,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 1.554312234475219e-14
+    },
+    {
+      "case": "future",
+      "controlled": true,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 4.440892098500626e-15
+    },
+    {
+      "case": "multiple_always",
+      "controlled": false,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": -8.881784197001252e-16
+    },
+    {
+      "case": "multiple_always",
+      "controlled": false,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 4.440892098500626e-16
+    },
+    {
+      "case": "multiple_always",
+      "controlled": false,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 2.220446049250313e-16
+    },
+    {
+      "case": "multiple_always",
+      "controlled": true,
+      "weights": "equal",
+      "package_status": "error",
+      "reconstruction_error": 0.0
+    },
+    {
+      "case": "multiple_always",
+      "controlled": true,
+      "weights": "integer",
+      "package_status": "error",
+      "reconstruction_error": 1.4876988529977098e-14
+    },
+    {
+      "case": "multiple_always",
+      "controlled": true,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": 7.771561172376096e-15
+    },
+    {
+      "case": "castle",
+      "controlled": false,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": -2.7755575615628914e-17
+    },
+    {
+      "case": "castle",
+      "controlled": false,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 4.163336342344337e-17
+    },
+    {
+      "case": "castle",
+      "controlled": false,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": -6.938893903907228e-18
+    },
+    {
+      "case": "castle",
+      "controlled": true,
+      "weights": "equal",
+      "package_status": "ok",
+      "reconstruction_error": -1.3877787807814457e-17
+    },
+    {
+      "case": "castle",
+      "controlled": true,
+      "weights": "integer",
+      "package_status": "ok",
+      "reconstruction_error": 0.0
+    },
+    {
+      "case": "castle",
+      "controlled": true,
+      "weights": "irrational",
+      "package_status": "not_supported",
+      "reconstruction_error": -2.7755575615628914e-17
+    }
+  ]
+}

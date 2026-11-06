@@ -1,0 +1,294 @@
+{
+  "cases": 48,
+  "passed": true,
+  "rows": [
+    {
+      "case": "balanced_0_0",
+      "estimator": "bjs",
+      "beta_max_abs": 2.55351295663786e-14,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "balanced_0_0",
+      "estimator": "gardner_static",
+      "beta_max_abs": 2.3203661214665772e-14,
+      "vcov_max_abs": 3.469446951953614e-18
+    },
+    {
+      "case": "balanced_0_0",
+      "estimator": "gardner_dynamic",
+      "beta_max_abs": 2.6423307986078726e-14,
+      "vcov_max_abs": 2.636779683484747e-16
+    },
+    {
+      "case": "balanced_0_0",
+      "estimator": "etwfe_conditional",
+      "beta_max_abs": 1.815214645262131e-14,
+      "vcov_max_abs": 1.3183898417423734e-16
+    },
+    {
+      "case": "balanced_0_0",
+      "estimator": "etwfe_unconditional",
+      "beta_max_abs": 1.815214645262131e-14,
+      "vcov_max_abs": 1.1796119636642288e-16
+    },
+    {
+      "case": "balanced_0_0",
+      "estimator": "bjs_placebos",
+      "beta_max_abs": 3.885780586188048e-16,
+      "vcov_max_abs": 1.3426759704060487e-14
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "bjs",
+      "beta_max_abs": 1.848454722619408e-11,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "gardner_static",
+      "beta_max_abs": 1.4918732915703004e-11,
+      "vcov_max_abs": 6.576336697428076e-14
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "gardner_dynamic",
+      "beta_max_abs": 1.8484325181589156e-11,
+      "vcov_max_abs": 6.48925357893404e-14
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "etwfe_conditional",
+      "beta_max_abs": 9.769962616701378e-15,
+      "vcov_max_abs": 3.07073160302207e-16
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "etwfe_unconditional",
+      "beta_max_abs": 9.769962616701378e-15,
+      "vcov_max_abs": 4.371503159461554e-16
+    },
+    {
+      "case": "balanced_0_1",
+      "estimator": "bjs_placebos",
+      "beta_max_abs": 5.551115123125783e-16,
+      "vcov_max_abs": 4.666406150377611e-15
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "bjs",
+      "beta_max_abs": 6.306066779870889e-14,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "gardner_static",
+      "beta_max_abs": 6.609296443471635e-16,
+      "vcov_max_abs": 1.0547118733938987e-15
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "gardner_dynamic",
+      "beta_max_abs": 6.428191312579656e-14,
+      "vcov_max_abs": 1.412064909445121e-15
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "etwfe_conditional",
+      "beta_max_abs": 2.7755575615628914e-15,
+      "vcov_max_abs": 1.1796119636642288e-16
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "etwfe_unconditional",
+      "beta_max_abs": 2.7755575615628914e-15,
+      "vcov_max_abs": 1.1796119636642288e-16
+    },
+    {
+      "case": "balanced_1_0",
+      "estimator": "bjs_placebos",
+      "beta_max_abs": 4.496403249731884e-15,
+      "vcov_max_abs": 4.9280024505549136e-14
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "bjs",
+      "beta_max_abs": 3.284694738425742e-11,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "gardner_static",
+      "beta_max_abs": 2.5895507960171926e-11,
+      "vcov_max_abs": 5.755118603900655e-14
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "gardner_dynamic",
+      "beta_max_abs": 3.2846725339652494e-11,
+      "vcov_max_abs": 3.8824499171141724e-13
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "etwfe_conditional",
+      "beta_max_abs": 1.8096635301390052e-14,
+      "vcov_max_abs": 3.5388358909926865e-16
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "etwfe_unconditional",
+      "beta_max_abs": 1.8096635301390052e-14,
+      "vcov_max_abs": 3.5388358909926865e-16
+    },
+    {
+      "case": "balanced_1_1",
+      "estimator": "bjs_placebos",
+      "beta_max_abs": 4.385380947269368e-15,
+      "vcov_max_abs": 2.8359259385268842e-14
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "bjs",
+      "beta_max_abs": 2.4913404672588513e-13,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "gardner_static",
+      "beta_max_abs": 2.441380431150719e-13,
+      "vcov_max_abs": 5.655198531684391e-16
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "gardner_dynamic",
+      "beta_max_abs": 2.4846791291111003e-13,
+      "vcov_max_abs": 7.667477763817487e-16
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "etwfe_conditional",
+      "beta_max_abs": 2.2620794126737565e-14,
+      "vcov_max_abs": 7.632783294297951e-17
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "etwfe_unconditional",
+      "beta_max_abs": 2.2620794126737565e-14,
+      "vcov_max_abs": 6.245004513516506e-17
+    },
+    {
+      "case": "unbalanced_0_0",
+      "estimator": "bjs_placebos",
+      "beta_max_abs": 5.35682609381638e-15,
+      "vcov_max_abs": 5.684341886080802e-14
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "bjs",
+      "beta_max_abs": 1.1881162720328575e-11,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "gardner_static",
+      "beta_max_abs": 1.0401679517713092e-11,
+      "vcov_max_abs": 5.5795645881318023e-14
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "gardner_dynamic",
+      "beta_max_abs": 1.188094067572365e-11,
+      "vcov_max_abs": 5.6229326750312225e-14
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "etwfe_conditional",
+      "beta_max_abs": 1.4210854715202004e-14,
+      "vcov_max_abs": 3.677613769070831e-16
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "etwfe_unconditional",
+      "beta_max_abs": 1.4210854715202004e-14,
+      "vcov_max_abs": 4.510281037539698e-16
+    },
+    {
+      "case": "unbalanced_0_1",
+      "estimator": "bjs_placebos",
+      "beta_max_abs": 2.3869795029440866e-15,
+      "vcov_max_abs": 1.3349737981727117e-13
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "bjs",
+      "beta_max_abs": 3.6193270602780103e-14,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "gardner_static",
+      "beta_max_abs": 2.8504976157250894e-14,
+      "vcov_max_abs": 1.0408340855860843e-17
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "gardner_dynamic",
+      "beta_max_abs": 3.6193270602780103e-14,
+      "vcov_max_abs": 4.163336342344337e-17
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "etwfe_conditional",
+      "beta_max_abs": 3.9968028886505635e-15,
+      "vcov_max_abs": 1.734723475976807e-16
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "etwfe_unconditional",
+      "beta_max_abs": 3.9968028886505635e-15,
+      "vcov_max_abs": 1.5959455978986625e-16
+    },
+    {
+      "case": "unbalanced_1_0",
+      "estimator": "bjs_placebos",
+      "beta_max_abs": 2.275957200481571e-15,
+      "vcov_max_abs": 1.3428147482841268e-13
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "bjs",
+      "beta_max_abs": 1.5196732761069143e-12,
+      "vcov_max_abs": null
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "gardner_static",
+      "beta_max_abs": 1.255134884914355e-12,
+      "vcov_max_abs": 3.851086116668512e-15
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "gardner_dynamic",
+      "beta_max_abs": 1.5198953207118393e-12,
+      "vcov_max_abs": 3.647082635893639e-14
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "etwfe_conditional",
+      "beta_max_abs": 2.653433028854124e-14,
+      "vcov_max_abs": 5.134781488891349e-16
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "etwfe_unconditional",
+      "beta_max_abs": 2.653433028854124e-14,
+      "vcov_max_abs": 4.996003610813204e-16
+    },
+    {
+      "case": "unbalanced_1_1",
+      "estimator": "bjs_placebos",
+      "beta_max_abs": 3.3306690738754696e-16,
+      "vcov_max_abs": 1.9034079867807918e-13
+    }
+  ]
+}
