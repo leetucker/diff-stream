@@ -1,7 +1,7 @@
 # diff-stream
 
 Difference-in-differences with staggered treatment timing, on panels larger than
-memory. Inlcudes Callaway and Sant'Anna, Sun and Abraham, Borusyak, Jaravel and
+memory. Includes Callaway and Sant'Anna, Sun and Abraham, Borusyak, Jaravel and
 Spiess imputation, Gardner's two-stage DiD, Wooldridge's extended two-way fixed
 effects, and stacked DiD. Two diagnostics show what a conventional two-way fixed
 effects estimate averages. Results are tested against the authors' R and Stata
