@@ -41,8 +41,8 @@ def reduce_moments(y, x, w, wc, columns, do_clean, Q, q, norms, Qc, qc, bad):
 
     A unit's demeaned design is nonzero only in the columns where one of its
     rows is, which with fixed-effect dummies is a few of the P (its own levels,
-    not all of them), so the products visit those columns alone. The other
-    entries would add exact zeros."""
+    not all of them), so when it is under half of them the products visit those
+    columns alone. The other entries would add exact zeros."""
     n, T = y.shape
     P = columns.shape[0]
     T1 = T - 1
@@ -63,6 +63,12 @@ def reduce_moments(y, x, w, wc, columns, do_clean, Q, q, norms, Qc, qc, bad):
                         act[nact] = a
                         nact += 1
                         break
+            if 2 * nact >= P:
+                # mostly dense: contiguous loops over every column are faster than
+                # indexed ones, and the skipped entries are exact zeros either way
+                nact = P
+                for a in range(P):
+                    act[a] = a
             for pass_ in range(2 if do_clean else 1):
                 mass = 0.0
                 for t in range(T):
@@ -93,14 +99,23 @@ def reduce_moments(y, x, w, wc, columns, do_clean, Q, q, norms, Qc, qc, bad):
                         xa = (X[t, a] - xm[a]) * wt
                         if pass_ == 0:
                             q[c, a] += xa * ry
-                            for ib in range(nact):
-                                b = act[ib]
-                                Q[c, a, b] += xa * (X[t, b] - xm[b])
+                            if nact == P:
+                                # every column is active: a contiguous loop vectorizes
+                                for b in range(P):
+                                    Q[c, a, b] += xa * (X[t, b] - xm[b])
+                            else:
+                                for ib in range(nact):
+                                    b = act[ib]
+                                    Q[c, a, b] += xa * (X[t, b] - xm[b])
                         else:
                             qc[c, a] += xa * ry
-                            for ib in range(nact):
-                                b = act[ib]
-                                Qc[c, a, b] += xa * (X[t, b] - xm[b])
+                            if nact == P:
+                                for b in range(P):
+                                    Qc[c, a, b] += xa * (X[t, b] - xm[b])
+                            else:
+                                for ib in range(nact):
+                                    b = act[ib]
+                                    Qc[c, a, b] += xa * (X[t, b] - xm[b])
             for t in range(T):
                 for ia in range(nact):
                     a = act[ia]
