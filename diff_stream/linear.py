@@ -6,6 +6,7 @@ model-matrix compiler; numerical state depends on columns and effect cells.
 
 import numpy as np
 
+from ._core import covariate_kernels, twostage_kernels
 from ._core.nuisance import solve_checked
 from ._core.within import center_groups, independent_columns, moments, row_sums, weighted_squares
 
@@ -64,6 +65,13 @@ class RowDesign:
         self.keep = np.arange(len(self.names))
         self.dropped = []
 
+    def raw_batches(self, *, actual_cohort=False):
+        """The store's batches (g, y, x, w) with covariates only, for the compiled passes."""
+        for g, y, x, w in self.store.batches(
+            include_x=True, include_weights=True, row_weights=True, actual_cohort=actual_cohort
+        ):
+            yield g, y, (x if self.store.design is not None else x[:, :, :0]), w
+
     def batches(self, *, actual_cohort=False):
         for g, y, x, w in self.store.batches(
             include_x=True, include_weights=True, row_weights=True, actual_cohort=actual_cohort
@@ -74,7 +82,7 @@ class RowDesign:
             )
             yield g, y, np.nan_to_num(X, nan=0.0)[:, :, self.keep], w
 
-    def reduce(self, clean=None):
+    def reduce(self, clean=None, source=None):
         """Select identified columns; optionally also the clean-row moments.
 
         ``clean(g)`` gives the rows (units by periods) of a second, clean-sample
@@ -83,18 +91,22 @@ class RowDesign:
         centering acts column by column, so restricting afterwards is exact.
         """
         P = len(self.names)
-        Q = np.zeros((P, P))
-        norms = np.zeros(P)
-        Qc, qc = (np.zeros((P, P)), np.zeros(P)) if clean is not None else (None, None)
-        for g, y, X, w in self.batches():
-            y = np.nan_to_num(y, nan=0.0)
-            q, _ = moments(X, y, w)
-            Q += q
-            norms += weighted_squares(X, w)
-            if clean is not None:
-                a, b = moments(X, y, w * clean(g))
-                Qc += a
-                qc += b
+        if twostage_kernels.ENABLED:
+            kernels = twostage_kernels.TwoStageKernels(self.store.times, 0)
+            Q, _, norms, Qc, qc = kernels.reduce(source or self.raw_batches, P, clean)
+        else:
+            Q = np.zeros((P, P))
+            norms = np.zeros(P)
+            Qc, qc = (np.zeros((P, P)), np.zeros(P)) if clean is not None else (None, None)
+            for g, y, X, w in self.batches():
+                y = np.nan_to_num(y, nan=0.0)
+                q, _ = moments(X, y, w)
+                Q += q
+                norms += weighted_squares(X, w)
+                if clean is not None:
+                    a, b = moments(X, y, w * clean(g))
+                    Qc += a
+                    qc += b
         self.keep = independent_columns(Q, original_norm=norms)
         self.dropped = [n for j, n in enumerate(self.names) if j not in self.keep]
         if not len(self.keep):
@@ -121,21 +133,38 @@ def fit_bjs(store, cells, avgeffectsby, leaveout, workdir, anticipation=0):
     from .unbalanced import ObservedBJSInference
 
     model = RowDesign(store)
-    Q, q = model.reduce(
-        clean=lambda g: (g[:, None] == 0) | (store.times < g[:, None] - anticipation)
-    )
+    try:
+        Q, q = model.reduce(
+            clean=lambda g: (g[:, None] == 0) | (store.times < g[:, None] - anticipation)
+        )
+    except ValueError as error:
+        if "positive-weight estimation observation" not in str(error):
+            raise
+        raise ValueError(
+            "BJS requires at least one untreated observation per unit; "
+            "exclude units without one explicitly"
+        ) from None
     P, M = len(model.keep), len(cells)
-    theta = solve_checked(Q, q, "BJS untreated covariate/fixed-effect design is unidentified")
+    theta = solve_checked(
+        Q,
+        q,
+        "BJS untreated design is unidentified (a disconnected observed design, "
+        "or a collinear covariate or fixed effect)",
+    )
     counts = np.array([store.cell_weights[g][t - store.times[0]] for g, t in cells])
     beta, D = np.zeros(M), np.zeros((M, P))
-    for g, y, X, w in model.batches():
-        obs, _, xm, resid, _ = model.residuals(g, y, X, w, theta, anticipation)
-        for j, (cg, t) in enumerate(cells):
-            ti = t - store.times[0]
-            mask = (g == cg) & obs[:, ti]
-            sw = w[mask, ti] / counts[j]
-            beta[j] += sw @ resid[mask, ti]
-            D[j] += sw @ (X[mask, ti] - xm[mask])
+    if covariate_kernels.ENABLED:
+        kernels = covariate_kernels.BJSKernels(store, cells, model.keep, theta, anticipation)
+        beta, D = kernels.cell_sums(model.raw_batches, counts)
+    else:
+        for g, y, X, w in model.batches():
+            obs, _, xm, resid, _ = model.residuals(g, y, X, w, theta, anticipation)
+            for j, (cg, t) in enumerate(cells):
+                ti = t - store.times[0]
+                mask = (g == cg) & obs[:, ti]
+                sw = w[mask, ti] / counts[j]
+                beta[j] += sw @ resid[mask, ti]
+                D[j] += sw @ (X[mask, ti] - xm[mask])
     H = solve_checked(Q, D.T, "BJS untreated covariate/fixed-effect design").T
     context = ObservedBJSInference(
         store,
@@ -163,6 +192,19 @@ def fit_sunab(store, cells, anticipation=0):
     model.reduce()
     K, M = len(model.keep), len(cells)
     P = K + M
+    if covariate_kernels.ENABLED:
+        kernels = covariate_kernels.SunAbrahamKernels(store, cells, model.keep)
+        Q, q = kernels.moments(model.raw_batches)
+        coefficients = solve_checked(
+            Q, q, "Sun–Abraham covariate/fixed-effect interactions are unidentified"
+        )
+        H = solve_checked(Q, np.eye(P)[:, K:], "Sun–Abraham joint design")
+        V = np.zeros((M, M))
+        for raw in model.raw_batches():
+            score = kernels.scores(raw, coefficients, H)
+            V += score.T @ score
+        counts = np.array([store.cell_weights[g][t - store.times[0]] for g, t in cells])
+        return coefficients[K:], counts, (V + V.T) / 2, model
     Q, q = np.zeros((P, P)), np.zeros(P)
 
     def batches():

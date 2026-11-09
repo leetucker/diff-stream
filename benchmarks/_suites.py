@@ -92,21 +92,23 @@ COMPETITORS = {
 }
 # scenarios with covariates or fixed effects in a form only R's packages fit alike
 # (diff-diff takes covariates but not fixed effects interacted with time; pyfixest's
-# event study takes neither)
+# event study takes neither, so it is left out wherever there are covariates)
 ONLY_R = {"H", "I", "J"}
 
 # scenario -> fits compared
 FITS = {
     **{s: ["cs", "sunab", "bjs", "gardner", "etwfe", "stacked"] for s in "ABCD"},
-    "E": ["cs", "sunab", "bjs", "gardner"],
+    "E": ["cs", "sunab", "bjs", "gardner", "etwfe", "stacked"],
     "F": ["bacon", "twfe_weights"],
-    "G": ["cs"],
+    # two covariates (x, z); stacked DiD takes none, and diff-diff's needs entropy balancing
+    "G": ["cs", "sunab", "bjs", "gardner", "etwfe"],
     "H": ["sunab", "bjs", "gardner"],
     "I": ["sunab", "bjs"],
     "J": ["sunab", "bjs"],
 }
 # scenarios with a memory-limited variant of diff-stream's fits (max_memory_gb)
 LIMITED = {"B": 2.0, "I": 4.0}
+LIMITED_POLARS_THREADS = 4  # Polars threads of the memory-limited variants
 
 
 def parse(kind):
@@ -126,13 +128,16 @@ def configs(scenario):
     out = {}
     for fit in FITS[scenario]:
         function = FUNCTIONS[fit]
-        if scenario == "G":
+        if scenario == "G" and fit == "cs":
             for adjustment in ("reg", "ipw", "dr"):
                 name = ADJUSTMENT_NAMES[adjustment]
                 out[f"{DS} {function} ({name})"] = kind(scenario, "ds", fit, adjustment=adjustment)
                 if adjustment == "dr":
                     out[f"{DS} {function} ({name}, 1 thread)"] = kind(
                         scenario, "ds", fit, adjustment=adjustment, threads=1
+                    )
+                    out[f"{DS} {function} ({name}, passive OpenMP wait)"] = kind(
+                        scenario, "ds", fit, adjustment=adjustment, ompwait="passive"
                     )
                 for label, library in COMPETITORS[fit]:
                     if library in ("r", "dd"):
@@ -142,6 +147,11 @@ def configs(scenario):
             continue
         out[f"{DS} {function}"] = kind(scenario, "ds", fit)
         out[f"{DS} {function} (1 thread)"] = kind(scenario, "ds", fit, threads=1)
+        if scenario == "G" and fit in ("gardner", "etwfe"):
+            # the compiled passes under OMP_WAIT_POLICY=passive, to compare with the default
+            out[f"{DS} {function} (passive OpenMP wait)"] = kind(
+                scenario, "ds", fit, ompwait="passive"
+            )
         if scenario in LIMITED and fit in ("cs", "sunab", "bjs", "gardner", "etwfe", "stacked"):
             out[f"{DS} {function} ({LIMITED[scenario]:g} GB limit)"] = kind(
                 scenario, "ds", fit, limit=LIMITED[scenario]
@@ -152,6 +162,10 @@ def configs(scenario):
         for label, library in COMPETITORS[fit]:
             if scenario in ONLY_R and library != "r":
                 continue
+            if library == "pyfixest" and MODELS[scenario].covariates:
+                continue  # its event study takes no covariates
+            if library == "dd" and fit == "etwfe" and MODELS[scenario].covariates:
+                continue  # its covariate options are other specifications (diff_diff_fit.py)
             out[label] = kind(scenario, library, fit)
     return out
 
@@ -189,16 +203,23 @@ def library_of(scenario):
 def child_env(label_kind):
     """Environment variables of a diff-stream child with a thread limit."""
     _s, library, _fit, options = parse(label_kind)
-    if library != "ds" or "threads" not in options:
+    if library != "ds":
         return {}
-    t = str(options["threads"])
-    return {
-        "STREAM_LIMITS_MAX_THREADS": t,
-        "POLARS_MAX_THREADS": t,
-        "NUMBA_NUM_THREADS": t,
-        "OPENBLAS_NUM_THREADS": t,
-        "OMP_NUM_THREADS": t,
-    }
+    env = {"OMP_WAIT_POLICY": options["ompwait"]} if "ompwait" in options else {}
+    if "limit" in options:
+        # Polars' read buffers grow with its thread pool (about 130 MB a thread), so a
+        # fit held to a few GB is run, like a small job, with a few of them.
+        env["POLARS_MAX_THREADS"] = str(LIMITED_POLARS_THREADS)
+    if "threads" in options:
+        t = str(options["threads"])
+        env |= {
+            "STREAM_LIMITS_MAX_THREADS": t,
+            "POLARS_MAX_THREADS": t,
+            "NUMBA_NUM_THREADS": t,
+            "OPENBLAS_NUM_THREADS": t,
+            "OMP_NUM_THREADS": t,
+        }
+    return env
 
 
 # --------------------------------------------------------------------------
@@ -237,6 +258,37 @@ def commands(path, external_command, external_missing):
 # --------------------------------------------------------------------------
 
 
+WARM_UP_UNITS = 2000
+
+
+def warm_up(fit_to, fit, path, workdir):
+    """Fit a small sample of the panel first, untimed, so that the timed fit
+    does not include compiling diff-stream's (and hdfe-stream's) numba kernels,
+    which happens once per installation (the compiled code is cached on disk)
+    and would otherwise land on whichever configuration runs first. The sample
+    is the first units, so it has the panel's columns and design."""
+    import shutil
+    from pathlib import Path
+
+    import polars as pl
+
+    where = Path(workdir) / "warm_up"
+    try:
+        where.mkdir(parents=True, exist_ok=True)
+        sample = where / "sample.parquet"
+        pl.scan_parquet(path).filter(pl.col("id") < WARM_UP_UNITS).sink_parquet(sample)
+        result = fit_to(sample, where)
+        if fit in ("cs", "sunab", "bjs", "etwfe"):
+            result.aggregate("event_time")
+        cleanup = getattr(result, "cleanup", None)
+        if cleanup:
+            cleanup()
+    except Exception as error:  # the timed fit reports any real failure
+        print(f"warm-up skipped: {error!r}", flush=True)
+    finally:
+        shutil.rmtree(where, ignore_errors=True)
+
+
 def run_diff_stream(scenario, fit, options, path, workdir):
     import diff_stream as ds
 
@@ -247,22 +299,26 @@ def run_diff_stream(scenario, fit, options, path, workdir):
     if "limit" in options:
         common["max_memory_gb"] = float(options["limit"])
     function = getattr(ds, FUNCTIONS[fit])
-    t0 = time.perf_counter()
     kw = {}
     if model.unbalanced and fit not in ("bacon", "twfe_weights"):
         kw["incomplete_units"] = "keep"
     if fit == "cs":
         kw["adjustment"] = ADJUSTMENTS[options.get("adjustment", "dr")]
-    if fit in ("sunab", "bjs") and "solver" in options:
+    if fit in ("sunab", "bjs", "gardner") and "solver" in options:
         kw["fixed_effect_solver"] = options["solver"]
     if fit == "etwfe":
         kw["control_group"] = "never_treated"
     if fit == "stacked":
         kw["event_window"] = WINDOW
-    if fit in ("bacon", "twfe_weights"):
-        result = function("y ~ 1", path, workdir=str(workdir), **common)
-    else:
-        result = function(model.fml, path, workdir=str(workdir), **common, **kw)
+
+    def fit_to(source, where):
+        if fit in ("bacon", "twfe_weights"):
+            return function("y ~ 1", source, workdir=str(where), **common)
+        return function(model.fml, source, workdir=str(where), **common, **kw)
+
+    warm_up(fit_to, fit, path, workdir)
+    t0 = time.perf_counter()
+    result = fit_to(path, workdir)
     extra = {}
     try:
         if fit in ("cs", "sunab", "bjs", "etwfe"):

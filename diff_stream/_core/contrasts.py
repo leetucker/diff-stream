@@ -64,8 +64,11 @@ class AdjustedContrast:
         return phi if weights is None else phi * weights[:, None]
 
 
-def fit_contrasts(batches, transforms, systems, method, control_max):
-    """One common moment pass after nuisance fitting, for any number of outcomes."""
+def fit_contrasts(batches, transforms, systems, method, control_max, *, fast=None):
+    """One common moment pass after nuisance fitting, for any number of outcomes.
+
+    ``fast`` (``cs_kernels.BalancedCS``) does the pass in compiled code.
+    """
     moments = []
     for s in systems:
         K, L = s.regression.shape
@@ -85,28 +88,69 @@ def fit_contrasts(batches, transforms, systems, method, control_max):
                 capped=0,
             )
         )
-    for raw in batches():
-        for j, transform in enumerate(transforms):
-            X, d, Y, w = weighted_system(transform(raw))
-            if not len(d):
-                continue
-            s, m = systems[j], moments[j]
-            residual = Y if method == "ipw" else Y - X @ s.regression
-            m["s1"] += w[d] @ residual[d]
-            m["xt"] += w[d] @ X[d]
-            if method != "reg":
-                p, wc = att_parts(X, d, s.beta, control_max)
-                wc = wc * w
-                m["pmin"] = min(m["pmin"], float(p.min()))
-                m["pmax"] = max(m["pmax"], float(p.max()))
-                m["trimmed"] += int(np.sum((~d) & (p >= control_max)))
-                m["capped"] += int(np.sum(p >= 1 - 1e-6))
-                m["w0"] += wc.sum()
-                m["w02"] += wc @ wc
-                m["s0"] += wc @ residual
-                m["xc"] += wc @ X
-                m["xcy"] += X.T @ (wc[:, None] * residual)
-                m["H"] += X.T @ ((w * p * (1 - p))[:, None] * X)
+    if fast is not None:
+        C = len(systems)
+        K = systems[0].regression.shape[0]
+        L = fast.Lmax
+        acc = dict(
+            s1=np.zeros((C, L)),
+            xt=np.zeros((C, K)),
+            w0=np.zeros(C),
+            w02=np.zeros(C),
+            s0=np.zeros((C, L)),
+            xc=np.zeros((C, K)),
+            xcy=np.zeros((C, K, L)),
+            hess=np.zeros((C, K, K)),
+            pmin=np.ones(C),
+            pmax=np.zeros(C),
+            trimmed=np.zeros(C, dtype=np.int64),
+            capped=np.zeros(C, dtype=np.int64),
+        )
+        beta = np.array([s.beta for s in systems])
+        reg = np.zeros((C, K, L))
+        for j, s in enumerate(systems):
+            reg[j, :, : s.regression.shape[1]] = s.regression
+        for raw in batches():
+            fast.moments(raw, method, beta, reg, control_max, K, acc)
+        for j, m in enumerate(moments):
+            n = systems[j].regression.shape[1]
+            m.update(
+                w0=float(acc["w0"][j]),
+                w02=float(acc["w02"][j]),
+                s1=acc["s1"][j, :n].copy(),
+                s0=acc["s0"][j, :n].copy(),
+                xt=acc["xt"][j].copy(),
+                xc=acc["xc"][j].copy(),
+                xcy=acc["xcy"][j, :, :n].copy(),
+                H=acc["hess"][j].copy(),
+                pmin=float(acc["pmin"][j]),
+                pmax=float(acc["pmax"][j]),
+                trimmed=int(acc["trimmed"][j]),
+                capped=int(acc["capped"][j]),
+            )
+    else:
+        for raw in batches():
+            for j, transform in enumerate(transforms):
+                X, d, Y, w = weighted_system(transform(raw))
+                if not len(d):
+                    continue
+                s, m = systems[j], moments[j]
+                residual = Y if method == "ipw" else Y - X @ s.regression
+                m["s1"] += w[d] @ residual[d]
+                m["xt"] += w[d] @ X[d]
+                if method != "reg":
+                    p, wc = att_parts(X, d, s.beta, control_max)
+                    wc = wc * w
+                    m["pmin"] = min(m["pmin"], float(p.min()))
+                    m["pmax"] = max(m["pmax"], float(p.max()))
+                    m["trimmed"] += int(np.sum((~d) & (p >= control_max)))
+                    m["capped"] += int(np.sum(p >= 1 - 1e-6))
+                    m["w0"] += wc.sum()
+                    m["w02"] += wc @ wc
+                    m["s0"] += wc @ residual
+                    m["xc"] += wc @ X
+                    m["xcy"] += X.T @ (wc[:, None] * residual)
+                    m["H"] += X.T @ ((w * p * (1 - p))[:, None] * X)
     fitted = []
     for s, m in zip(systems, moments, strict=True):
         wt, wc = s.treated_weight, m["w0"]

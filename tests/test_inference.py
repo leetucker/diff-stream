@@ -49,6 +49,8 @@ def common_draws(panel, monkeypatch):
     only the sampler; it exercises the actual streaming score reducer.
     """
     xi = read_csv(REF / "multipliers.csv.gz", has_header=False).to_numpy()
+    # the fixture follows the unit batches as the store yields them in each pass
+    monkeypatch.setattr("diff_stream.cs.RETAIN_SHARE", 0.0)
     baseline = panel.filter(pl.col("time") == 1)
     lookup = dict(zip(baseline["y"], baseline["id"], strict=True))
     active = {}

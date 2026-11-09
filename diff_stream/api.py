@@ -12,7 +12,7 @@ from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scop
 
 from . import _docs, _options
 from ._core.multiplier import MAX_DRAW_ENTRIES, StreamingMultiplier, validate_bootstrap
-from ._core.partition import preprocess_budget_mb
+from ._core.partition import preprocess_budget_mb, staging_bytes
 from ._present import present, public_profile
 from .bjs import BJSInference
 from .bjs_placebo import fit_placebos
@@ -248,6 +248,7 @@ def _fit(
         return present(result, store.period_labels)
 
     budget = MemoryBudget(memory_gb, memory_reserve)
+    automatic_preprocess = preprocess_mb is None
     preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline = current_rss_gb() or 0
     with thread_scope(threads):
@@ -266,6 +267,10 @@ def _fit(
             keep_fe_columns=estimator == "bjs",
         )
         absorbed = fe_terms if iterative else None
+        if automatic_preprocess:
+            # counting the levels of large fixed effects used memory: size the
+            # default from what is left now
+            preprocess_mb = preprocess_budget_mb(None, budget)
         if not budget.fits((preprocess_mb * 1e6 + 96e6) / 1e9):
             raise MemoryError(
                 "preprocessing buffers exceed job headroom before staging; reduce preprocess_mb or request more memory"
@@ -390,7 +395,10 @@ def _fit(
             )
             M, T, G = len(cells), len(times), len(groups)
             rich_regression = estimator != "cs" and (
-                design is not None or not store.weights_time_invariant or absorbed is not None
+                design is not None
+                or not store.weights_time_invariant
+                or absorbed is not None
+                or (estimator == "bjs" and not store.is_balanced)
             )
 
             # Numerical buffers grow with the batch; an automatic batch starts
@@ -439,7 +447,7 @@ def _fit(
                     ),
                     Component(
                         "bounded partition preprocessing",
-                        preprocess_mb * 1e6 + 96e6,
+                        staging_bytes(preprocess_mb, store) + 96e6,
                         preprocess_mb * 1e6 + 256e6,
                     ),
                     Component(

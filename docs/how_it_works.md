@@ -27,10 +27,22 @@ every later pass reads whole units from it in large batches.
   the regressions and one per Newton step for the logits, for every
   comparison at once. Comparisons with the same sample and covariate period
   share a model; outcome regressions on the same controls share a solve.
+  The passes run in compiled code, in parallel over comparisons; each
+  comparison's sums are added in the same order whatever the number of threads,
+  so results do not depend on `n_threads`. Unbalanced panels and repeated cross
+  sections, which use each unit's observed rows, are compiled the same way. The
+  first fit in a new installation spends several seconds compiling, once; the
+  compiled code is cached for later fits. If a propensity logit fails to
+  converge with the compiled sums, it is refitted with the plain NumPy
+  arithmetic before an error is raised.
 - **Sun-Abraham and BJS with covariates or fixed effects, two-stage and
   ETWFE** eliminate the unit effects within each batch of whole units and
   accumulate the small normal equations of the remaining design (time effects,
   covariates, extra fixed effects, treatment indicators), as matrix products.
+  All four run in compiled code that visits each unit once and builds its
+  design rows as it goes; extended TWFE visits only the nonzero entries of its
+  design, and BJS's aggregation covariance is computed the same way. Units are summed
+  in fixed chunks, so results do not depend on `n_threads`.
 - **BJS standard errors** need the residuals of each aggregate's averaging
   groups, so they are recomputed per aggregate: from cohort-level second
   moments in a balanced unweighted panel, by two more passes over the staged

@@ -41,12 +41,18 @@ Every unit needs at least one untreated observation, and the first stage must
 be identified (covariates need variation among the untreated). Covariates and
 additional fixed effects follow the Sun-Abraham and BJS syntax.
 
-The additional fixed effects enter the regression as a dummy for each level,
-up to 256 columns with the covariates. Fixed effects with more levels, such as
-county-by-year, are not available here. Use `did_bjs` instead: it has the
-same effect estimates (Gardner's two-stage estimates equal BJS's imputation
-estimates) and absorbs fixed effects with any number of levels; its standard
-errors are BJS's rather than Gardner's.
+The additional fixed effects are estimated in one of two ways, chosen by
+`fixed_effect_solver`: a dummy for each level in the first-stage regression
+(`"dense"`, up to 256 columns with the covariates), or absorbed by alternating
+projections in [hdfe-stream](https://github.com/leetucker/hdfe-stream)
+(`"iterative"`), whose time does not grow with the number of levels and which
+has no limit on them, such as county-by-year. The default, `"auto"`, uses dense
+for up to 40 columns and iterative above that; the two give the same estimates
+and standard errors, and `fit.diagnostics["fixed_effect_solver"]` says which was
+used. [Sun-Abraham](sun_abraham.md#fixed-effects-with-many-levels) gives the
+timings, which are about the same for two-stage: at 1 million units over 8
+periods, 24 levels took 8 seconds dense against 10 iterative, and 240 levels 48
+against 14.
 
 ## Validated against
 

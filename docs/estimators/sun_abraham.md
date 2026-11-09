@@ -53,15 +53,19 @@ Additional fixed effects are estimated in one of two ways, chosen by
   out of core.
 
 The default, `"auto"`, counts the levels in one pass over the data and uses
-dense for up to 24 columns (levels plus covariates), iterative above that.
-Between 16 and 32 levels the two take about the same time; at 240 levels,
-on 8 periods and 50,000 to 200,000 units, dense took 5 to 8 times as long for
-Sun-Abraham and 6 to 13 times for BJS. Both give the same estimates and
+dense for up to 40 columns (levels plus covariates), iterative above that.
+With one covariate on 8 periods, the two took about the same time at 40 to 48
+levels for Sun-Abraham, and at somewhat fewer for BJS, from 100,000 to 3
+million units. Below that dense is faster: at 1 million units, 24 levels took
+9 seconds against 18. Above it iterative is: at 240 levels dense took 126
+seconds at 1 million units and 391 at 3 million, against 17 and 57 for
+iterative. The limit sits just below the crossover because dense at many
+levels costs far more than iterative at few. Both give the same estimates and
 standard errors (to the solver's tolerance, 1e-10 relative);
 `fit.diagnostics["fixed_effect_solver"]` says which was used.
 
 Sun-Abraham's iterative path uses more memory than its dense one when the
-levels are few (about 4 GB against 2 to 3 GB on 200,000 units over 8 periods);
+levels are few (about 4 GB against 2 to 4 GB on 1 million units over 8 periods);
 BJS's uses less. With a tight `max_memory_gb` and few levels, pass
 `fixed_effect_solver="dense"`.
 
@@ -72,6 +76,13 @@ kept only approximately, because hdfe-stream's sorting pass has buffers of its
 own: on 2 million rows with 47 effects, a 2 GB limit peaked at 2.4 GB, and a
 3 GB limit was kept. Allow about 0.5 GB above the expected need, or set
 `max_memory_gb` a little below the job's allocation.
+
+The process's peak resident memory, which is what tools such as `/usr/bin/time`
+report, also counts pages of memory-mapped files. hdfe-stream maps its table of
+distinct fixed-effect combinations from disk, so with many levels most of the
+peak is file-backed memory that the operating system can drop under pressure,
+not memory the limit applies to. On 1 million units over 8 periods with 2 GB
+as the limit, the peak was 5.1 GB, of which 1.9 GB was ordinary memory.
 
 ## Validated against
 

@@ -15,10 +15,12 @@ from hdfe_stream.core.results_base import RegressionResult
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
 from . import _docs, _options
+from ._core import twostage_kernels
 from ._core.nuisance import solve_checked
-from ._core.partition import preprocess_budget_mb
+from ._core.partition import preprocess_budget_mb, staging_bytes
 from ._core.within import row_sums
 from ._present import internal, label_frame, labels_of, present, public_profile
+from .cs import RETAIN_SHARE, RetainedBatches
 from .linear import RowDesign
 from .store import PanelStore, inspect
 
@@ -94,11 +96,13 @@ class TwoStageResult(RegressionResult):
         return out
 
 
-def _fit(store, specification, reference, anticipation):
-    model = RowDesign(store)
-    Q, q = model.reduce(
-        clean=lambda g: (g[:, None] == 0) | (store.times < g[:, None] - anticipation)
-    )
+def second_stage_support(store, specification, reference, anticipation):
+    """The second stage's coefficients: (support table rows, event times, names).
+
+    Static fits have one indicator for affected observations (t >=
+    g-anticipation); dynamic fits one per observed event time except the
+    reference.
+    """
     support = []
     scale = store.weight_scale / store.weight_normalizer
     for g, counts in sorted(store.cell_counts.items()):
@@ -124,6 +128,23 @@ def _fit(store, specification, reference, anticipation):
         raise ValueError("no supported Gardner second-stage coefficients")
     horizons = sorted({r["event_time"] for r in support}) if specification == "dynamic" else []
     names = [f"event::{h}" for h in horizons] if specification == "dynamic" else ["ATT"]
+    return support, horizons, names
+
+
+def _fit(store, specification, reference, anticipation):
+    model = RowDesign(store)
+    compiled = twostage_kernels.ENABLED
+    source = RetainedBatches(
+        model.raw_batches,
+        retain=compiled
+        and store.n_units * store.periods * 8 * (2 + len(model.names))
+        <= RETAIN_SHARE * store.budget.headroom_gb() * 1e9,
+    )
+    Q, q = model.reduce(
+        clean=lambda g: (g[:, None] == 0) | (store.times < g[:, None] - anticipation),
+        source=source,
+    )
+    support, horizons, names = second_stage_support(store, specification, reference, anticipation)
     P, M = len(model.keep), len(names)
     theta = solve_checked(Q, q, "Gardner untreated covariate/fixed-effect design is unidentified")
 
@@ -139,6 +160,22 @@ def _fit(store, specification, reference, anticipation):
                 Z = (g[:, None, None] != 0) & (event[:, :, None] == np.asarray(horizons))
             Z = (Z & obs[:, :, None]).astype(np.float64)
             yield X - xm[:, None], Z, w, u1, score1
+
+    if compiled:
+        kernels = twostage_kernels.TwoStageKernels(store.times, anticipation)
+        dynamic = specification == "dynamic"
+        marks = np.asarray(horizons if dynamic else [0], dtype=np.int64)
+        mass, rhs, C = kernels.second_stage(source, model.keep, theta, marks, dynamic)
+        if np.any(mass <= 0):
+            raise ValueError("Gardner second-stage design is unidentified")
+        beta = rhs / mass
+        H = solve_checked(Q, C.T, "Gardner first-stage inference design is unidentified")
+        accumulator = ClusterScoreAccumulator()
+        for raw in source():
+            accumulator.add_clusters(
+                kernels.scores(raw, model.keep, theta, marks, dynamic, beta, H, mass)
+            )
+        return beta, accumulator.sums, names, pl.DataFrame(support), model
 
     # Unit first-stage scores vanish exactly after clean-sample elimination.
     # The Schur-complement cross derivative uses X - clean-unit-mean(X),
@@ -183,6 +220,7 @@ def _two_stage(
     weights=None,
     allow_time_varying_weights=False,
     reference_group="auto",
+    fe_solver="auto",
 ):
     """Two-stage DiD from internal option names; see did_two_stage.
 
@@ -231,7 +269,9 @@ def _two_stage(
     preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline = current_rss_gb() or 0
     with thread_scope(threads):
-        lf, yname, design = inspect(
+        if fe_solver not in ("auto", "dense", "iterative"):
+            raise ValueError("fixed_effect_solver must be 'auto', 'dense' or 'iterative'")
+        lf, yname, design, fe_terms, iterative = inspect(
             fml,
             data,
             panel,
@@ -240,6 +280,7 @@ def _two_stage(
             allow_covariates=True,
             weights=weights,
             allow_fe=True,
+            fe_solver=fe_solver,
         )
         if not budget.fits((preprocess_mb * 1e6 + 96e6) / 1e9):
             raise MemoryError(
@@ -314,7 +355,7 @@ def _two_stage(
                         ),
                         Component(
                             "bounded partition preprocessing",
-                            preprocess_mb * 1e6 + 96e6,
+                            staging_bytes(preprocess_mb, store) + 96e6,
                             preprocess_mb * 1e6 + 256e6,
                         ),
                         Component(
@@ -338,7 +379,30 @@ def _two_stage(
                 raise MemoryError(
                     "estimated numerical buffers exceed job headroom; reduce batch_units or request more memory"
                 )
-            beta, V, names, support, model = _fit(store, specification, reference, anticipation)
+            if iterative:
+                from .twostage_absorbed import fit_two_stage_absorbed
+
+                support, horizons, names = second_stage_support(
+                    store, specification, reference, anticipation
+                )
+                beta, V, absorbed_info = fit_two_stage_absorbed(
+                    store, fe_terms, specification, horizons, anticipation, threads=threads
+                )
+                fit_info = {
+                    "first_stage_columns": absorbed_info["first_stage_columns"],
+                    "absorbed_or_redundant_columns": absorbed_info["absorbed_or_redundant_columns"],
+                    "fixed_effect_solver": "iterative",
+                    "absorbed_terms": absorbed_info["absorbed_terms"],
+                    "regression_backend": absorbed_info["regression_backend"],
+                }
+                support = pl.DataFrame(support)
+            else:
+                beta, V, names, support, model = _fit(store, specification, reference, anticipation)
+                fit_info = {
+                    "first_stage_columns": [model.names[j] for j in model.keep],
+                    "absorbed_or_redundant_columns": model.dropped,
+                    "fixed_effect_solver": "dense",
+                }
             V *= store.n_units / (store.n_units - 1) if vcov == "CRV1" else 1
             V = (V + V.T) / 2
             result = TwoStageResult(
@@ -357,8 +421,7 @@ def _two_stage(
                 _support=support,
                 diagnostics={
                     **diagnostics,
-                    "first_stage_columns": [model.names[j] for j in model.keep],
-                    "absorbed_or_redundant_columns": model.dropped,
+                    **fit_info,
                     "warnings": [],
                 },
             )
@@ -381,6 +444,7 @@ def did_two_stage(
     incomplete_units="error",
     last_treated_controls="if_needed",
     vcov="CRV0",
+    fixed_effect_solver="auto",
     n_threads=None,
     max_memory_gb=None,
     memory_reserve=None,
@@ -407,10 +471,8 @@ def did_two_stage(
     fml : str
         ``"y ~ 1"``; first-stage covariates ``"y ~ x"``; additional fixed
         effects after a bar, ``"y ~ x | region^time"``. Unit and time fixed
-        effects are always included. The added design is limited to 256
-        columns; for fixed effects with more levels (county-by-year), use
-        `did_bjs`, which has the same effect estimates and absorbs them
-        iteratively.
+        effects are always included. Fixed effects with many levels
+        (county-by-year) are absorbed iteratively; see ``fixed_effect_solver``.
     {DATA}
     event_study : bool, default True
         Estimate one coefficient per event time (an event study). False
@@ -423,6 +485,7 @@ def did_two_stage(
     {INCOMPLETE_UNITS}
     {LAST_TREATED}
     {VCOV}
+    {FIXED_EFFECT_SOLVER}
     {RESOURCES}
 
     Returns

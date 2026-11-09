@@ -14,11 +14,21 @@ The first release.
   and `did_stacked` (stacked DiD with Wing, Freedman and Hollingsworth's
   corrective weights, without building the stack).
   Sun-Abraham, BJS and the two-stage estimator take covariates and additional
-  fixed effects (`"y ~ x | region^year"`); Sun-Abraham and BJS absorb fixed
-  effects with any number of levels (county-by-year) through hdfe-stream
+  fixed effects (`"y ~ x | region^year"`) and absorb fixed effects with any
+  number of levels (county-by-year) through hdfe-stream
   (`fixed_effect_solver`). BJS drops treated observations whose untreated
   outcome cannot be imputed, with an `UnimputedObservationsWarning` and the
   affected cells in its diagnostics.
+- **Speed**: Callaway-Sant'Anna with covariates (balanced and unbalanced panels, and
+  repeated cross sections), the two-stage estimator, extended TWFE, and Sun-Abraham and BJS with
+  covariates run their passes over the data in compiled code, in parallel, as do the
+  validation and summing when the panel is first staged, and the next batch of units is read in
+  the background. Importing the package sets `OMP_WAIT_POLICY=passive` (unless set), which
+  speeds the compiled passes. Results are identical for any number of threads. The first fit after installation compiles for a few seconds, once.
+- **Benchmarks** against R's did, fixest, didimputation, did2s, etwfe and
+  bacondecomp and Python's diff-diff and pyfixest, from 10,000 to 10 million
+  units, with covariates and with fixed effects of millions of levels
+  (`docs/benchmarks/`).
 - **Data**: Polars frames or Parquet larger than memory; treatment timing as
   a first-treated-period column (`cohort=`, 0 or null for never treated) or a
   0/1 column (`treatment=`); evenly spaced periods (every second year, ...),

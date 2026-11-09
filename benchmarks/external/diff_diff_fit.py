@@ -71,7 +71,11 @@ def main():
             model = dd.TwoStageDiD()
         else:
             model = dd.ETWFE(control_group=control)
-        res = model.fit(d, **names)
+        # ETWFE is run without covariates: diff-diff's three covariate arguments are
+        # specifications of their own, none of which matches Wooldridge's full
+        # interaction of covariates with cohort and time that diff-stream and R's etwfe fit
+        covariates = None if fit == "etwfe" else spec.get("covariates") or None
+        res = model.fit(d, **names, covariates=covariates) if covariates else model.fit(d, **names)
         coefs = event_study(res, None if fit == "sunab" else res.aggregate("event_study"))
     elif fit == "stacked":
         lo, hi = spec["window"]

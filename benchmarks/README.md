@@ -1,7 +1,9 @@
 # Development validation and benchmarks
 
 Install `.[test,benchmark]`. All local measurements are development results;
-do not include them in public benchmark claims. No EC2 runs are started here.
+do not include them in public benchmark claims. The results in the
+documentation (`docs/benchmarks/`) come from EC2 runs started with
+`ec2/bench_ec2.py`.
 
 ## Numerical references
 
@@ -53,8 +55,8 @@ implementations, as time and peak memory against the number of units:
 
 | Suite | Scenarios | Compares |
 |---|---|---|
-| `scale_benchmark.py` | A-E: 8 or 30 periods, few or many cohorts, one unbalanced; F: diagnostics | the six estimators with no covariates, and Goodman-Bacon and TWFE weights |
-| `covariates_benchmark.py` | G: two covariates; H: region-by-period effects (240 levels) | Callaway-Sant'Anna by regression, IPW and doubly robust; Sun-Abraham, BJS and two-stage, dense and iterative solvers |
+| `scale_benchmark.py` | A-E: 8 or 30 periods, few or many cohorts, one unbalanced (all six estimators); F: diagnostics | the six estimators with no covariates, and Goodman-Bacon and TWFE weights |
+| `covariates_benchmark.py` | G: two covariates (Callaway-Sant'Anna, Sun-Abraham, BJS, two-stage, extended TWFE); H: region-by-period effects (240 levels) | Callaway-Sant'Anna by regression, IPW and doubly robust; the others with the covariates; in H, Sun-Abraham, BJS and two-stage, dense and iterative solvers |
 | `absorbed_benchmark.py` | I: county-by-period effects; J: and industry-by-period, with a covariate | Sun-Abraham and BJS with fixed effects of millions of levels |
 
 `_designs.py` defines the panels (simulated in chunks of units, so a panel of 300
@@ -79,6 +81,16 @@ Python imports are excluded from the timing, as diff-stream's are; its compiled
 kernels are cached on disk. Sampled disk can miss very short-lived files, and
 process peak memory includes the runtime's own memory.
 
+Peak memory is the process's resident high-water mark (`VmHWM`), for every
+library alike. It counts the pages of memory-mapped files that are resident,
+not only ordinary memory. hdfe-stream maps its table of distinct fixed-effect
+combinations from disk, so for diff-stream's Sun-Abraham and BJS with
+high-dimensional fixed effects (scenarios H, I and J) most of the peak is
+file-backed memory that the operating system can drop under pressure, and the
+figure overstates what a memory limit has to hold. On 1 million units over 8
+periods with a 2 GB limit, the peak was 5.1 GB, of which 1.9 GB was ordinary
+memory.
+
 **The other libraries** run from their own environments, under
 `benchmarks/external/` or the interpreter named by an environment variable;
 where one is missing its configurations are skipped, and nothing is written for
@@ -98,9 +110,13 @@ installed without them (`external/install_did2s.R`), which does not touch
 compared for Sun-Abraham only (its saturated event study).
 
 `ec2/bench_ec2.py` runs the suites on an EC2 instance (see `ec2/README.md`;
-that folder is not in the repository). Results of the earlier local checks
+that folder is not in the repository). Results of local checks
 (`results/local_*.csv`) are development runs and are not comparable with the
-suites'. Run the suites on the large machine before quoting any figure.
+suites'. After a run, `bench_ec2.py fetch --install` copies its CSVs and figures
+into `results/` and `docs/figures/`. `python benchmarks/build_docs.py` then rewrites
+the pages in `docs/benchmarks/` from the CSVs (tables and numbers); read its diff,
+because the sentences about which libraries fail or run out of memory are written
+in the script.
 
 ## BJS inference hardening
 

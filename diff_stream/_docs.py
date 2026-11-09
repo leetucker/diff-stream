@@ -49,7 +49,7 @@ FIXED_EFFECT_SOLVER = """\
         which is exact and fastest with few levels, and limited to 256 columns in
         all. "iterative" absorbs them by alternating projections (hdfe-stream),
         with a time that does not grow with the number of levels and no limit
-        on it, such as county-by-year. "auto" uses dense for up to 24 columns
+        on it, such as county-by-year. "auto" uses dense for up to 40 columns
         (levels and covariates) and iterative above that. Both give the same
         estimates and standard errors."""
 

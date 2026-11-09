@@ -16,10 +16,12 @@ from hdfe_stream.core.profile import Component, Profile
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
 from . import _docs, _options
+from ._core import etwfe_kernels
 from ._core.nuisance import solve_checked
-from ._core.partition import preprocess_budget_mb
+from ._core.partition import preprocess_budget_mb, staging_bytes
 from ._core.within import center_groups, independent_columns
 from ._present import present, public_profile
+from .cs import RETAIN_SHARE, RetainedBatches
 from .results import DIDResult
 from .store import PanelStore, inspect
 
@@ -58,6 +60,22 @@ class ExtendedDesign:
         for j, (cg, t) in enumerate(self.cells):
             self.cell_at[self.groups.index(cg), t - t0] = j
 
+    def raw_batches(self):
+        """The store's batches (g, y, x, w) with covariates only, for the compiled passes."""
+        for g, y, x, w in self.store.batches(
+            include_x=True, include_weights=True, row_weights=True
+        ):
+            yield g, y, (x if self.K else x[:, :, :0]), w
+
+    def cell_rows(self, g, x):
+        """(rows, periods, cell numbers, [1, x] at those rows) of a batch's treatment cells."""
+        cell = self.cell_at[np.searchsorted(self.group_array, g)]
+        rows, periods = np.nonzero(cell >= 0)
+        one_x = np.concatenate(
+            [np.ones((len(rows), 1)), np.nan_to_num(x[rows, periods], nan=0)], axis=1
+        )
+        return rows, periods, cell[rows, periods], one_x
+
     def batches(self):
         for g, y, x, w in self.store.batches(
             include_x=True, include_weights=True, row_weights=True
@@ -90,25 +108,101 @@ class ExtendedDesign:
             yield g, np.nan_to_num(y, nan=0), D, w, one_x, (rows, periods, index)
 
 
+class UnconditionalScores:
+    """``ClusterScoreAccumulator``'s sums for the scores ``[s, share - c]``,
+    where ``s`` is a unit's cell scores, ``share`` its weight in each cell it
+    belongs to (a unit has at most one row per cell) and ``c`` the cells' share
+    of the units' total. The ``share`` block is sparse, so its products with
+    ``s`` and itself are formed from the few entries, and the centering by
+    ``c`` is added afterwards; the dense product is then the cells' scores
+    alone, a quarter of the work of the full width."""
+
+    def __init__(self, c, cells):
+        self.c = np.asarray(c, dtype=np.float64)
+        M = len(self.c)
+        self.score_score = np.zeros((M, M))
+        self.score_share = np.zeros((M, M))
+        self.share_share = np.zeros((M, M))
+        self.score_sum = np.zeros(M)
+        self.share_sum = np.zeros(M)
+        self.n_clusters = 0
+        # A unit's cells are its cohort's, so the share block is block diagonal
+        # by cohort: cell j is column ``position[j]`` of its cohort's block.
+        self.by_cohort = {}
+        self.position = np.zeros(M, dtype=np.int64)
+        for j, (cohort, _) in enumerate(cells):
+            members = self.by_cohort.setdefault(cohort, [])
+            self.position[j] = len(members)
+            members.append(j)
+        self.by_cohort = {k: np.array(v) for k, v in self.by_cohort.items()}
+        self.width = max((len(v) for v in self.by_cohort.values()), default=0)
+
+    def add(self, score, cohort, rows, index, weight):
+        """A batch of units: their cell scores, cohorts, and the (unit, cell)
+        pairs with the unit's weight in the cell."""
+        share = np.zeros((score.shape[0], self.width))
+        share[rows, self.position[index]] = weight
+        self.score_score += score.T @ score
+        self.score_sum += score.sum(axis=0)
+        # One reordering puts each cohort's units in a contiguous slice.
+        order = np.argsort(cohort, kind="stable")
+        ordered = cohort[order]
+        score, share = score[order], share[order]
+        for g, cells in self.by_cohort.items():
+            start = np.searchsorted(ordered, g, side="left")
+            stop = np.searchsorted(ordered, g, side="right")
+            if start == stop:
+                continue
+            block = share[start:stop, : len(cells)]
+            self.score_share[:, cells] += score[start:stop].T @ block
+            self.share_share[np.ix_(cells, cells)] += block.T @ block
+            self.share_sum[cells] += block.sum(axis=0)
+        self.n_clusters += score.shape[0]
+
+    @property
+    def sums(self):
+        c, n = self.c, self.n_clusters
+        cross = self.score_share - np.outer(self.score_sum, c)
+        share = (
+            self.share_share
+            - np.outer(self.share_sum, c)
+            - np.outer(c, self.share_sum)
+            + n * np.outer(c, c)
+        )
+        joint = np.block([[self.score_score, cross], [cross.T, share]])
+        return (joint + joint.T) / 2
+
+
 def _fit(model, inference):
     store = model.store
     P, M = len(model.names), len(model.cells)
     Q, q, norms = np.zeros((P, P)), np.zeros(P), np.zeros(P)
     mass = np.array([store.cell_weights[g][t - int(store.times[0])] for g, t in model.cells])
     means = np.zeros((M, model.K + 1))
-    for _g, y, D, w, one_x, (rows, periods, index) in model.batches():
-        ww = w.ravel()
-        if model.fixed_effects == "unit":
+    kernels = etwfe_kernels.ETWFEKernels(model)
+    compiled = kernels.usable
+    source = RetainedBatches(
+        model.raw_batches,
+        retain=compiled
+        and store.n_units * store.periods * 8 * (2 + model.K)
+        <= RETAIN_SHARE * store.budget.headroom_gb() * 1e9,
+    )
+    if compiled:
+        Q, q, norms, means = kernels.moments(source)
+    else:
+        for _g, y, D, w, one_x, (rows, periods, index) in model.batches():
+            ww = w.ravel()
+            if model.fixed_effects == "unit":
+                flat = D.reshape(-1, P)
+                norms += (flat * flat).T @ ww
+                D, y, _, _ = center_groups(D, y, w)
             flat = D.reshape(-1, P)
-            norms += (flat * flat).T @ ww
-            D, y, _, _ = center_groups(D, y, w)
-        flat = D.reshape(-1, P)
-        weighted = ww[:, None] * flat
-        Q += flat.T @ weighted
-        q += weighted.T @ y.ravel()
-        contribution = w[rows, periods][:, None] * one_x[rows, periods]
-        for k in range(model.K + 1):
-            means[:, k] += np.bincount(index, weights=contribution[:, k], minlength=M)
+            weighted = ww[:, None] * flat
+            Q += flat.T @ weighted
+            q += weighted.T @ y.ravel()
+            contribution = w[rows, periods][:, None] * one_x[rows, periods]
+            for k in range(model.K + 1):
+                means[:, k] += np.bincount(index, weights=contribution[:, k], minlength=M)
     if model.fixed_effects != "unit":
         # Without centering, the column norms are the Gram diagonal.
         norms = np.diag(Q).copy()
@@ -135,14 +229,41 @@ def _fit(model, inference):
             f"ETWFE treatment effects are unidentified for cells {[model.cells[j] for j in np.flatnonzero(bad)]}; check reference support and covariate variation"
         )
     Q = Q[np.ix_(keep, keep)]
-    coef = solve_checked(Q, q[keep], "ETWFE saturated regression")
+    # Q[keep, keep] scaled is the matrix the identification solve above checked.
+    coef = solve_checked(Q, q[keep], "ETWFE saturated regression", verify=False)
     beta = L[:, keep] @ coef
-    H = solve_checked(Q, L[:, keep].T, "ETWFE margin covariance")
+    H = solve_checked(Q, L[:, keep].T, "ETWFE margin covariance", verify=False)
     full_coef = np.zeros(P)
     full_coef[keep] = coef
-    acc = ClusterScoreAccumulator()
+    acc = (
+        UnconditionalScores(mass / store.n_units, model.cells)
+        if inference == "unconditional"
+        else ClusterScoreAccumulator()
+    )
     blocks = full_coef[model.offset :].reshape(M, model.K + 1)
     all_columns = len(keep) == P
+
+    def finish_batch(g, w, score, rows, periods, index, one_x):
+        if inference == "unconditional":
+            # Recover each row's margin from the retained coefficient coding;
+            # its sample average equals the reported cell effect. A unit has
+            # one row per cell, so the (unit, cell) pairs are distinct.
+            margin = np.einsum("rk,rk->r", one_x, blocks[index])
+            row_weight = w[rows, periods]
+            score[rows, index] += row_weight * (margin - beta[index]) / mass[index]
+            acc.add(score, g, rows, index, row_weight)
+        else:
+            acc.add_clusters(score)
+
+    if compiled:
+        H_full = np.zeros((P, M))
+        H_full[keep] = H
+        for raw in source():
+            g, _, x, w = raw
+            score = kernels.scores(raw, full_coef, H_full)
+            rows, periods, index, one_x = model.cell_rows(g, x)
+            finish_batch(g, w, score, rows, periods, index, one_x)
+        return _result(beta, acc, inference, M, keep, coef)
     for g, y, D, w, one_x, (rows, periods, index) in model.batches():
         if model.fixed_effects == "unit":
             D, y, _, _ = center_groups(D, y, w)
@@ -150,18 +271,11 @@ def _fit(model, inference):
             D = D[:, :, keep]
         e = y - D @ coef
         score = np.matmul((w * e)[:, None, :], D)[:, 0, :] @ H
-        if inference == "unconditional":
-            share = np.zeros((len(g), M))
-            # Recover each row's margin from the retained coefficient coding;
-            # its sample average equals the reported cell effect. A unit has
-            # one row per cell, so the (unit, cell) pairs are distinct.
-            margin = np.einsum("rk,rk->r", one_x[rows, periods], blocks[index])
-            row_weight = w[rows, periods]
-            share[rows, index] = row_weight
-            score[rows, index] += row_weight * (margin - beta[index]) / mass[index]
-            acc.add_clusters(score, share - mass / store.n_units)
-        else:
-            acc.add_clusters(score)
+        finish_batch(g, w, score, rows, periods, index, one_x[rows, periods])
+    return _result(beta, acc, inference, M, keep, coef)
+
+
+def _result(beta, acc, inference, M, keep, coef):
     joint = acc.sums
     return (
         beta,
@@ -343,7 +457,7 @@ def _extended_twfe(
                         ),
                         Component(
                             "bounded partition preprocessing",
-                            preprocess_mb * 1e6 + 96e6,
+                            staging_bytes(preprocess_mb, store) + 96e6,
                             preprocess_mb * 1e6 + 256e6,
                         ),
                         Component(

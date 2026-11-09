@@ -30,6 +30,21 @@ def preprocess_budget_mb(preprocess_mb, budget):
     return float(preprocess_mb)
 
 
+def staging_bytes(preprocess_mb, store):
+    """Expected memory of staging: the preprocessing allowance, or less when the
+    staged rows are small. Sorting a panel in one piece peaked at about six
+    times its rows' size in the measurements (more on small panels, where the
+    runtime's own use dominates), so eight times plus a fixed 0.4 GB covers
+    them; the allowance stays the upper bound."""
+    rows = getattr(store, "n_rows_used", None)
+    if not rows:
+        return preprocess_mb * 1e6
+    design = getattr(store, "design", None)
+    columns = 4 + (len(design.names) if design is not None else 0)
+    columns += int(getattr(store, "weighted", False))
+    return min(preprocess_mb * 1e6, 8.0 * rows * 8 * columns + 0.4e9)
+
+
 @dataclass
 class Part:
     path: Path
@@ -78,8 +93,17 @@ class GroupPartitions:
 
     def _guard(self, size):
         if not self.budget.fits(size / 1e9):
+            threads = pl.thread_pool_size()
+            hint = (
+                f" (Polars is using {threads} threads, and the memory it holds while reading grows "
+                "with them, about 130 MB each for row groups of a million rows; set "
+                "STREAM_LIMITS_MAX_THREADS or POLARS_MAX_THREADS before Python starts to lower it)"
+                if threads > 4
+                else ""
+            )
             raise MemoryError(
                 "preprocessing buffers exceed job headroom; reduce preprocess_mb or request more memory"
+                + hint
             )
 
     def _name(self, prefix):

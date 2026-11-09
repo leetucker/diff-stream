@@ -9,9 +9,12 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.special import expit
 
+from . import cs as cs_module
+from ._core import cs_row_kernels
 from ._core.functionals import NormalizedMeans
 from ._core.nuisance import fit_linear_systems, fit_systems, solve_checked
 from .cohort_scores import CohortScoreCovariance
+from .cs import RetainedBatches, balanced_bytes
 
 
 @dataclass
@@ -122,6 +125,25 @@ class RowFunctional:
                 self.probability_min = min(self.probability_min, float(p.min()))
                 self.probability_max = max(self.probability_max, float(p.max()))
 
+    def load(self, acc, j):
+        """Take the sums of the compiled pass (``cs_row_kernels``) for comparison ``j``."""
+        n = len(self.signs)
+        self.means.weight = acc["weight"][j, :n].copy()
+        self.means.value = acc["value"][j, :n].copy()
+        self.means.x = acc["xw"][j, :n].copy()
+        self.means.xvalue = acc["xv"][j, :n].copy()
+        self.stratum_counts = acc["strata"][j].copy()
+        self.sample_weight = acc["sw"][j].copy()
+        self.sample_weight_squares = acc["sw2"][j].copy()
+        if self.system is not None:
+            self.H = acc["hess"][j].copy()
+            self.trimmed = int(acc["trimmed"][j])
+            self.capped = int(acc["capped"][j])
+            self.control_weight_squares = acc["cws"][j].copy()
+            if acc["pmax"][j] >= acc["pmin"][j]:
+                self.probability_min = float(acc["pmin"][j])
+                self.probability_max = float(acc["pmax"][j])
+
     def finish(self):
         self.means.finish()
         self.estimate = self.means.mean @ self.signs
@@ -158,10 +180,18 @@ def fit_cs_unbalanced(
         for (g, t), b, c in zip(cells, bases, controls, strict=True)
     ]
 
-    def batches():
-        return store.batches(
+    fast = cs_row_kernels.ENABLED
+    retain = (
+        fast
+        and balanced_bytes(store, K) <= cs_module.RETAIN_SHARE * store.budget.headroom_gb() * 1e9
+    )
+    batches = RetainedBatches(
+        lambda: store.batches(
             include_x=True, include_weights=True, row_weights=not store.weights_time_invariant
-        )
+        ),
+        retain=retain,
+    )
+    size = int(max(np.max(groups), *(c.cohort for c in comparisons))) + 1
 
     linear_keys = {}
     model_indices = []
@@ -179,7 +209,14 @@ def fit_cs_unbalanced(
 
         return select
 
-    models = fit_linear_systems(batches, [linear_transform(*key) for key in linear_keys], K)
+    if fast and linear_keys:
+        gram, moments = cs_row_kernels.fit_linear_rows(batches, list(linear_keys), size, K)
+        models = [
+            (solve_checked(Q, q, f"stratified outcome regression (system {j}, {K} columns)"), Q)
+            for j, (Q, q) in enumerate(zip(gram, moments, strict=True))
+        ]
+    else:
+        models = fit_linear_systems(batches, [linear_transform(*key) for key in linear_keys], K)
     ps_keys, ps_indices, ps_transforms = {}, [], []
     for c in comparisons:
         key = (c.cohort, c.controls, *sorted([c.base, c.target]))
@@ -187,16 +224,43 @@ def fit_cs_unbalanced(
             ps_keys[key] = len(ps_keys)
             ps_transforms.append(c)
         ps_indices.append(ps_keys[key])
-    systems, passes = (
-        fit_systems(batches, ps_transforms, "ipw", names) if method != "reg" else ([], 0)
-    )
+    kernels = cs_row_kernels.RowKernels(comparisons, size) if fast else None
+
+    def propensity_fits(use_kernels):
+        return fit_systems(
+            batches,
+            ps_transforms,
+            "ipw",
+            names,
+            fast=cs_row_kernels.RowKernels(ps_transforms, size) if use_kernels else None,
+        )
+
+    if method == "reg":
+        systems, passes = [], 0
+    else:
+        try:
+            systems, passes = propensity_fits(fast)
+        except ValueError:
+            # A nearly collinear design can converge in one summation order and
+            # not in another; the array path is the reference.
+            if not fast:
+                raise
+            systems, passes = propensity_fits(False)
     fitted = [
         RowFunctional(c, method, trim, systems[ps] if systems else None, [models[k] for k in ix], K)
         for c, ps, ix in zip(comparisons, ps_indices, model_indices, strict=True)
     ]
-    for raw in batches():
-        for f in fitted:
-            f.update(raw)
+    if kernels is not None:
+        params = kernels.parameters(fitted, method, K)
+        acc = kernels.empty_moments(K)
+        for raw in batches():
+            kernels.moments(raw, method, trim, params, acc)
+        for j, f in enumerate(fitted):
+            f.load(acc, j)
+    else:
+        for raw in batches():
+            for f in fitted:
+                f.update(raw)
     for f in fitted:
         f.finish()
     M = len(cells)
@@ -207,11 +271,14 @@ def fit_cs_unbalanced(
     accumulator = CohortScoreCovariance(cohorts, counts / store.n_units)
     for raw in batches():
         g, y, _, w = raw
-        scores = np.zeros((len(g), M))
         anchor = w.sum(axis=1) / np.isfinite(y).sum(axis=1) if w.ndim == 2 else w
-        for j, f in enumerate(fitted):
-            unit, phi = f.scores(raw)
-            np.add.at(scores[:, j], unit, phi)
+        if kernels is not None:
+            scores = kernels.scores(raw, method, trim, params, fitted)
+        else:
+            scores = np.zeros((len(g), M))
+            for j, f in enumerate(fitted):
+                unit, phi = f.scores(raw)
+                np.add.at(scores[:, j], unit, phi)
         accumulator.add(g, scores, anchor)
         if multiplier is not None:
             share = anchor[:, None] * ((g[:, None] == cohorts) - counts / store.n_units)

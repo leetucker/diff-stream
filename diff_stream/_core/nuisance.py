@@ -13,13 +13,17 @@ from scipy.special import expit
 from .weights import weighted_linear, weighted_system
 
 
-def solve_checked(matrix, rhs, context):
-    """Solve in diagonally scaled coordinates; never silently drop columns."""
+def solve_checked(matrix, rhs, context, *, verify=True):
+    """Solve in diagonally scaled coordinates; never silently drop columns.
+
+    ``verify=False`` skips the eigenvalue check, for a matrix already checked
+    (its scaled form is the same whatever the right-hand side), which for a
+    matrix of hundreds of columns is most of the time of a solve."""
     scale = np.sqrt(np.maximum(np.diag(matrix), 0))
     if np.any(scale <= 0) or not np.isfinite(matrix).all():
         raise ValueError(f"{context}: singular nuisance design")
     normalized = matrix / np.outer(scale, scale)
-    if np.linalg.eigvalsh(normalized)[0] <= 1e-12:
+    if verify and np.linalg.eigvalsh(normalized)[0] <= 1e-12:
         raise ValueError(f"{context}: singular or ill-conditioned nuisance design")
     vector = np.ndim(rhs) == 1
     target = np.asarray(rhs) / (scale if vector else scale[:, None])
@@ -72,37 +76,65 @@ class NuisanceSystem:
     design_scale: np.ndarray | None = None
 
 
-def fit_systems(batches, transforms, method, names, *, tol=1e-10, maxiter=100):
+def fit_systems(batches, transforms, method, names, *, tol=1e-10, maxiter=100, fast=None):
     """Fit independent systems together, scanning the source once per Newton step.
 
     Multi-outcome control OLS systems share a Gram solve. Logistic MLE uses
     damped Newton steps, scaled solves and an explicit separation check.
+    ``fast`` (``cs_kernels.BalancedCS``) does the passes in compiled code, with the
+    same sums.
     """
     K = len(names)
     systems = [None] * len(transforms)
     passes = 0
-    for raw in batches():
-        for j, transform in enumerate(transforms):
-            X, d, Y, w = weighted_system(transform(raw))
-            if systems[j] is None:
-                systems[j] = NuisanceSystem(
-                    np.zeros(K),
-                    np.zeros((K, Y.shape[1])),
-                    np.zeros((K, K)),
-                    design_scale=np.zeros(K),
-                )
-            s = systems[j]
-            s.n_treated += int(d.sum())
-            s.n_controls += int((~d).sum())
-            s.treated_weight += float(w[d].sum())
-            s.control_weight += float(w[~d].sum())
-            s.control_weight_squares += float(w[~d] @ w[~d])
-            s.treated_weight_squares += float(w[d] @ w[d])
-            s.design_scale += np.einsum("i,ij,ij->j", w, X, X)
-            if method != "ipw":
-                xc = X[~d]
-                s.control_gram += xc.T @ (w[~d, None] * xc)
-                s.regression += xc.T @ (w[~d, None] * Y[~d])
+    if fast is not None:
+        C = len(transforms)
+        acc = dict(
+            counts=np.zeros((C, 2), dtype=np.int64),
+            wsums=np.zeros((C, 4)),
+            scale=np.zeros((C, K)),
+            gram=np.zeros((C, K, K)),
+            reg=np.zeros((C, K, fast.Lmax)),
+        )
+        for raw in batches():
+            fast.initial(raw, K, method != "ipw", acc)
+        for j in range(C):
+            L = int(fast.sizes[j])
+            systems[j] = NuisanceSystem(
+                np.zeros(K),
+                acc["reg"][j, :, :L].copy(),
+                acc["gram"][j].copy(),
+                n_treated=int(acc["counts"][j, 0]),
+                n_controls=int(acc["counts"][j, 1]),
+                treated_weight=float(acc["wsums"][j, 0]),
+                control_weight=float(acc["wsums"][j, 1]),
+                treated_weight_squares=float(acc["wsums"][j, 2]),
+                control_weight_squares=float(acc["wsums"][j, 3]),
+                design_scale=acc["scale"][j].copy(),
+            )
+    else:
+        for raw in batches():
+            for j, transform in enumerate(transforms):
+                X, d, Y, w = weighted_system(transform(raw))
+                if systems[j] is None:
+                    systems[j] = NuisanceSystem(
+                        np.zeros(K),
+                        np.zeros((K, Y.shape[1])),
+                        np.zeros((K, K)),
+                        design_scale=np.zeros(K),
+                    )
+                s = systems[j]
+                s.n_treated += int(d.sum())
+                s.n_controls += int((~d).sum())
+                s.treated_weight += float(w[d].sum())
+                s.control_weight += float(w[~d].sum())
+                s.control_weight_squares += float(w[~d] @ w[~d])
+                s.treated_weight_squares += float(w[d] @ w[d])
+                s.design_scale += np.einsum("i,ij,ij->j", w, X, X)
+                if method != "ipw":
+                    xc = X[~d]
+                    s.control_gram += xc.T @ (w[~d, None] * xc)
+                    s.regression += xc.T @ (w[~d, None] * Y[~d])
     passes += 1
     for s in systems:
         if not s.n_treated or not s.n_controls:
@@ -115,8 +147,33 @@ def fit_systems(batches, transforms, method, names, *, tol=1e-10, maxiter=100):
     if method == "reg":
         return systems, passes
 
+    def fast_stats(betas, indices):
+        nonlocal passes
+        C = len(transforms)
+        B = np.array(betas)
+        active = np.zeros(C, dtype=bool)
+        active[list(indices)] = True
+        loss, correction = np.zeros(C), np.zeros(C)
+        grad, hess, margin = np.zeros((C, K)), np.zeros((C, K, K)), np.full(C, np.inf)
+        for raw in batches():
+            inc, g_part, h_part, m_part = fast.newton(raw, B, active, K)
+            # compensated accumulation of the objective, as in the array path
+            step = inc - correction
+            total = loss + step
+            correction = (total - loss) - step
+            loss = total
+            grad += g_part
+            hess += h_part
+            margin = np.minimum(margin, m_part)
+        passes += 1
+        return {
+            j: [float(loss[j]), grad[j].copy(), hess[j].copy(), float(margin[j])] for j in indices
+        }
+
     def stats(betas, indices):
         nonlocal passes
+        if fast is not None:
+            return fast_stats(betas, indices)
         out = {j: [0.0, np.zeros(K), np.zeros((K, K)), np.inf] for j in indices}
         loss_correction = dict.fromkeys(indices, 0.0)
         for raw in batches():

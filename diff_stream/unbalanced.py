@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 
+from ._core import covariate_kernels
 from ._core.nuisance import solve_checked
 
 
@@ -228,15 +229,46 @@ class ObservedBJSInference:
                 effects = (sw[mask][:, ti] * resid[mask][:, ti]) @ w.T
                 yield mask, r, totals, effects
 
-        for g, y, X, sw in batches():
-            iterator = parts(g, y, X, sw)
-            next(iterator)
-            for _mask, r, totals, effects in iterator:
-                denom[:, r] += (totals**2).sum(axis=0)
-                numer[:, r] += (totals * effects).sum(axis=0)
+        compiled = self.model is not None and covariate_kernels.ENABLED
+        if compiled:
+            kernels = covariate_kernels.BJSKernels(
+                self.store, self.cells, self.model.keep, self.theta, self.anticipation
+            )
+            cell_labels = [
+                labels[
+                    {"cohort_time": (g, t), "event_time": t - g, "cohort": g, "all": 0}[
+                        self.avgeffectsby
+                    ]
+                ]
+                for g, t in self.cells
+            ]
+            grouping = kernels.grouping(cell_labels, self.counts, A)
+            denom, numer = kernels.totals(self.model.raw_batches, grouping, R)
+        else:
+            for g, y, X, sw in batches():
+                iterator = parts(g, y, X, sw)
+                next(iterator)
+                for _mask, r, totals, effects in iterator:
+                    denom[:, r] += (totals**2).sum(axis=0)
+                    numer[:, r] += (totals * effects).sum(axis=0)
         averages = np.divide(numer, denom, out=np.zeros_like(numer), where=denom > 0)
         V, unidentified = np.zeros((P, P)), np.zeros(P, bool)
         derivative = A @ self.H
+        if compiled:
+            for raw in self.model.raw_batches():
+                scores, invalid = kernels.scores(
+                    raw, grouping, derivative, averages, denom, self.leaveout
+                )
+                if self.leaveout:
+                    unidentified |= invalid
+                    if invalid.any() and not allow_unidentified:
+                        raise ValueError(
+                            "BJS leave_out requires more than one contributing unit in each residual group; use a coarser residual_averaging"
+                        )
+                V += scores.T @ scores
+            V[unidentified, :] = np.nan
+            V[:, unidentified] = np.nan
+            return (V + V.T) / 2
         for g, y, X, sw in batches():
             iterator = parts(g, y, X, sw)
             scores = -next(iterator) @ derivative.T

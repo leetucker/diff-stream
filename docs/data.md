@@ -93,9 +93,8 @@ transformations, `x:z` and `x*z` for interactions.
 - **Sun-Abraham, BJS, two-stage**: covariates, and additional fixed effects
   after a bar: `"y ~ age | region^year"` adds region-by-year effects. Unit and
   time fixed effects are always included. Covariates take up to 256 design
-  columns. Sun-Abraham and BJS absorb fixed effects with any number of levels
-  (`fixed_effect_solver`); two-stage takes up to 256 added columns (for more,
-  use BJS, which has the same estimates).
+  columns. The fixed effects can have any number of levels, absorbed iteratively
+  when there are many (`fixed_effect_solver`).
 - **Extended TWFE**: covariates, interacted with cohort and time; no
   additional fixed effects.
 

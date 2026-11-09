@@ -13,7 +13,7 @@ from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scop
 
 from . import _docs, _options
 from ._core.nuisance import solve_checked
-from ._core.partition import preprocess_budget_mb
+from ._core.partition import preprocess_budget_mb, staging_bytes
 from ._core.within import center_groups, independent_columns
 from ._present import public_profile
 from .twfe_store import WeightStore, inspect_weights
@@ -428,7 +428,7 @@ def _twfe_weights(
                         ),
                         Component(
                             "bounded partition preprocessing",
-                            preprocess_mb * 1e6 + 96e6,
+                            staging_bytes(preprocess_mb, store) + 96e6,
                             preprocess_mb * 1e6 + 256e6,
                         ),
                         Component(

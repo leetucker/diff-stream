@@ -1,14 +1,18 @@
 """Snapshot, recursively partition whole units, validate and sort bounded leaves."""
 
+from concurrent.futures import ThreadPoolExecutor, wait
 from pathlib import Path
 
 import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
 
+from ._core import staging_kernels
 from ._core.partition import GroupPartitions, Part
 from ._core.weights import validate_weights
 from .periods import PeriodLabels, cohorts_from_treatment
+
+PREFETCH = True  # read the next batch in a background thread; tests switch it off
 
 
 def source(data):
@@ -23,10 +27,12 @@ def source(data):
 
 # "auto" absorbs additional fixed effects iteratively above this many design
 # columns (levels plus covariates). The dense design's time grows with the number
-# of levels, the iterative solver's does not: on 50,000 to 200,000 units over 8
-# periods the two met between 16 and 32 levels, and dense was 5 to 13 times
-# slower at 240. Explicit fixed_effect_solver="dense" still goes to 256 columns.
-DENSE_MAX_LEVELS = 24
+# of levels, the iterative solver's does not: with one covariate over 8 periods,
+# from 100,000 to 3 million units, the two took the same time at about 40 to 48
+# levels, and at 240 dense was 7 to 8 times slower. Choosing dense wrongly costs
+# far more than choosing iterative wrongly, so the limit is just below the
+# crossover. Explicit fixed_effect_solver="dense" still goes to 256 columns.
+DENSE_MAX_LEVELS = 40
 
 
 def inspect(
@@ -64,8 +70,10 @@ def inspect(
             levels = 0
             if fe_solver == "auto":
                 # One streaming pass counts the dummies a dense design would need.
+                # The levels are hashed first: counting distinct structs of
+                # millions of levels held several GB, the hashes about a third.
                 counts = source(data).select(
-                    [pl.struct(t).n_unique().alias(str(j)) for j, t in enumerate(terms)]
+                    [pl.struct(t).hash().n_unique().alias(str(j)) for j, t in enumerate(terms)]
                 )
                 levels = sum(counts.collect(engine="streaming").row(0))
                 levels += 0 if covariates == "1" else covariates.count("+") + 1
@@ -349,102 +357,109 @@ class PanelStore(GroupPartitions):
         lengths = np.diff(np.r_[starts, len(ids)])
         t = d["t"].to_numpy()
         g = d["g"].to_numpy()
-        unit = np.repeat(np.arange(len(starts)), lengths)
-        if np.any((ids[1:] == ids[:-1]) & (t[1:] == t[:-1])):
-            raise ValueError(
-                "balanced panels with unique unit-time keys are required; duplicate unit-time key"
-            )
-        if "d" in d.columns:
-            g = cohorts_from_treatment(d["d"].to_numpy(), t, ids, starts, unit)
-        if self.period_labels.step != 1:
-            t = self.period_labels.internal(t)
-            g = self.period_labels.internal_cohorts(g, int(self.times[-1]))
-        if np.any(g != g[starts][unit]):
-            raise ValueError("cohort must be constant within unit")
-        if self.weighted:
-            w = d["w"].to_numpy()
-            if np.any(w != w[starts][unit]) and not self.allow_time_varying_weights:
-                raise ValueError(
-                    "sampling weights must be constant within unit; time-varying weights are unsupported"
-                )
-        cohort = g[starts].copy()
-        actual = cohort.copy() if self.retain_actual_cohort else None
-        if self.actual_cohort_column is not None:
-            original = d[self.actual_cohort_column].to_numpy()
-            if np.any(original < 0) or np.any(original != original[starts][unit]):
-                raise ValueError("original cohort must be nonnegative and constant within unit")
-            actual = original[starts].copy()
-        if np.any(cohort < 0):
-            raise ValueError(
-                "always-treated/negative cohorts are unsupported; exclude them explicitly"
-            )
-        onset = cohort - self.anticipation
-        if self.allow_always_treated:
-            cohort[(cohort > 0) & (onset <= self.times[0])] = self.times[0]
-        elif np.any((cohort != 0) & (onset <= self.times[0])):
-            raise ValueError(
-                "always-treated/negative cohorts or anticipation without a clean pre-period are unsupported; exclude them explicitly"
-            )
-        cohort[onset > self.times[-1]] = 0
-        self.n_units_input += len(starts)
-        complete = lengths == self.periods
-        if self.panel_mode == "balanced" and not complete.all():
-            raise ValueError(
-                "balanced panels with unique unit-time keys are required; set incomplete_units='keep' or 'drop'"
-            )
-        if self.panel_mode == "complete":
-            keep = complete[unit]
-            d = d.filter(pl.Series(keep))
-            t = t[keep]
-            cohort = cohort[complete]
-            if actual is not None:
-                actual = actual[complete]
-            lengths = lengths[complete]
-            unit = np.repeat(np.arange(len(cohort)), lengths)
+        summary = self._summarize(d, t, g, starts, lengths)
+        if summary is not None:
+            unit, cohort, y, w, lengths = summary
+            actual = None
         else:
-            self.is_balanced &= bool(complete.all())
-        if not len(cohort):
-            part.path.unlink()
-            return
-        y = d["y"].to_numpy()
-        w = d["w"].to_numpy() / self.weight_scale if self.weighted else np.ones(len(y))
-        validate_weights(w)
-        first = np.r_[0, np.cumsum(lengths)[:-1]]
-        self.weights_time_invariant &= bool(np.all(w == w[first][unit]))
-        mean_weight = np.bincount(unit, weights=w, minlength=len(cohort)) / lengths
-        ti = t - self.times[0]
-        T = self.periods
-        # Cohort-period sums in one bincount over (cohort index, period), not
-        # a full-length mask per cohort.
-        labels, code = np.unique(cohort, return_inverse=True)
-        row = code[unit] * T + ti
-        n = len(labels) * T
-        sums = np.bincount(row, weights=y * w, minlength=n).reshape(-1, T)
-        mass = np.bincount(row, weights=w, minlength=n).reshape(-1, T)
-        counts = np.bincount(row, minlength=n).reshape(-1, T)
-        units = np.bincount(code, minlength=len(labels))
-        first_weight = np.bincount(code, weights=w[first], minlength=len(labels))
-        mean_by = np.bincount(code, weights=mean_weight, minlength=len(labels))
-        for i, k in enumerate(labels.tolist()):
-            self.gc[k] = self.gc.get(k, 0) + int(units[i])
-            self.gw[k] = self.gw.get(k, 0.0) + float(first_weight[i])
-            self.gw_observed_mean[k] = self.gw_observed_mean.get(k, 0.0) + float(mean_by[i])
-            self.cell_weights[k] = self.cell_weights.get(k, np.zeros(T)) + mass[i]
-            self.sums[k] = self.sums.get(k, np.zeros(T)) + sums[i]
-            self.cell_counts[k] = self.cell_counts.get(k, np.zeros(T, dtype=int)) + counts[i]
-        if actual is not None:
-            labels, code = np.unique(actual, return_inverse=True)
+            unit = np.repeat(np.arange(len(starts)), lengths)
+            if np.any((ids[1:] == ids[:-1]) & (t[1:] == t[:-1])):
+                raise ValueError(
+                    "balanced panels with unique unit-time keys are required; duplicate unit-time key"
+                )
+            if "d" in d.columns:
+                g = cohorts_from_treatment(d["d"].to_numpy(), t, ids, starts, unit)
+            if self.period_labels.step != 1:
+                t = self.period_labels.internal(t)
+                g = self.period_labels.internal_cohorts(g, int(self.times[-1]))
+            if np.any(g != g[starts][unit]):
+                raise ValueError("cohort must be constant within unit")
+            if self.weighted:
+                w = d["w"].to_numpy()
+                if np.any(w != w[starts][unit]) and not self.allow_time_varying_weights:
+                    raise ValueError(
+                        "sampling weights must be constant within unit; time-varying weights are unsupported"
+                    )
+            cohort = g[starts].copy()
+            actual = cohort.copy() if self.retain_actual_cohort else None
+            if self.actual_cohort_column is not None:
+                original = d[self.actual_cohort_column].to_numpy()
+                if np.any(original < 0) or np.any(original != original[starts][unit]):
+                    raise ValueError("original cohort must be nonnegative and constant within unit")
+                actual = original[starts].copy()
+            if np.any(cohort < 0):
+                raise ValueError(
+                    "always-treated/negative cohorts are unsupported; exclude them explicitly"
+                )
+            onset = cohort - self.anticipation
+            if self.allow_always_treated:
+                cohort[(cohort > 0) & (onset <= self.times[0])] = self.times[0]
+            elif np.any((cohort != 0) & (onset <= self.times[0])):
+                raise ValueError(
+                    "always-treated/negative cohorts or anticipation without a clean pre-period are unsupported; exclude them explicitly"
+                )
+            cohort[onset > self.times[-1]] = 0
+            self.n_units_input += len(starts)
+            complete = lengths == self.periods
+            if self.panel_mode == "balanced" and not complete.all():
+                raise ValueError(
+                    "balanced panels with unique unit-time keys are required; set incomplete_units='keep' or 'drop'"
+                )
+            if self.panel_mode == "complete":
+                keep = complete[unit]
+                d = d.filter(pl.Series(keep))
+                t = t[keep]
+                cohort = cohort[complete]
+                if actual is not None:
+                    actual = actual[complete]
+                lengths = lengths[complete]
+                unit = np.repeat(np.arange(len(cohort)), lengths)
+            else:
+                self.is_balanced &= bool(complete.all())
+            if not len(cohort):
+                part.path.unlink()
+                return
+            y = d["y"].to_numpy()
+            w = d["w"].to_numpy() / self.weight_scale if self.weighted else np.ones(len(y))
+            validate_weights(w)
+            first = np.r_[0, np.cumsum(lengths)[:-1]]
+            self.weights_time_invariant &= bool(np.all(w == w[first][unit]))
+            mean_weight = np.bincount(unit, weights=w, minlength=len(cohort)) / lengths
+            ti = t - self.times[0]
+            T = self.periods
+            # Cohort-period sums in one bincount over (cohort index, period), not
+            # a full-length mask per cohort.
+            labels, code = np.unique(cohort, return_inverse=True)
             row = code[unit] * T + ti
             n = len(labels) * T
-            counts = np.bincount(row, minlength=n).reshape(-1, T)
+            sums = np.bincount(row, weights=y * w, minlength=n).reshape(-1, T)
             mass = np.bincount(row, weights=w, minlength=n).reshape(-1, T)
+            counts = np.bincount(row, minlength=n).reshape(-1, T)
             units = np.bincount(code, minlength=len(labels))
+            first_weight = np.bincount(code, weights=w[first], minlength=len(labels))
+            mean_by = np.bincount(code, weights=mean_weight, minlength=len(labels))
             for i, k in enumerate(labels.tolist()):
-                self.actual_gc[k] = self.actual_gc.get(k, 0) + int(units[i])
-                self.actual_cell_counts[k] = (
-                    self.actual_cell_counts.get(k, np.zeros(T, dtype=int)) + counts[i]
-                )
-                self.actual_cell_weights[k] = self.actual_cell_weights.get(k, np.zeros(T)) + mass[i]
+                self.gc[k] = self.gc.get(k, 0) + int(units[i])
+                self.gw[k] = self.gw.get(k, 0.0) + float(first_weight[i])
+                self.gw_observed_mean[k] = self.gw_observed_mean.get(k, 0.0) + float(mean_by[i])
+                self.cell_weights[k] = self.cell_weights.get(k, np.zeros(T)) + mass[i]
+                self.sums[k] = self.sums.get(k, np.zeros(T)) + sums[i]
+                self.cell_counts[k] = self.cell_counts.get(k, np.zeros(T, dtype=int)) + counts[i]
+            if actual is not None:
+                labels, code = np.unique(actual, return_inverse=True)
+                row = code[unit] * T + ti
+                n = len(labels) * T
+                counts = np.bincount(row, minlength=n).reshape(-1, T)
+                mass = np.bincount(row, weights=w, minlength=n).reshape(-1, T)
+                units = np.bincount(code, minlength=len(labels))
+                for i, k in enumerate(labels.tolist()):
+                    self.actual_gc[k] = self.actual_gc.get(k, 0) + int(units[i])
+                    self.actual_cell_counts[k] = (
+                        self.actual_cell_counts.get(k, np.zeros(T, dtype=int)) + counts[i]
+                    )
+                    self.actual_cell_weights[k] = (
+                        self.actual_cell_weights.get(k, np.zeros(T)) + mass[i]
+                    )
         self._guard(32e6 + 32 * (len(self.gc) + len(self.actual_gc)) * self.periods)
         path = self._name("units")
         output = pl.DataFrame({"u": unit + self.n_units, "t": t, "g": cohort[unit], "y": y})
@@ -469,7 +484,132 @@ class PanelStore(GroupPartitions):
         self.partition_count += 1
         part.path.unlink()
 
-    def batches(
+    def _summarize(self, d, t, g, starts, lengths):
+        """The checks and cohort-period sums of a sorted leaf in one compiled pass
+        (``staging_kernels``), as the NumPy code in ``_leaf`` does; None when the
+        leaf is one the kernel does not cover. Returns the leaf's units' index of
+        each row, their cohorts, the outcomes, the scaled weights (None when
+        unweighted) and the unit lengths."""
+        if not (
+            staging_kernels.ENABLED
+            and "d" not in d.columns
+            and self.period_labels.step == 1
+            and self.panel_mode != "complete"
+            and not self.retain_actual_cohort
+            and self.actual_cohort_column is None
+            and t.dtype.kind in "iu"
+            and g.dtype.kind in "iu"
+        ):
+            return None
+        y = d["y"].to_numpy()
+        raw_w = d["w"].to_numpy() if self.weighted else None
+        cohort = g[starts].copy()
+        labels, code = np.unique(cohort, return_inverse=True)
+        T = self.periods
+        flags, sums, mass, counts, mean_weight = staging_kernels.summarize(
+            starts, lengths, t, g, y, raw_w, self.weight_scale, code, len(labels), self.times[0], T
+        )
+        if flags[staging_kernels.PERIOD]:
+            return None
+        if flags[staging_kernels.DUPLICATE]:
+            raise ValueError(
+                "balanced panels with unique unit-time keys are required; duplicate unit-time key"
+            )
+        if flags[staging_kernels.COHORT]:
+            raise ValueError("cohort must be constant within unit")
+        if self.weighted and flags[staging_kernels.WEIGHT] and not self.allow_time_varying_weights:
+            raise ValueError(
+                "sampling weights must be constant within unit; time-varying weights are unsupported"
+            )
+        if np.any(cohort < 0):
+            raise ValueError(
+                "always-treated/negative cohorts are unsupported; exclude them explicitly"
+            )
+        onset = cohort - self.anticipation
+        if self.allow_always_treated:
+            cohort[(cohort > 0) & (onset <= self.times[0])] = self.times[0]
+        elif np.any((cohort != 0) & (onset <= self.times[0])):
+            raise ValueError(
+                "always-treated/negative cohorts or anticipation without a clean pre-period are unsupported; exclude them explicitly"
+            )
+        cohort[onset > self.times[-1]] = 0
+        self.n_units_input += len(starts)
+        complete = lengths == self.periods
+        if self.panel_mode == "balanced" and not complete.all():
+            raise ValueError(
+                "balanced panels with unique unit-time keys are required; set incomplete_units='keep' or 'drop'"
+            )
+        self.is_balanced &= bool(complete.all())
+        if flags[staging_kernels.BAD_WEIGHT]:
+            validate_weights(np.array([-1.0]))
+        self.weights_time_invariant &= not flags[staging_kernels.WEIGHT]
+        weight = raw_w / self.weight_scale if self.weighted else None
+        first_weight = weight[starts] if self.weighted else np.ones(len(starts))
+        # the cohorts above may have been moved (always-treated, beyond the last period)
+        labels, code = np.unique(cohort, return_inverse=True)
+        sums, mass, counts = self._regroup(sums, mass, counts, g[starts], cohort)
+        units = np.bincount(code, minlength=len(labels))
+        first_weight_by = np.bincount(code, weights=first_weight, minlength=len(labels))
+        mean_by = np.bincount(code, weights=mean_weight, minlength=len(labels))
+        for i, k in enumerate(labels.tolist()):
+            self.gc[k] = self.gc.get(k, 0) + int(units[i])
+            self.gw[k] = self.gw.get(k, 0.0) + float(first_weight_by[i])
+            self.gw_observed_mean[k] = self.gw_observed_mean.get(k, 0.0) + float(mean_by[i])
+            self.cell_weights[k] = self.cell_weights.get(k, np.zeros(T)) + mass[i]
+            self.sums[k] = self.sums.get(k, np.zeros(T)) + sums[i]
+            self.cell_counts[k] = self.cell_counts.get(k, np.zeros(T, dtype=int)) + counts[i]
+        unit = np.repeat(np.arange(len(starts)), lengths)
+        return unit, cohort, y, weight, lengths
+
+    @staticmethod
+    def _regroup(sums, mass, counts, original, cohort):
+        """The kernel's per-cohort sums regrouped by the final cohorts (a cohort
+        can be moved to another by anticipation or beyond-sample timing; the move
+        depends only on the cohort)."""
+        before, first = np.unique(original, return_index=True)
+        after = np.unique(cohort)
+        if len(before) == len(after) and np.array_equal(before, after):
+            return sums, mass, counts
+        slot = np.searchsorted(after, cohort[first])
+        out_sums = np.zeros((len(after), sums.shape[1]))
+        out_mass = np.zeros_like(out_sums)
+        out_counts = np.zeros((len(after), sums.shape[1]), dtype=np.int64)
+        for i, j in enumerate(slot.tolist()):
+            out_sums[j] += sums[i]
+            out_mass[j] += mass[i]
+            out_counts[j] += counts[i]
+        return out_sums, out_mass, out_counts
+
+    def batches(self, **options):
+        """The staged units in batches of whole units, ``(g, y[, x][, w])``.
+
+        The next batch is read and decoded in a background thread while the
+        current one is worked on (Arrow's reads and decoding release the
+        interpreter lock, as do the compiled passes), so a pass costs about
+        the larger of the two rather than their sum. One batch is held ahead;
+        the numerical code is only ever called from the consuming thread.
+        """
+        source = self._batches(**options)
+        if not PREFETCH:
+            yield from source
+            return
+        done = object()
+        with ThreadPoolExecutor(1) as pool:
+            pending = pool.submit(next, source, done)
+            try:
+                while True:
+                    current = pending.result()
+                    if current is done:
+                        return
+                    pending = pool.submit(next, source, done)
+                    yield current
+                    del current
+            finally:
+                # a generator cannot be closed while another thread advances it
+                wait([pending])
+                source.close()
+
+    def _batches(
         self, *, include_x=False, include_weights=False, actual_cohort=False, row_weights=False
     ):
         if actual_cohort and not self.retain_actual_cohort:
@@ -497,7 +637,11 @@ class PanelStore(GroupPartitions):
                     y = b.column(1).to_numpy().reshape(-1, self.periods).copy()
                     result = (g, y)
                     if include_x and self.design is not None:
-                        x = np.column_stack([b.column(j + 2).to_numpy() for j in range(K)])
+                        # Polars assembles the K design columns in parallel, about
+                        # four times faster than stacking them one by one.
+                        x = pl.from_arrow(b.select([f"__x{j}" for j in range(K)])).to_numpy(
+                            order="c"
+                        )
                         result += (x.reshape(-1, self.periods, K),)
                     elif include_x:
                         result += (np.ones((*y.shape, 1)),)

@@ -22,9 +22,7 @@ REFERENCES = {r["name"]: r for r in json.loads((ROOT / "reference.json").read_te
 @pytest.mark.parametrize("scenario", ["overlap_very_weak", "weights_wide", "collinear_border"])
 @pytest.mark.parametrize("mode", ["balanced", "unbalanced"])
 @pytest.mark.parametrize("method", ["reg", "ipw", "dr"])
-def test_external_stress_estimates_and_joint_covariance(
-    scenario, mode, method, tmp_path, request
-):
+def test_external_stress_estimates_and_joint_covariance(scenario, mode, method, tmp_path, request):
     if (
         sys.platform == "darwin"
         and (scenario, mode) == ("collinear_border", "unbalanced")

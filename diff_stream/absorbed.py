@@ -56,6 +56,21 @@ def staged(store, terms, paths=None):
 DEFAULT_BATCH_ROWS = 2_000_000
 BATCH_BYTES_PER_VALUE = 32
 
+# hdfe-stream solves the normal equations for a block of columns at a time, one
+# pass over the rows per block. A block holds about this many bytes per unit and
+# column (the grouped sums, their copies and the solution), measured at 3 million
+# units: 115 MB for a column.
+SOLVE_BYTES_PER_UNIT_COLUMN = 40
+SOLVE_BLOCK = 16  # hdfe-stream's default; fewest passes
+
+
+def solve_block(store, columns):
+    """Columns per block for the normal-equations solve: hdfe-stream's default
+    when half the memory left holds it, fewer (at least one) when it does not."""
+    room = 0.5 * store.budget.headroom_gb() * 1e9
+    fit = int(room // (SOLVE_BYTES_PER_UNIT_COLUMN * max(store.n_units, 1)))
+    return max(1, min(SOLVE_BLOCK, columns, fit))
+
 
 def batch_rows(store, width):
     """hdfe-stream's row batch: its default when that fits a quarter of the
@@ -118,7 +133,9 @@ def fit_sunab_absorbed(store, cells, terms, *, threads=None):
             fml,
             data,
             workdir=store.root,
-            **hdfe_options(store, threads, len(xs) + len(cells), vcov={"CRV1": "u"}),
+            **hdfe_options(
+                store, threads, len(xs) + len(cells), vcov={"CRV1": "u"}, save_resid=False
+            ),
         )
     try:
         names = list(fit.coefnames)
@@ -252,7 +269,7 @@ class AbsorbedBJSInference:
                 for j, n in enumerate(names)
             ],
         )
-        solution = first.solve_normal_equations(target, names)
+        solution = first.solve_normal_equations(target, names, block=solve_block(store, M))
         try:
             self._untreated_scores(solution, names, xs, absorbed)
         finally:

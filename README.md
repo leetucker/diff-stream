@@ -27,7 +27,7 @@ fit.aggregate("overall").summary()  # overall ATT
 
 **Status: in development** (version 0.1.0.dev0, not yet on PyPI). The
 estimators, inference and documentation are complete and tested; the
-benchmark suites wait for a full run.
+[benchmarks](docs/benchmarks/index.md) compare them with other implementations.
 
 ## What it does
 
@@ -84,8 +84,10 @@ benchmark suites wait for a full run.
   fitted together.
 
 On a simulated panel of one million units over eight periods (8 million
-rows), each estimator fits in one to six seconds on four threads of a laptop, and within
-1 GB of memory when limited to it.
+rows), each estimator fits in one to two seconds on a 16-vCPU cloud instance,
+and ten million units (80 million rows) in under half a minute, with a peak of
+about 4 GB. With `max_memory_gb=2`, a million units fit within about 1.1 GB.
+The benchmarks give the comparisons with R and Python implementations.
 
 ## Validation against other implementations
 

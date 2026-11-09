@@ -3,6 +3,10 @@
 import stream_limits as _limits
 
 _limits.apply_scheduler_defaults()
+# The compiled passes make many short parallel calls, which run faster when idle
+# OpenMP threads sleep than when they spin. A policy the user has set is kept.
+if hasattr(_limits, "set_openmp_wait_policy"):  # stream-limits 0.3
+    _limits.set_openmp_wait_policy()
 
 from hdfe_stream.core.profile import Profile  # noqa: E402
 from hdfe_stream.core.reporting import etable  # noqa: E402

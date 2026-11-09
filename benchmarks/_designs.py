@@ -12,7 +12,8 @@ estimators and libraries compared on it. Letters are unique across the suites
                               E  8 periods, 7 cohorts, 10% of the rows missing
                               F  8 periods, 7 cohorts          the diagnostics (Goodman-Bacon,
                                                                TWFE weights)
-    covariates_benchmark.py   G  Callaway-Sant'Anna with two covariates (selection on them)
+    covariates_benchmark.py   G  two covariates (selection on them): Callaway-Sant'Anna,
+                                 Sun-Abraham, BJS, two-stage, extended TWFE
                               H  region-by-period fixed effects (240 levels) and a covariate
     absorbed_benchmark.py     I  county-by-period fixed effects (n/40 counties: millions of levels)
                               J  county-by-period and industry-by-period, and a covariate

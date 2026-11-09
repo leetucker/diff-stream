@@ -85,8 +85,5 @@ matches the `feTR` type of the authors' TwoWayFEWeights. The other types
   de Chaisemartin and D'Haultfoeuille's `did_multiplegt_dyn` covers them.
 - Nonlinear ETWFE (logit, Poisson): R's etwfe, Stata's `jwdid`.
 - Fixed effects interacted with the unit (unit-specific trends).
-- More than 256 added design columns in two-stage. BJS has the same effect
-  estimates and absorbs fixed effects with any number of levels (as does
-  Sun-Abraham), with BJS's standard errors rather than Gardner's.
 - Sensitivity analysis for parallel trends: pass `fit.aggregate().beta` and
   `.vcov` to R's HonestDiD.

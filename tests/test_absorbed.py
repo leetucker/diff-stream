@@ -14,7 +14,13 @@ import pytest
 from numpy.testing import assert_allclose
 
 from benchmarks._files import digest, read_csv
-from diff_stream import UnimputedObservationsWarning, did_bjs, did_sun_abraham, refit_bootstrap
+from diff_stream import (
+    UnimputedObservationsWarning,
+    did_bjs,
+    did_sun_abraham,
+    did_two_stage,
+    refit_bootstrap,
+)
 from diff_stream.simulate import simulate_panel
 
 DATA = Path(__file__).parent / "data"
@@ -150,14 +156,14 @@ def test_iterative_matches_dense(small_panel, estimator, options):
 
 
 def test_solver_choice(small_panel, county_panel):
-    # up to 24 columns (levels and covariates) go to the dense design, above that to
+    # up to 40 columns (levels and covariates) go to the dense design, above that to
     # the iterative solver; explicit "dense" works to 256 columns
     few = did_sun_abraham("y ~ x | region", small_panel, **KW)  # 6 levels and a covariate
     assert few.diagnostics["fixed_effect_solver"] == "dense"
-    edge = did_bjs("y ~ 1 | region^time", small_panel.filter(pl.col("region") < 3), **KW)
-    assert edge.diagnostics["fixed_effect_solver"] == "dense"  # 3 regions x 8 periods = 24
-    over = did_bjs("y ~ x | region^time", small_panel.filter(pl.col("region") < 3), **KW)
-    assert over.diagnostics["fixed_effect_solver"] == "iterative"  # 24 levels and a covariate
+    edge = did_bjs("y ~ 1 | region^time", small_panel.filter(pl.col("region") < 5), **KW)
+    assert edge.diagnostics["fixed_effect_solver"] == "dense"  # 5 regions x 8 periods = 40
+    over = did_bjs("y ~ x | region^time", small_panel.filter(pl.col("region") < 5), **KW)
+    assert over.diagnostics["fixed_effect_solver"] == "iterative"  # 40 levels and a covariate
     assert (
         did_sun_abraham(
             "y ~ x | region^time", small_panel, fixed_effect_solver="dense", **KW
@@ -246,3 +252,86 @@ def test_batch_rows_follow_the_budget():
     rows = batch_rows(store(1), 50)
     assert rows == int(0.25e9 / (32 * 52))
     assert batch_rows(store(0.01), 50) == 50_000
+
+
+def test_solve_block_follows_the_memory_left():
+    from types import SimpleNamespace
+
+    from diff_stream.absorbed import SOLVE_BLOCK, solve_block
+
+    def store(headroom_gb, units):
+        budget = SimpleNamespace(headroom_gb=lambda: headroom_gb)
+        return SimpleNamespace(budget=budget, n_units=units)
+
+    assert solve_block(store(20.0, 3_000_000), 30) == SOLVE_BLOCK  # room: hdfe-stream's default
+    assert solve_block(store(20.0, 3_000_000), 5) == 5  # never more columns than there are
+    # half the room, 40 bytes per unit and column
+    assert solve_block(store(1.8, 3_000_000), 30) == 7
+    assert solve_block(store(0.0, 3_000_000), 30) == 1  # at least one
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {},
+        {"weights": "w"},
+        {"incomplete_units": "keep"},
+        {"anticipation": 1},
+        {"event_study": False},
+        {"event_study": False, "weights": "w", "anticipation": 1},
+        {"reference_period": -2},
+    ],
+    ids=[
+        "plain",
+        "weighted",
+        "unbalanced",
+        "anticipation",
+        "static",
+        "static_weighted",
+        "reference",
+    ],
+)
+def test_two_stage_iterative_matches_dense(small_panel, options):
+    d = small_panel
+    if "incomplete_units" in options:
+        d = d.filter(~((pl.col("id") % 7 == 0) & pl.col("time").is_in([3, 6])))
+    if "anticipation" in options:
+        d = d.filter(pl.col("first_treat") != 2)
+    a, b = (
+        did_two_stage("y ~ x | region^time", d, fixed_effect_solver=solver, **options, **KW)
+        for solver in ("dense", "iterative")
+    )
+    assert [a.diagnostics["fixed_effect_solver"], b.diagnostics["fixed_effect_solver"]] == [
+        "dense",
+        "iterative",
+    ]
+    assert a.coefnames == b.coefnames
+    assert_allclose(b.beta, a.beta, atol=1e-9, rtol=0)
+    assert_allclose(b.vcov, a.vcov, atol=1e-10, rtol=0)
+
+
+@pytest.mark.parametrize("name", ["county", "two_terms"])
+def test_two_stage_with_many_levels_matches_bjs(county_panel, name):
+    """County-by-period effects (1,200 levels) exceed the dense design's 256 columns,
+    so "auto" absorbs them; the estimates are BJS's, which the fixest-validated BJS
+    fit gives, and the covariance is the corrected two-stage one."""
+    fml, options = CASES[name]
+    fit = did_two_stage(fml, county_panel, **options, **KW)
+    assert fit.diagnostics["fixed_effect_solver"] == "iterative"
+    bjs = did_bjs(fml, county_panel, **options, **KW)
+    event = bjs.aggregate("event_time")
+    ix = [fit.coefnames.index(n) for n in event.coefnames]
+    assert_allclose(fit.beta[ix], event.beta, atol=1e-9, rtol=0)
+    assert np.all(np.isfinite(fit.vcov)) and np.all(np.diag(fit.vcov) > 0)
+    bjs.cleanup()
+    with pytest.raises(ValueError, match="256"):
+        did_two_stage(fml, county_panel, fixed_effect_solver="dense", **options, **KW)
+
+
+def test_two_stage_iterative_reports_unidentified_levels(county_panel):
+    """A fixed-effect level of a treated observation with no untreated rows."""
+    d = county_panel.filter(
+        ~((pl.col("county") == pl.col("county").first()) & (pl.col("first_treat") == 0))
+    )
+    with pytest.raises(ValueError, match="no untreated observation|unidentified|not identified"):
+        did_two_stage("y ~ 1 | county^time", d, **KW)
