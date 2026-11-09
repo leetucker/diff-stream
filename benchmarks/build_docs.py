@@ -68,6 +68,12 @@ def mem(suite, model, config, n):
     return float(r.peak_memory_mb)
 
 
+def disk(suite, model, config, n):
+    r = row(suite, model, config, n)
+    assert r is not None and r.status == "ok", (suite, model, config, n)
+    return float(r.peak_disk_mb)
+
+
 def cell(r):
     if r is None:
         return "–"
@@ -462,14 +468,15 @@ fits the same task from the same Parquet file (see [the overview](index.md)).
 - **Sun-Abraham** with the iterative solver takes {secs(H_sa(1_000_000))} seconds at a million units, against
   {secs(H_sa_dense(1_000_000))} for the dense solver, but at ten million units the iterative solver takes
   {secs(H_sa(10_000_000))} seconds and the dense solver {secs(H_sa_dense(10_000_000))}. The dense solver also peaks at
-  {gb(H_sa_dense_mem)} GB, where the iterative solver reaches {gb(H_sa_mem)} GB, which is the benchmark's memory cap and
+  {gb(H_sa_dense_mem)} GB, where the iterative solver reaches {gb(H_sa_mem)} GB, a figure that
   counts pages of a memory-mapped file (see [the overview](index.md#peak-memory)). For which
   solver `"auto"` picks, see [Sun-Abraham](../estimators/sun_abraham.md#fixed-effects-with-many-levels).
 - **Other implementations:** fixest's `sunab` takes {secs(t("covariates", "H", "fixest sunab (R)", 1_000_000))} seconds at a million units and runs out of
   memory at ten million. R's `didimputation` takes {secs(t("covariates", "H", "didimputation (R)", 100_000))} seconds at
   100,000 units and runs out of memory at a million. R's `did2s` was not installed for this design.
-- One thread is slow at ten million units: the Sun-Abraham and two-stage fits time out at
-  1,800 seconds.
+- One thread takes {secs(t("covariates", "H", "diff-stream did_sun_abraham (1 thread)", 10_000_000))} seconds for Sun-Abraham,
+  {secs(t("covariates", "H", "diff-stream did_bjs (1 thread)", 10_000_000))} for BJS and
+  {secs(t("covariates", "H", "diff-stream did_two_stage (1 thread)", 10_000_000))} for two-stage at ten million units.
 
 {table("covariates", "H", exclude=("limit", "passive"))}
 
@@ -484,6 +491,19 @@ the numbers are in `benchmarks/results/covariates.csv`.
 # ---------------------------------------------------------------- absorbed
 aI = lambda e, n: t("absorbed", "I", DS[e], n)  # noqa: E731
 aJ = lambda e, n: t("absorbed", "J", DS[e], n)  # noqa: E731
+
+
+def one_thread_range(n):
+    """(smallest, largest) ratio of the one-thread time to the all-threads time."""
+    r = [
+        t("absorbed", m, f"{DS[e]} (1 thread)", n) / t("absorbed", m, DS[e], n)
+        for m in "IJ"
+        for e in ("sunab", "bjs")
+    ]
+    return min(r), max(r)
+
+
+one_1m, one_10m = one_thread_range(1_000_000), one_thread_range(10_000_000)
 absorbed_md = f"""# Fixed effects with millions of levels
 
 Two designs with 8 periods and 7 cohorts, in which units belong to counties
@@ -503,8 +523,8 @@ comparable regression that ran.
   {secs(aJ("bjs", 1_000_000))} in design J, and ten million in {secs(aI("bjs", 10_000_000))} and
   {secs(aJ("bjs", 10_000_000))}.
 - **Sun-Abraham** takes {secs(aI("sunab", 1_000_000))} and {secs(aJ("sunab", 1_000_000))} seconds at a million units, but at ten million
-  units it takes {secs(aI("sunab", 10_000_000))} seconds in design I and times out at 1,800 seconds in design J.
-  BJS fits these designs much faster than Sun-Abraham at ten million units.
+  units it takes {secs(aI("sunab", 10_000_000))} seconds in design I and {secs(aJ("sunab", 10_000_000))} in design J,
+  less than BJS takes.
 - **fixest's `sunab`** takes {secs(t("absorbed", "I", "fixest sunab (R)", 1_000_000))} and {secs(t("absorbed", "J", "fixest sunab (R)", 1_000_000))} seconds at a million units,
   with peaks of {gb(mem("absorbed", "I", "fixest sunab (R)", 1_000_000))} and {gb(mem("absorbed", "J", "fixest sunab (R)", 1_000_000))} GB, and runs
   out of memory at ten million.
@@ -512,8 +532,8 @@ comparable regression that ran.
   100,000 units. At a million and ten million units the benchmark's call fails
   (`predict()` needs the fixed-effect values that fixest drops with this many
   levels), so there is no result.
-- With one thread, the fits take 1.7 to 2.5 times as long at a million units and
-  1.9 to 2.0 times as long at ten million, where Sun-Abraham times out in both designs.
+- With one thread, the fits take {one_1m[0]:.1f} to {one_1m[1]:.1f} times as long at a million units and
+  {one_10m[0]:.1f} to {one_10m[1]:.1f} times as long at ten million.
 
 ## Design I
 
@@ -526,9 +546,13 @@ comparable regression that ran.
 Every comparator that finished agrees with diff-stream's fit to 6e-9 or
 better.
 
-With `max_memory_gb=4`, Sun-Abraham in design I still reports a peak of
-{gb(mem("absorbed", "I", "diff-stream did_sun_abraham (4 GB limit)", 10_000_000))} GB at ten million units; the peak counts
-memory-mapped pages (see [the overview](index.md#peak-memory)).
+With `max_memory_gb=4` (and Polars held to 4 threads, as a small job would be), Sun-Abraham in
+design I takes {secs(t("absorbed", "I", "diff-stream did_sun_abraham (4 GB limit)", 10_000_000))} seconds at ten million
+units, against {secs(t("absorbed", "I", "diff-stream did_sun_abraham", 10_000_000))} without a limit, with a peak of
+{gb(mem("absorbed", "I", "diff-stream did_sun_abraham (4 GB limit)", 10_000_000))} GB (which counts memory-mapped pages; see
+[the overview](index.md#peak-memory)) and {gb(disk("absorbed", "I", "diff-stream did_sun_abraham (4 GB limit)", 10_000_000))} GB of scratch
+disk. BJS takes {secs(t("absorbed", "I", "diff-stream did_bjs (4 GB limit)", 10_000_000))} seconds under the same limit, against
+{secs(aI("bjs", 10_000_000))}.
 
 Figures (time, memory and disk) are in `docs/figures/`, and the numbers are in
 `benchmarks/results/absorbed.csv`.
@@ -557,8 +581,8 @@ the number of units. Stata's commands are not benchmarked. See
   about 100,000 units the faster Python and R implementations are comparable.
 - **Covariates and fixed effects cost more** but scale the same way
   ([covariates](covariates.md)). With millions of fixed-effect levels BJS fits ten
-  million units in {secs(aI("bjs", 10_000_000))} to {secs(aJ("bjs", 10_000_000))} seconds; Sun-Abraham needs
-  {secs(aI("sunab", 10_000_000))} seconds or more ([absorbed fixed effects](absorbed.md)).
+  million units in {secs(aI("bjs", 10_000_000))} to {secs(aJ("bjs", 10_000_000))} seconds and Sun-Abraham in
+  {secs(aI("sunab", 10_000_000))} to {secs(aJ("sunab", 10_000_000))} ([absorbed fixed effects](absorbed.md)).
 - **Estimates agree** with the other implementations to 5e-8 or better where
   they use the same conventions; the exceptions are listed on each page.
 

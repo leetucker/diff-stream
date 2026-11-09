@@ -21,12 +21,12 @@ comparable regression that ran.
 :alt: Wall time against the number of units with county-by-period effects, one line per implementation, log-log
 ```
 
-- **BJS** fits a million units in 17.4 seconds in design I and
-  24.8 in design J, and ten million in 262 and
-  396.
-- **Sun-Abraham** takes 18.3 and 24.1 seconds at a million units, but at ten million
-  units it takes 1,684 seconds in design I and times out at 1,800 seconds in design J.
-  BJS fits these designs much faster than Sun-Abraham at ten million units.
+- **BJS** fits a million units in 17.5 seconds in design I and
+  25.2 in design J, and ten million in 260 and
+  399.
+- **Sun-Abraham** takes 14.7 and 21.0 seconds at a million units, but at ten million
+  units it takes 173 seconds in design I and 252 in design J,
+  less than BJS takes.
 - **fixest's `sunab`** takes 29.1 and 32.6 seconds at a million units,
   with peaks of 19.8 and 20.5 GB, and runs
   out of memory at ten million.
@@ -34,39 +34,43 @@ comparable regression that ran.
   100,000 units. At a million and ten million units the benchmark's call fails
   (`predict()` needs the fixed-effect values that fixest drops with this many
   levels), so there is no result.
-- With one thread, the fits take 1.7 to 2.5 times as long at a million units and
-  1.9 to 2.0 times as long at ten million, where Sun-Abraham times out in both designs.
+- With one thread, the fits take 1.7 to 2.8 times as long at a million units and
+  1.9 to 2.6 times as long at ten million.
 
 ## Design I
 
 | Estimator | Implementation | 10,000 | 100,000 | 1,000,000 | 10,000,000 |
 |---|---|---:|---:|---:|---:|
-| Sun-Abraham | diff-stream | 0.29 | 2.1 | 18.3 | 1,684 |
-|  | diff-stream, 1 thread | 0.46 | 4.3 | 44.0 | timeout |
-|  | diff-stream, 4 GB limit | 0.29 | 2.3 | 19.3 | 1,656 |
+| Sun-Abraham | diff-stream | 0.25 | 1.8 | 14.7 | 173 |
+|  | diff-stream, 1 thread | 0.45 | 4.1 | 41.5 | 442 |
+|  | diff-stream, 4 GB limit | 0.27 | 4.0 | 18.8 | 326 |
 |  | fixest sunab (R) | 1.0 | 3.3 | 29.1 | out of memory |
-| BJS | diff-stream | 0.61 | 2.0 | 17.4 | 262 |
-|  | diff-stream, 1 thread | 0.33 | 2.7 | 29.7 | 491 |
-|  | diff-stream, 4 GB limit | 0.59 | 2.1 | 16.5 | 617 |
+| BJS | diff-stream | 0.47 | 1.9 | 17.5 | 260 |
+|  | diff-stream, 1 thread | 0.35 | 2.6 | 29.9 | 492 |
+|  | diff-stream, 4 GB limit | 0.49 | 2.0 | 20.5 | 487 |
 |  | didimputation (R) | 3.9 | 229 | – | – |
 
 ## Design J
 
 | Estimator | Implementation | 10,000 | 100,000 | 1,000,000 | 10,000,000 |
 |---|---|---:|---:|---:|---:|
-| Sun-Abraham | diff-stream | 0.37 | 2.9 | 24.1 | timeout |
-|  | diff-stream, 1 thread | 0.61 | 5.8 | 59.5 | timeout |
+| Sun-Abraham | diff-stream | 0.33 | 2.4 | 21.0 | 252 |
+|  | diff-stream, 1 thread | 0.59 | 5.4 | 56.3 | 620 |
 |  | fixest sunab (R) | 0.89 | 3.6 | 32.6 | out of memory |
-| BJS | diff-stream | 0.71 | 2.7 | 24.8 | 396 |
-|  | diff-stream, 1 thread | 0.52 | 4.3 | 49.1 | 782 |
+| BJS | diff-stream | 0.65 | 2.7 | 25.2 | 399 |
+|  | diff-stream, 1 thread | 0.52 | 4.3 | 49.0 | 777 |
 |  | didimputation (R) | 4.0 | 239 | – | – |
 
 Every comparator that finished agrees with diff-stream's fit to 6e-9 or
 better.
 
-With `max_memory_gb=4`, Sun-Abraham in design I still reports a peak of
-29.8 GB at ten million units; the peak counts
-memory-mapped pages (see [the overview](index.md#peak-memory)).
+With `max_memory_gb=4` (and Polars held to 4 threads, as a small job would be), Sun-Abraham in
+design I takes 326 seconds at ten million
+units, against 173 without a limit, with a peak of
+6.0 GB (which counts memory-mapped pages; see
+[the overview](index.md#peak-memory)) and 5.1 GB of scratch
+disk. BJS takes 487 seconds under the same limit, against
+260.
 
 Figures (time, memory and disk) are in `docs/figures/`, and the numbers are in
 `benchmarks/results/absorbed.csv`.

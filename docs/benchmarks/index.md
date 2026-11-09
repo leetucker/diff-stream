@@ -9,20 +9,20 @@ the number of units. Stata's commands are not benchmarked. See
 
 - **diff-stream scales to panels the others cannot hold.** At ten million units
   over 8 periods (80 million rows) all six estimators finish in
-  19.2 to 27.6 seconds with a peak of 3.4 to 3.7 GB, and at ten million
+  18.7 to 25.7 seconds with a peak of 3.4 to 3.6 GB, and at ten million
   units over 30 periods (300 million rows) in
-  72.8 to 115 seconds. At that size most other implementations run out of memory
+  82.6 to 116 seconds. At that size most other implementations run out of memory
   on this 30 GB machine; the ones that finish (R's `did`, fixest on stacked
   data, diff-diff's Callaway-Sant'Anna with few cohorts) take as long or longer and
   need 17.0 to 21.2 GB.
-- **It is faster at a million units.** The fits take 0.83 to 1.8 seconds, against
+- **It is faster at a million units.** The fits take 0.87 to 1.6 seconds, against
   2.9 to 16.4 for Callaway-Sant'Anna in other
   implementations, and from a few seconds to over 800 seconds for the other estimators. Below
   about 100,000 units the faster Python and R implementations are comparable.
 - **Covariates and fixed effects cost more** but scale the same way
   ([covariates](covariates.md)). With millions of fixed-effect levels BJS fits ten
-  million units in 262 to 396 seconds; Sun-Abraham needs
-  1,684 seconds or more ([absorbed fixed effects](absorbed.md)).
+  million units in 260 to 399 seconds and Sun-Abraham in
+  173 to 252 ([absorbed fixed effects](absorbed.md)).
 - **Estimates agree** with the other implementations to 5e-8 or better where
   they use the same conventions; the exceptions are listed on each page.
 
