@@ -31,8 +31,9 @@ dependencies = [
     # formula compilation, IPW, influence-function accumulation, balance tables,
     # the profile and the result base classes (hdfe_stream.core's stable names)
     # 0.9.1: HDFEResult.solve_normal_equations, which BJS with absorbed fixed effects uses
-    "hdfe-stream[formula]>=0.9.1",
-    "stream-limits>=0.2.1",     # thread and memory limits for jobs on a scheduler
+    # 0.9.2: stored cell sums are read only when needed (Sun-Abraham with many variables)
+    "hdfe-stream[formula]>=0.9.2",
+    "stream-limits>=0.3.0",     # thread and memory limits for jobs on a scheduler
     "polars>=1.37,!=1.41.*",    # 1.41 panics in streaming joins of wide frames
     # NumPy 2 and the first releases built for it. With NumPy 1.x linear algebra
     # a nearly collinear propensity design (tests/test_numerical_stress.py,
@@ -55,7 +56,7 @@ Changelog = "https://github.com/leetucker/diff-stream/blob/main/CHANGELOG.md"
 # the other Python packages live in environments of their own (see
 # benchmarks/README.md)
 benchmark = [
-    "stream-limits[launcher]>=0.2.1",
+    "stream-limits[launcher]>=0.3.0",
     "matplotlib>=3.7",
     "psutil>=5.9",
     "pandas>=2.0",
@@ -70,7 +71,7 @@ docs = [
 ]
 test = [
     "pytest>=7.0",
-    "stream-limits[testing]>=0.2.1",   # resource_runner, for the memory-limit tests
+    "stream-limits[testing]>=0.3.0",   # resource_runner, for the memory-limit tests
 ]
 
 [tool.setuptools.packages.find]

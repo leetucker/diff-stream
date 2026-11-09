@@ -136,9 +136,6 @@ def configs(scenario):
                     out[f"{DS} {function} ({name}, 1 thread)"] = kind(
                         scenario, "ds", fit, adjustment=adjustment, threads=1
                     )
-                    out[f"{DS} {function} ({name}, passive OpenMP wait)"] = kind(
-                        scenario, "ds", fit, adjustment=adjustment, ompwait="passive"
-                    )
                 for label, library in COMPETITORS[fit]:
                     if library in ("r", "dd"):
                         out[f"{label[:-1]}, {name})"] = kind(
@@ -147,11 +144,6 @@ def configs(scenario):
             continue
         out[f"{DS} {function}"] = kind(scenario, "ds", fit)
         out[f"{DS} {function} (1 thread)"] = kind(scenario, "ds", fit, threads=1)
-        if scenario == "G" and fit in ("gardner", "etwfe"):
-            # the compiled passes under OMP_WAIT_POLICY=passive, to compare with the default
-            out[f"{DS} {function} (passive OpenMP wait)"] = kind(
-                scenario, "ds", fit, ompwait="passive"
-            )
         if scenario in LIMITED and fit in ("cs", "sunab", "bjs", "gardner", "etwfe", "stacked"):
             out[f"{DS} {function} ({LIMITED[scenario]:g} GB limit)"] = kind(
                 scenario, "ds", fit, limit=LIMITED[scenario]
@@ -205,7 +197,7 @@ def child_env(label_kind):
     _s, library, _fit, options = parse(label_kind)
     if library != "ds":
         return {}
-    env = {"OMP_WAIT_POLICY": options["ompwait"]} if "ompwait" in options else {}
+    env = {}
     if "limit" in options:
         # Polars' read buffers grow with its thread pool (about 130 MB a thread), so a
         # fit held to a few GB is run, like a small job, with a few of them.
