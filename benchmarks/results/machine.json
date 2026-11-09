@@ -5,22 +5,22 @@
  "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
  "python": "3.13.16",
  "diff-stream": "0.1.0.dev0",
- "hdfe-stream": "0.9.1",
- "stream-limits": "0.2.1",
+ "hdfe-stream": "0.10.0",
+ "stream-limits": "0.3.0",
  "polars": "2.1.0",
  "numpy": "2.5.4",
  "numba": "0.68.1",
  "scipy": "1.18.1",
  "pyarrow": "26.0.1",
- "measured": "2026-11-08",
+ "measured": "2026-11-09",
  "ec2": {
-  "run": "2026-11-07T2102Z_c8id.4xlarge_spot_ds-only_kernels-rerun",
+  "run": "2026-11-09T2236Z_c8id.4xlarge_spot",
   "instance_type": "c8id.4xlarge",
   "market": "spot",
-  "region": "us-east-2",
-  "az": "us-east-2c",
+  "region": "us-west-2",
+  "az": "us-west-2b",
   "memory_max": "96% of memory (systemd MemoryMax)",
-  "data_disk": "local NVMe (/dev/nvme0n1)",
-  "baseline": "diff-stream/runs/2026-11-07T1511Z_c8id.4xlarge_spot_cs-kernels"
+  "data_disk": "local NVMe (/dev/nvme1n1)",
+  "baseline": "diff-stream/runs/2026-11-09T1210Z_c8id.4xlarge_spot"
  }
 }
