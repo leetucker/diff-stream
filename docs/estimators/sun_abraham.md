@@ -56,10 +56,11 @@ The default, `"auto"`, counts the levels in one pass over the data and uses
 dense for up to 40 columns (levels plus covariates), iterative above that.
 With one covariate on 8 periods, the two took about the same time at 40 to 48
 levels for Sun-Abraham, and at somewhat fewer for BJS, from 100,000 to 3
-million units. Below that dense is faster: at 1 million units, 24 levels took
-9 seconds against 18. Above it iterative is: at 240 levels dense took 126
-seconds at 1 million units and 391 at 3 million, against 17 and 57 for
-iterative. The limit sits just below the crossover because dense at many
+million units, on 8 cores. Below that dense is faster: at 1 million units, 24
+levels took 9 seconds against 18. Above it iterative is: in the
+[benchmarks](../benchmarks/covariates.md), at 240 levels dense took 51 seconds at
+1 million units and 537 at 10 million, against 16 and 170 for iterative, on 16
+cores. The limit sits just below the crossover because dense at many
 levels costs far more than iterative at few. Both give the same estimates and
 standard errors (to the solver's tolerance, 1e-10 relative);
 `fit.diagnostics["fixed_effect_solver"]` says which was used.
@@ -83,6 +84,14 @@ distinct fixed-effect combinations from disk, so with many levels most of the
 peak is file-backed memory that the operating system can drop under pressure,
 not memory the limit applies to. On 1 million units over 8 periods with 2 GB
 as the limit, the peak was 5.1 GB, of which 1.9 GB was ordinary memory.
+
+With millions of fixed-effect levels, the solve needs an array with a row for every
+level and a column for every cohort-period effect. If that is more than a fifth of the
+memory left, hdfe-stream keeps it in a file in the working directory (0.8 GB for
+2 million levels and 50 effects) and reads it back a block at a time, so a small limit
+costs some time and a little scratch disk but does not change the estimates. See
+[absorbed fixed effects](../benchmarks/absorbed.md) for a fit at ten million units
+under a 4 GB limit.
 
 ## Validated against
 

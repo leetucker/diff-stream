@@ -52,7 +52,9 @@ and standard errors, and `fit.diagnostics["fixed_effect_solver"]` says which was
 used. [Sun-Abraham](sun_abraham.md#fixed-effects-with-many-levels) gives the
 timings, which are about the same for two-stage: at 1 million units over 8
 periods, 24 levels took 8 seconds dense against 10 iterative, and 240 levels 48
-against 14.
+against 14 (on 8 cores). In the [benchmarks](../benchmarks/covariates.md), with 240
+levels and the iterative solver, the two-stage estimator fits 1 million units in
+12 seconds and 10 million in 146, on 16 cores.
 
 ## Validated against
 

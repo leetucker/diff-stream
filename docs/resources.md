@@ -38,8 +38,8 @@ or fixed effects (its columns squared). A panel with 50 periods and 50 cohorts
 has about 2,500 Callaway-Sant'Anna effects, a 50 MB covariance.
 
 On the 8-million-row simulated panel of the [benchmarks](benchmarks/scale.md),
-every estimator fits with `max_memory_gb=2` at a peak of about 1.1 GB, and
-peaks at about 1.9 GB without a limit. On the 80-million-row panel the limit
+every estimator fits with `max_memory_gb=2` at a peak of about 0.8 GB, and
+peaks at about 1.8 GB without a limit. On the 80-million-row panel the limit
 holds only if Polars has few threads: the memory it holds while reading grows with
 its thread pool, about 130 MB for each thread, and is not covered by
 `max_memory_gb`. In a test on that panel the fit peaked at about 1.1 GB with 4
@@ -81,9 +81,9 @@ sleep between the compiled passes instead of spinning. In the benchmarks this wa
 2% to 15% faster at a million units and more at small sizes, with the same memory,
 and on a laptop with performance and efficiency cores it is the difference between
 8 threads being slower than 1 and faster. A value you have set yourself is kept
-(`OMP_WAIT_POLICY=active` restores spinning). It needs a stream-limits that has
-`set_openmp_wait_policy`, and applies to the process, so other OpenMP libraries
-in it wait the same way.
+(`OMP_WAIT_POLICY=active` restores spinning). It applies to the process, so other
+OpenMP libraries in it wait the same way. On Windows, numba's OpenMP runtime does not
+read the variable, so it changes nothing there.
 
 `refit_bootstrap(n_workers=k)` divides `n_threads` and the memory left among
 its k worker processes.
