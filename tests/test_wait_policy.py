@@ -16,7 +16,9 @@ def _policy(**env):
     e = {k: v for k, v in os.environ.items() if k != "OMP_WAIT_POLICY"}
     e.update(env)
     code = "import os, diff_stream; print(os.environ.get('OMP_WAIT_POLICY'))"
-    r = subprocess.run([sys.executable, "-c", code], env=e, capture_output=True, text=True, timeout=300)
+    r = subprocess.run(
+        [sys.executable, "-c", code], env=e, capture_output=True, text=True, timeout=300
+    )
     assert r.returncode == 0, r.stderr
     return r.stdout.strip()
 

@@ -25,7 +25,7 @@ def test_parallel_draws_match_serial_and_use_divided_threads(estimator, last, tm
         allow_time_varying_weights=True,
         incomplete_units="keep",
         anticipation=1,
-        max_memory_gb=3,
+        max_memory_gb=6,
         estimator=ESTIMATORS[estimator],
     )
     if estimator == "cs":
@@ -75,7 +75,7 @@ def test_parallel_failed_attempts_match_serial_without_redrawing(tmp_path):
         estimator=did_callaway_santanna,
         aggregate="overall",
         effective_sample_warning=None,
-        max_memory_gb=3,
+        max_memory_gb=6,
         workdir=tmp_path,
         **KW,
     )
@@ -135,7 +135,7 @@ def test_remote_errors_propagate_and_clean_scratch(failure, monkeypatch, tmp_pat
             small_data(),
             n_workers=2,
             reps=2,
-            max_memory_gb=3,
+            max_memory_gb=6,
             estimator=did_callaway_santanna,
             aggregate="overall",
             effective_sample_warning=None,
