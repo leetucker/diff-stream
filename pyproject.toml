@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "diff-stream"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Staggered difference-in-differences on data larger than memory: Callaway-Sant'Anna, Sun-Abraham, Borusyak-Jaravel-Spiess imputation, two-stage DiD and extended TWFE, with TWFE diagnostics"
 readme = "README.md"
 license = "MIT"

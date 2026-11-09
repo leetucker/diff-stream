@@ -89,8 +89,6 @@ for the limits.
 pip install diff-stream
 ```
 
-(Not on PyPI yet; install from the repository with `pip install -e .`.)
-
 ```{toctree}
 :hidden:
 :caption: Getting started

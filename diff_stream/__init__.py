@@ -24,7 +24,7 @@ from .results import DIDResult  # noqa: E402
 from .stacked import StackedResult, did_stacked  # noqa: E402
 from .twfe_weights import TWFEWeightResult, twfe_weights  # noqa: E402
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.1.0"
 __all__ = [
     "did_callaway_santanna",
     "did_sun_abraham",

@@ -25,9 +25,8 @@ fit.aggregate().summary()           # event study
 fit.aggregate("overall").summary()  # overall ATT
 ```
 
-**Status: in development** (version 0.1.0.dev0, not yet on PyPI). The
-estimators, inference and documentation are complete and tested; the
-[benchmarks](docs/benchmarks/index.md) compare them with other implementations.
+**Version 0.1.0.** The estimators, inference and documentation are complete and
+tested; the [benchmarks](docs/benchmarks/index.md) compare them with other implementations.
 
 ## What it does
 
@@ -109,10 +108,8 @@ which these packages differ.
 
 ## Install
 
-diff-stream is not on PyPI yet. Install it from the repository:
-
 ```bash
-pip install git+https://github.com/leetucker/diff-stream
+pip install diff-stream
 ```
 
 Python 3.10 or later. It depends on hdfe-stream (with its formula extra),
