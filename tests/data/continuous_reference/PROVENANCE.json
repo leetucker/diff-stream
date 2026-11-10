@@ -1,0 +1,19 @@
+{
+  "reference": "R contdid 0.1.1 (cont_did; degree 3 without interior knots, and degree 2 with two) with not-yet-treated controls and a varying base period, the only settings contdid 0.1.1 applies (contdid issue #19), on a dose grid spanning every cell's doses (contdid issue #16). Point estimates are contdid's. Standard errors are sqrt(sum(IF^2))/n from the returned influence functions, after three one-line corrections listed in continuous_reference.R: the ACRT rescaling of contdid PR #17 (issue #13), the sign of the control part of the ATT(d) influence function in ptetools process_dose_gt, and R did's estimated-share term in ptetools pte_aggte. Unchanged contdid standard errors are kept as se_contdid. The level event study and the overall ATT's 'group' aggregation are from R did 2.5.1 (att_gt, not-yet-treated, varying).",
+  "files": {
+    "benchmarks/external/continuous_panel.py": "a186cbee170f91d643d578387551fdb6d697bbcce91de2bb39c2bcf4e4e26204",
+    "benchmarks/external/continuous_reference.R": "c9f849ad5693030beae5129570c3a5800be5bf50501e687d9dc0f8334f40fd91",
+    "tests/data/continuous_panel.csv": "8efef1628debea7511f3d6b9e57b30f3f5e8e6b0d29fa345c2255e2b6e5b8b31",
+    "tests/data/continuous_reference/curves_contdid_se_cubic.csv": "ad9f23fd833901a6bcfb234c31c982bdc786cdd865903035d4e143428a1a5649",
+    "tests/data/continuous_reference/curves_contdid_se_quadratic_knots.csv": "e0d41d4c4d7a346bffefaa0e43e8fa01667c3577cd280b1d2daa848dde9cbe3e",
+    "tests/data/continuous_reference/curves_cubic.csv": "9b46d714cdd5e68118563d629b5195046bda37ba08277ad3415086cd9496ec5f",
+    "tests/data/continuous_reference/curves_quadratic_knots.csv": "ccaf67654d24edfcf8daaf609cf121e3cf53a0b113d6cf0570331bb76a94bfb5",
+    "tests/data/continuous_reference/event_level.csv": "cc2111b149d7fc6726de70586230d17490c83732aaeb165a864e8ff23e9d0b94",
+    "tests/data/continuous_reference/event_slope_cubic.csv": "0d6c11d878b12fc621c9f756570429ad884e5d0a4b4fc0c5635669d8d71e6d5d",
+    "tests/data/continuous_reference/event_slope_quadratic_knots.csv": "0971a712595862b4a19fdadb09d602b2951c94954ac1c0cba14fb21a4d47072d",
+    "tests/data/continuous_reference/overall_att_did.csv": "2386cf391565158868f65e31b59698605f03d001633de78b8bb802e907d38621",
+    "tests/data/continuous_reference/overall_cubic.csv": "15fcbb3194284451b8ab113b842fe11b750293f57ca726b2b3ff1b5fcb3555e7",
+    "tests/data/continuous_reference/overall_quadratic_knots.csv": "e9ed6a8a25382c9ba72681e06ebcb78f593042b5bbf67a996c23c91e720246a5",
+    "tests/data/continuous_reference/versions.csv": "a645aa9ecdb7a4b8c13566a2983b13c7b59c95a1251ebc559bfc4cda6d57be20"
+  }
+}
