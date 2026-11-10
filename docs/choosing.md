@@ -52,6 +52,13 @@ So the choice is mostly between two families: comparisons with one base period
 - **A regression with extra fixed effects** (region-by-year, industry-by-year):
   `did_sun_abraham`, `did_bjs` or `did_two_stage`; with many levels
   (county-by-year), `did_sun_abraham` or `did_bjs`.
+- **A treatment that comes in doses** (the size of a subsidy, the strength of a
+  policy), each unit's received once and kept: `did_continuous`, for the effect of
+  each dose, ATT(d), and of a little more of it, ACRT(d). Its effect of being
+  treated is Callaway-Sant'Anna's. Comparing the effects of different doses needs a
+  stronger assumption than parallel trends: that the units receiving each dose would
+  have had the same effect of it as the units receiving others (Callaway,
+  Goodman-Bacon and Sant'Anna 2024).
 
 Reporting two (one from each family) is common; a large difference between
 them points at a pre-trend.
@@ -93,6 +100,8 @@ See [Diagnostics](diagnostics.md).
 - Borusyak, K., Jaravel, X. and Spiess, J. (2024). Revisiting event-study
   designs: robust and efficient estimation. *Review of Economic Studies*
   91(6), 3253-3285.
+- Callaway, B., Goodman-Bacon, A. and Sant'Anna, P. H. C. (2024).
+  Difference-in-differences with a continuous treatment. NBER Working Paper 32117.
 - Callaway, B. and Sant'Anna, P. H. C. (2021). Difference-in-differences with
   multiple time periods. *Journal of Econometrics* 225(2), 200-230.
 - de Chaisemartin, C. and D'Haultfoeuille, X. (2020). Two-way fixed effects

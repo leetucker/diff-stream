@@ -8,8 +8,9 @@
 | [`did_two_stage`](two_stage.md) | Gardner (2022): two-stage DiD | `TwoStageResult` |
 | [`did_extended_twfe`](extended_twfe.md) | Wooldridge (2021): extended two-way fixed effects (linear) | `DIDResult` |
 | [`did_stacked`](stacked.md) | Cengiz et al. (2019), Wing, Freedman and Hollingsworth (2024): stacked DiD with corrective weights | `StackedResult` |
+| [`did_continuous`](continuous.md) | Callaway, Goodman-Bacon and Sant'Anna (2024): a treatment that comes in doses, with dose-response curves | `DoseResponseResult` |
 
-All six share the data arguments (`panel`, `cohort`, `incomplete_units`,
+The six for a treatment without doses share the data arguments (`panel`, `cohort`, `incomplete_units`,
 `weights`, `anticipation`, `last_treated_controls`; see [Your data](../data.md)),
 the standard errors (clustered by unit, `vcov="CRV0"` or `"CRV1"`) and the
 memory and thread options (see [Memory and threads](../resources.md)). The
@@ -26,4 +27,5 @@ bjs
 two_stage
 extended_twfe
 stacked
+continuous
 ```

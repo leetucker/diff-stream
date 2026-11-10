@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **`did_continuous`**: Callaway, Goodman-Bacon and Sant'Anna's
+  difference-in-differences with a continuous treatment. It gives the dose-response
+  curves ATT(d) and ACRT(d) (`dose_response()`, with simultaneous bands from the
+  multiplier bootstrap), the overall ATT and average causal response, and event
+  studies of either (`aggregate(target=...)`). It takes staggered adoption,
+  never-treated or not-yet-treated comparisons and both base periods, and runs out of
+  core like the other estimators. It matches R's contdid except where contdid has known
+  problems, in its dose-response curves and its standard errors (see Differences from
+  other packages).
+
 ## 0.1.0
 
 The first release.

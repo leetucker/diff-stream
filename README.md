@@ -44,6 +44,9 @@ tested; the [benchmarks](docs/benchmarks/index.md) compare them with other imple
   covariate-interacted effects.
 - `did_stacked`: stacked DiD with corrective weights, without building the
   stack.
+- `did_continuous`: Callaway, Goodman-Bacon and Sant'Anna's DiD with a
+  continuous treatment (a dose): dose-response curves, the average causal
+  response, and event studies.
 
 **Data**
 - Unbalanced panels, sampling weights (also time-varying), anticipation, and

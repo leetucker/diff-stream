@@ -15,6 +15,10 @@
    :members:
    :inherited-members:
 
+.. autoclass:: DoseResponseResult
+   :members:
+   :inherited-members:
+
 .. autoclass:: BJSPlaceboResult
    :members:
    :inherited-members:

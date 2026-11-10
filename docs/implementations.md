@@ -66,6 +66,45 @@ never-treated units, as for the other estimators here; etwfe's is
 not-yet-treated (`cgroup = "notyet"`), so set `control_group` explicitly when
 comparing. Only the linear model is implemented.
 
+**Continuous treatment.** `did_continuous` matches the authors' R contdid 0.1.1 in
+its point estimates, with these differences:
+
+- *The dose-response curves.* contdid fits each cohort-period spline with boundary
+  knots at that cell's range of doses but evaluates the curves with boundary knots at
+  the range of `dvals`, so its ATT(d) and ACRT(d) are off unless every cell's doses
+  span exactly the grid ([contdid issue #16](https://github.com/bcallaway11/contdid/issues/16),
+  fix proposed in [PR #18](https://github.com/bcallaway11/contdid/pull/18)). Here the
+  spline has its boundary at the range of all treated doses, for fitting and
+  evaluating alike, and doses outside that range are an error.
+- *Options contdid ignores.* contdid 0.1.1 accepts `control_group`, `base_period`
+  and weights but does not apply them: it always uses not-yet-treated comparisons, a
+  varying base period and no weights
+  ([contdid issue #19](https://github.com/bcallaway11/contdid/issues/19)). Here both
+  comparisons and both base periods are applied. Weights are not supported.
+- *Standard errors.* Three problems in contdid and in ptetools, which it uses for
+  inference, make its standard errors differ from these. The estimates are not
+  affected.
+  - Its ACRT standard errors (overall, cohort-period and event study) are too small
+    by the share of treated units in each cell
+    ([contdid issue #13](https://github.com/bcallaway11/contdid/issues/13), fix
+    proposed in [PR #17](https://github.com/bcallaway11/contdid/pull/17)). On the
+    validation panel they were about a third of these.
+  - Its ATT(d) standard errors reverse the covariance between a unit's part as a
+    treated unit in one cohort-period and as a comparison unit in another (with
+    not-yet-treated comparisons): ptetools' `process_dose_gt` gives the comparison
+    units' part the wrong sign. On the validation panel they were 1% to 4%
+    smaller than these.
+  - Its overall ATT and event-study standard errors use a term for the estimated
+    cohort shares that differs from R did's, which these follow: ptetools'
+    `pte_aggte` centers each cohort indicator at the cohort's share of the treated
+    units rather than of all units. The differences were under 0.2%.
+- *The overall ATT* is a cohort-weighted average of post-treatment cells, R did's
+  `aggte(type = "group")`. `aggregate("overall")` weights cells by their units
+  instead, as for Callaway-Sant'Anna.
+- *The level event study.* contdid 0.1.1 computes it by passing the dose to
+  `ptetools::did_attgt`, which DRDID 1.4.0 rejects; it is Callaway-Sant'Anna on being
+  treated, and is checked against R did.
+
 **Aggregation.** `horizons` filters event times for every kind of
 aggregation, including calendar, where R did ignores its event-time limits.
 
@@ -81,8 +120,8 @@ matches the `feTR` type of the authors' TwoWayFEWeights. The other types
 
 ## Not implemented
 
-- Treatment that switches off, or continuous treatment, in the estimators:
-  de Chaisemartin and D'Haultfoeuille's `did_multiplegt_dyn` covers them.
+- Treatment that switches off: de Chaisemartin and D'Haultfoeuille's
+  `did_multiplegt_dyn` covers it.
 - Nonlinear ETWFE (logit, Poisson): R's etwfe, Stata's `jwdid`.
 - Fixed effects interacted with the unit (unit-specific trends).
 - Sensitivity analysis for parallel trends: pass `fit.aggregate().beta` and
