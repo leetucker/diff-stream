@@ -35,8 +35,13 @@ class CohortScoreCovariance:
         self._square = {}  # cohort -> sum of anchor**2
         self.n_clusters = 0
 
-    def add(self, g, scores, anchor=None):
-        """Add one row per unit: cohort labels, cell scores and share anchors."""
+    def add(self, g, scores, anchor=None, columns=None):
+        """Add one row per unit: cohort labels, cell scores and share anchors.
+
+        ``columns`` may map each cohort to the columns its units' scores can be
+        nonzero in. Only those are then copied, instead of finding them by scanning
+        every column, which with wide score matrices takes longer than the products.
+        """
         anchor = np.ones(len(g)) if anchor is None else anchor
         order = np.argsort(g, kind="stable")
         labels = g[order]
@@ -45,17 +50,33 @@ class CohortScoreCovariance:
         for a, b in zip(starts[:-1], starts[1:], strict=True):
             rows = order[a:b]
             k = labels[a].item()
-            S = scores[rows]
-            used = np.flatnonzero(np.any(S != 0, axis=0))
-            if len(used) == M:
-                self.V += S.T @ S
-            elif len(used):
-                block = S[:, used]
-                self.V[np.ix_(used, used)] += block.T @ block
             w = anchor[rows]
-            self._weighted[k] = self._weighted.get(k, 0.0) + w @ S
+            if columns is not None:
+                self.add_block(k, scores[np.ix_(rows, columns[k])], columns[k], w)
+                continue
+            else:
+                S = scores[rows]
+                used = np.flatnonzero(np.any(S != 0, axis=0))
+                if len(used) == M:
+                    self.V += S.T @ S
+                elif len(used):
+                    block = S[:, used]
+                    self.V[np.ix_(used, used)] += block.T @ block
+                weighted = w @ S
+            self._weighted[k] = self._weighted.get(k, 0.0) + weighted
             self._square[k] = self._square.get(k, 0.0) + float(w @ w)
         self.n_clusters += len(g)
+
+    def add_block(self, k, block, used, anchor=None, *, count=False):
+        """Add the units of one cohort ``k``: their scores in columns ``used`` only."""
+        anchor = np.ones(len(block)) if anchor is None else anchor
+        self.V[np.ix_(used, used)] += block.T @ block
+        weighted = np.zeros(self.V.shape[0])
+        weighted[used] = anchor @ block
+        self._weighted[k] = self._weighted.get(k, 0.0) + weighted
+        self._square[k] = self._square.get(k, 0.0) + float(anchor @ anchor)
+        if count:
+            self.n_clusters += len(block)
 
     def blocks(self):
         """(V, cross, shares): the blocks of the joint [scores, share] sums."""

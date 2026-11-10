@@ -16,6 +16,7 @@ from .api import did_bjs, did_callaway_santanna, did_sun_abraham  # noqa: E402
 from .bacon import BaconResult, bacon_decomp  # noqa: E402
 from .bjs_placebo import BJSPlaceboResult  # noqa: E402
 from .bootstrap import BootstrapFailureWarning, RefitBootstrapResult, refit_bootstrap  # noqa: E402
+from .continuous import DoseResponseResult, did_continuous  # noqa: E402
 from .effective_sample import LowEffectiveSampleWarning  # noqa: E402
 from .etwfe import did_extended_twfe  # noqa: E402
 from .gardner import TwoStageResult, did_two_stage  # noqa: E402
@@ -32,12 +33,14 @@ __all__ = [
     "did_two_stage",
     "did_extended_twfe",
     "did_stacked",
+    "did_continuous",
     "bacon_decomp",
     "twfe_weights",
     "refit_bootstrap",
     "DIDResult",
     "TwoStageResult",
     "StackedResult",
+    "DoseResponseResult",
     "BJSPlaceboResult",
     "BaconResult",
     "TWFEWeightResult",

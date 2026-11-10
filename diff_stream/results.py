@@ -51,6 +51,9 @@ class DIDResult(RegressionResult):
     _suppression_source: object = field(default=None, repr=False)
     _internal: dict | None = field(default=None, repr=False)
     _periods: object = field(default=None, repr=False)
+    # The public function to name in summaries, when not the estimator's own
+    # (did_continuous keeps its binarized and slope cells as CS results).
+    _display: str | None = field(default=None, repr=False)
     _normal_inference = True
 
     def covariate_balance(self, *, cohort=None, time=None):
@@ -494,20 +497,23 @@ class DIDResult(RegressionResult):
             },
             _contributor_table=p.contributors,
             _composition_table=p.composition,
+            _display=self._display,
         )
+
+    def _public_name(self):
+        return self._display or PUBLIC_ESTIMATORS.get(self.estimator, self.estimator)
 
     def _summary_fields(self):
         return {
             **super()._summary_fields(),
-            "estimator": PUBLIC_ESTIMATORS.get(self.estimator, self.estimator),
+            "estimator": self._public_name(),
             "n_units": self.n_units,
             "diagnostics": self.diagnostics,
         }
 
     def _summary_lines(self):
         return [
-            f"estimator: {PUBLIC_ESTIMATORS.get(self.estimator, self.estimator)}; "
-            f"units: {self.n_units:,}",
+            f"estimator: {self._public_name()}; units: {self.n_units:,}",
             *super()._summary_lines(),
             self.diagnostics.get("inference", ""),
             *(
