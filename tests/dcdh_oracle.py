@@ -1,19 +1,25 @@
-"""A dense, direct transcription of DIDmultiplegtDYN 2.4.0's estimator (no covariates). Never production code.
+"""A dense, direct transcription of DIDmultiplegtDYN 2.4.0's estimator. Never production code.
 
-Missing periods (NaN outcome and treatment) allowed; unit weights, no clustering, no trends.
-Y and D are groups x periods. Follows did_multiplegt_main / did_multiplegt_dyn_core /
-compute_placebo_effects_polars / compute_E_hat_gt_polars / compute_DOF_gt_polars.
+Missing periods (NaN outcome and treatment) allowed; weights by group and period (W),
+trends by group (``strata``: trends_nonparam) and linear trends (trends_lin); no
+clustering. Y and D are groups x periods. Follows did_multiplegt_main /
+did_multiplegt_dyn_core / compute_placebo_effects_polars / compute_E_hat_gt_polars /
+compute_DOF_gt_polars.
 """
 
 import numpy as np
 
 
-def prepare(D, *, drop_larger_lower=True):
+def prepare(D, *, strata=None, linear_trends=False, drop_larger_lower=True):
     """Groups, baselines and windows from the treatment, as did_multiplegt_main.
 
-    Missing periods (NaN) are periods with neither outcome nor treatment.
+    Missing periods (NaN) are periods with neither outcome nor treatment. ``strata``
+    (one code per group, trends_nonparam) splits each baseline; groups are compared
+    only within a (baseline, stratum) cell. With ``linear_trends``, groups first
+    switching in period 2 are dropped (after G is counted) before the windows.
     """
     G, T = D.shape
+    code = np.zeros(G) if strata is None else np.asarray(strata, dtype=float)
     t = np.arange(1, T + 1)
     obs = np.isfinite(D)
     first_obs = obs.argmax(axis=1)
@@ -26,15 +32,20 @@ def prepare(D, *, drop_larger_lower=True):
     changed = obs & (np.abs(diff) > 0)
     ever = np.maximum.accumulate(changed, axis=1)
     F = np.where(ever.any(axis=1), ever.argmax(axis=1) + 1, 0)  # periods 1..T, 0 never
-    # design restriction: within a baseline, F must vary (never-switchers count as F=0)
-    for d in np.unique(d_sq[keep]):
-        mine = keep & (d_sq == d)
+    # cells: (baseline, stratum)
+    _, sid = np.unique(
+        np.stack([np.nan_to_num(d_sq, nan=-1e300), code], 1), axis=0, return_inverse=True
+    )
+    sid = sid.ravel()
+    # design restriction: within a cell, F must vary (never-switchers count as F=0)
+    for c in np.unique(sid[keep]):
+        mine = keep & (sid == c)
         if np.unique(F[mine]).size < 2:
             keep[mine] = False
-    # (t, d) rows where no observed group of baseline d is unswitched are dropped
+    # (t, cell) rows where no observed group of the cell is unswitched are dropped
     present = obs.copy()
-    for d in np.unique(d_sq[keep]):
-        mine = keep & (d_sq == d)
+    for c in np.unique(sid[keep]):
+        mine = keep & (sid == c)
         open_ = (obs[mine] & ~ever[mine]).any(axis=0)
         present[np.ix_(mine, ~open_)] = False
     G_R = int(keep.sum())  # G as DIDmultiplegtDYN counts it
@@ -47,10 +58,12 @@ def prepare(D, *, drop_larger_lower=True):
     trunc = np.where(gap, last_before + 1, np.where(F == 0, last_obs + 2, 0))
     present &= ~(gap[:, None] & (t[None, :] > last_before[:, None]))
     F = np.where((F == 0) | gap, T_max + 1, F)
+    if linear_trends:
+        keep &= F != 2
     F_trunc = np.where(trunc > 0, np.minimum(F, trunc), F)
     T_g = np.zeros(G, dtype=int)
-    for d in np.unique(d_sq[keep]):
-        mine = keep & (d_sq == d)
+    for c in np.unique(sid[keep]):
+        mine = keep & (sid == c)
         T_g[mine] = F_trunc[mine].max() - 1
     window = (t[None, :] >= F[:, None]) & (t[None, :] <= T_g[:, None]) & present
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -71,48 +84,67 @@ def prepare(D, *, drop_larger_lower=True):
         present=present,
         T_max=T_max,
         G_R=G_R,
+        sid=sid,
     )
 
 
-def covariate_stats(Y, X, info):
+def covariate_stats(Y, X, info, W):
     """Per baseline: the coefficients of the outcome's one-period changes on the
-    covariates' among not-yet-switched rows, with period effects (did_multiplegt_main),
-    and each group's term of the correction for estimating them."""
-    keep, d_sq, F, present = (info[k] for k in ("keep", "d_sq", "F", "present"))
+    covariates' among not-yet-switched rows, with period effects by cell (baseline and
+    stratum; did_multiplegt_main), and each group's term of the correction for
+    estimating them. The correction's fitted values come from a regression with period
+    effects by baseline only, as the package's feols call."""
+    keep, d_sq, F, present, sid = (info[k] for k in ("keep", "d_sq", "F", "present", "sid"))
     G, T, K = X.shape
     t = np.arange(1, T + 1)[None, :].repeat(G, axis=0)
     dY = np.full((G, T), np.nan)
     dY[:, 1:] = Y[:, 1:] - Y[:, :-1]
     dX = np.full((G, T, K), np.nan)
     dX[:, 1:] = X[:, 1:] - X[:, :-1]
-    rows_all = keep[:, None] & present & (t >= 2) & (t < F[:, None])
-    rows_all &= np.isfinite(dY) & np.isfinite(dX).all(axis=2)
+    base = keep[:, None] & present & (t >= 2) & (t < F[:, None]) & np.isfinite(dY)
+    rows_all = base & np.isfinite(dX).all(axis=2)
+    Wn = np.where(rows_all, W, 0.0)
+
+    def demeaned(rows, groups):
+        """dX less its weighted mean by (group, period) over ``rows``."""
+        out = np.zeros((G, T, K))
+        for c in np.unique(groups[rows.any(axis=1)]):
+            for tt in range(T):
+                m = rows[:, tt] & (groups == c)
+                if m.any():
+                    avg = (Wn[m, tt, None] * dX[m, tt]).sum(axis=0) / Wn[m, tt].sum()
+                    out[m, tt] = dX[m, tt] - avg
+        return out
+
     theta, inv_denom = {}, {}
     in_sum = np.zeros((G, K))
     for d in np.unique(d_sq[keep]):
         rows = rows_all & (d_sq == d)[:, None]
-        n = rows.sum(axis=0)
-        avg = np.zeros((T, K))
-        for tt in range(T):
-            if n[tt]:
-                avg[tt] = dX[rows[:, tt], tt].mean(axis=0)
-        resid = np.where(rows[:, :, None], dX - avg[None], 0.0)
-        M = np.einsum("gtk,gtj->kj", resid, resid)
-        v = np.einsum("gtk,gt->k", resid, np.where(rows, dY, 0.0))
+        resid = demeaned(rows, sid)
+        M = np.einsum("gt,gtk,gtj->kj", Wn, resid, resid)
+        v = np.einsum("gt,gtk,gt->k", Wn, resid, np.where(rows, dY, 0.0))
         invM = np.linalg.inv(M)
         th = invM @ v
-        fitted = np.einsum("gtk,k->gt", np.nan_to_num(dX), th)
+        # the fitted values of the correction: period effects by baseline only
+        resid_E = demeaned(rows, d_sq)
+        ME = np.einsum("gt,gtk,gtj->kj", Wn, resid_E, resid_E)
+        vE = np.einsum("gt,gtk,gt->k", Wn, resid_E, np.where(rows, dY, 0.0))
+        thE = np.linalg.solve(ME, vE)
+        fitted = np.einsum("gtk,k->gt", np.nan_to_num(dX), thE)
         fe = np.zeros(T)
         for tt in range(T):
-            if n[tt]:
-                fe[tt] = (dY[rows[:, tt], tt] - fitted[rows[:, tt], tt]).mean()
+            m = rows[:, tt]
+            if m.any():
+                fe[tt] = (Wn[m, tt] * (dY[m, tt] - fitted[m, tt])).sum() / Wn[m, tt].sum()
+        n = (base & (d_sq == d)[:, None]).sum(axis=0)  # E_hat_denom: by baseline and period
         E = np.where(n[None, :] >= 2, fitted + fe[None, :], 0.0)
-        N_c = rows.sum()
+        T_d = F[keep & (d_sq == d)].max() - 1
+        N_c = np.where(base & (d_sq == d)[:, None] & (t <= T_d), W, 0.0).sum()
         factor = np.where(n >= 2, np.sqrt(n / np.maximum(n - 1, 1)), 1.0)[None, :]
-        term = np.where(rows, factor * (np.nan_to_num(dY) - E) / N_c, 0.0)
+        term = np.where(rows, W * factor * (np.nan_to_num(dY) - E) / N_c, 0.0)
         in_sum += np.einsum("gtk,gt->gk", resid, term)
         theta[d] = th
-        inv_denom[d] = invM * N_c * info["G_R"]
+        inv_denom[d] = invM * Wn[rows].sum() * info["G_R"]
     return dict(theta=theta, inv_denom=inv_denom, in_sum=in_sum, X=X)
 
 
@@ -136,16 +168,18 @@ def _cell_mean(values, weights, mask, keys):
     return out_mean, out_count
 
 
-def _one(Y, D, info, ell, direction, kind, only_never, cov=None):
-    """U and U_var by group for effect (kind='effect') or placebo ell, one direction."""
-    keep, d_sq, F, T_g, S, d_fg, L, present = (
-        info[k] for k in ("keep", "d_sq", "F", "T_g", "S", "d_fg", "L", "present")
+def _one(Y, D, info, ell, direction, kind, only_never, cov=None, W=None, still=None):
+    """U and U_var by group for effect (kind='effect') or placebo ell, one direction.
+
+    ``still`` (one flag per group) restricts the switchers, as same_switchers does."""
+    keep, d_sq, F, T_g, S, d_fg, L, present, sid = (
+        info[k] for k in ("keep", "d_sq", "F", "T_g", "S", "d_fg", "L", "present", "sid")
     )
     G, T = Y.shape
     T_max = info["T_max"]
     t = np.arange(1, T + 1)[None, :].repeat(G, axis=0)
     Yp = np.where(present & keep[:, None], Y, np.nan)
-    N_gt = np.where(np.isfinite(Yp), 1.0, 0.0)
+    N_gt = np.where(np.isfinite(Yp), 1.0 if W is None else W, 0.0)
 
     def lag(a, k):
         out = np.full(a.shape, np.nan)
@@ -159,13 +193,13 @@ def _one(Y, D, info, ell, direction, kind, only_never, cov=None):
         never = np.where(
             np.isfinite(diff) & (F[:, None] > t) & (F[:, None] < T_max + 1), 0.0, never
         )
-    base = np.repeat(d_sq[:, None], T, axis=1)
+    base = np.repeat(sid[:, None].astype(float), T, axis=1)
     keys_dt = np.stack([base, t.astype(float)], axis=-1)
 
     def by_dt(values):
         out = np.zeros((G, T))
-        for d in np.unique(d_sq[keep]):
-            mine = keep & (d_sq == d)
+        for c in np.unique(sid[keep]):
+            mine = keep & (sid == c)
             out[mine] = np.nansum(values[mine], axis=0)
         return out
 
@@ -173,6 +207,8 @@ def _one(Y, D, info, ell, direction, kind, only_never, cov=None):
     sw = (
         (t == F[:, None] - 1 + ell) & (ell <= L[:, None]) & (S[:, None] == direction) & (N_ctrl > 0)
     )
+    if still is not None:
+        sw &= still[:, None]
     dist = np.where(np.isfinite(diff), sw.astype(float), np.nan)
     dist = np.where(keep[:, None], dist, np.nan)
     if kind == "placebo":
@@ -261,6 +297,54 @@ def _one(Y, D, info, ell, direction, kind, only_never, cov=None):
     return N, (U, Uvar), (delta, delta_now)
 
 
+def _first_difference(A):
+    """A_t - A_{t-1}, NaN unless both periods are observed (axis 1 is time)."""
+    out = np.full(A.shape, np.nan)
+    out[:, 1:] = A[:, 1:] - A[:, :-1]
+    return out
+
+
+def _same_switchers(Y, info, i, only_never, W, placebo=0):
+    """Switchers that keep controls and observed changes at every horizon 1..i (and,
+    with ``placebo``, observed placebo changes 1..placebo): same_switchers."""
+    keep, F, T_g, present, sid = (info[k] for k in ("keep", "F", "T_g", "present", "sid"))
+    G, T = Y.shape
+    T_max = info["T_max"]
+    t = np.arange(1, T + 1)[None, :].repeat(G, axis=0)
+    Yp = np.where(present & keep[:, None], Y, np.nan)
+    N_gt = np.where(np.isfinite(Yp), W, 0.0)
+
+    def shifted(q):  # Y_{t-q} (q < 0: a lead)
+        out = np.full(Yp.shape, np.nan)
+        if q > 0:
+            out[:, q:] = Yp[:, :-q]
+        else:
+            out[:, :q] = Yp[:, -q:]
+        return out
+
+    def check(q, at):
+        change = Yp - shifted(q)
+        ctrl = np.isfinite(change) & (F[:, None] > t)
+        if only_never:
+            ctrl &= F[:, None] == T_max + 1
+        totals = np.zeros((G, T))
+        for c in np.unique(sid[keep]):
+            mine = keep & (sid == c)
+            totals[mine] = np.where(ctrl[mine], N_gt[mine], 0.0).sum(axis=0)
+        ok = np.zeros(G, dtype=bool)
+        inside = (at >= 1) & (at <= T)
+        g = np.flatnonzero(inside)
+        ok[g] = (totals[g, at[g] - 1] > 0) & np.isfinite(change[g, at[g] - 1])
+        return ok
+
+    still = (F - 1 + i <= T_g) & keep
+    for q in range(1, i + 1):
+        still &= check(q, F - 1 + q)
+    for q in range(1, placebo + 1):
+        still &= check(-q, F - 1 - q)
+    return still
+
+
 def did_multiplegt_dyn(
     Y,
     D,
@@ -271,10 +355,17 @@ def did_multiplegt_dyn(
     only_never_switchers=False,
     switchers="both",
     X=None,
+    W=None,
+    strata=None,
+    linear_trends=False,
 ):
     directions = {"both": (1, 0), "in": (1,), "out": (0,)}[switchers]
-    info = prepare(D)
-    cov = covariate_stats(Y, X, info) if X is not None else None
+    info = prepare(D, strata=strata, linear_trends=linear_trends)
+    W = np.ones(Y.shape) if W is None else np.where(np.isfinite(W), W, 0.0)
+    if linear_trends:
+        Y = _first_difference(Y)
+        X = None if X is None else _first_difference(X)
+    cov = covariate_stats(Y, X, info, W) if X is not None else None
     G = Y.shape[0]
     out = {}
     L_in = np.nanmax(np.where(info["keep"] & (info["S"] == 1), info["L"], -np.inf))
@@ -282,15 +373,31 @@ def did_multiplegt_dyn(
     n_eff = int(min(max(L for L, s in ((L_in, 1), (L_out, 0)) if s in directions), effects))
     F, L, S, keep = info["F"], info["L"], info["S"], info["keep"]
     span = np.where(F >= 3, np.minimum(L, F - 2), 0)
-    P_max = max((span[keep & (S == s)].max(initial=0) for s in directions), default=0)
+    P_max = max(
+        (span[keep & (S == s)].max(initial=0) - linear_trends for s in directions), default=0
+    )
+
+    def one(ell, s, kind, still=None):
+        return _one(Y, D, info, ell, s, kind, only_never_switchers, cov, W, still)
+
     for kind, count in (("effect", n_eff), ("placebo", int(min(placebo, P_max, n_eff)))):
         for ell in range(1, count + 1):
-            parts = {
-                s: _one(Y, D, info, ell, s, kind, only_never_switchers, cov)
-                if s in directions
-                else (0.0, None, None)
-                for s in (1, 0)
-            }
+            parts = {}
+            for s in (1, 0):
+                if s not in directions:
+                    parts[s] = (0.0, None, None)
+                elif not linear_trends:
+                    parts[s] = one(ell, s, kind)
+                else:
+                    # the sum of horizons 1..l for the same switchers (trends_lin)
+                    still = _same_switchers(
+                        Y, info, ell, only_never_switchers, W, ell if kind == "placebo" else 0
+                    )
+                    horizons = [one(k, s, kind, still) for k in range(1, ell + 1)]
+                    N, scores, deltas = horizons[-1]
+                    if N and all(h[0] for h in horizons):
+                        scores = tuple(sum(h[1][j] for h in horizons) for j in range(2))
+                    parts[s] = (N, scores, deltas)
             N1, N0 = parts[1][0], parts[0][0]
             total = N1 + N0
             U = np.zeros(G)
@@ -306,6 +413,8 @@ def did_multiplegt_dyn(
             if normalized:
                 est, se, Uvar = est / delta, se / delta, Uvar / delta
             out[(kind, ell)] = dict(estimate=est, se=se, n=total, Uvar=Uvar, parts=parts)
+    if linear_trends:
+        return out  # no average total effect with linear trends
     # average total effect
     num, den, var = {}, {}, {}
     for s, sign in ((1, 1.0), (0, -1.0)):

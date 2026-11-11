@@ -70,19 +70,41 @@ def wide(frame, column):
     return full[column].cast(pl.Float64).fill_null(np.nan).to_numpy().reshape(G, T)
 
 
-def oracle(frame, effects, placebos, covariates=(), **options):
-    Y, D = wide(frame, "y"), wide(frame, "d")
+def oracle(
+    frame,
+    effects,
+    placebos,
+    covariates=(),
+    *,
+    weights=None,
+    trends_by=None,
+    outcome="y",
+    counts=False,
+    **options,
+):
+    Y, D = wide(frame, outcome), wide(frame, "d")
     X = np.stack([wide(frame, c) for c in covariates], axis=-1) if covariates else None
-    out = dcdh_oracle.did_multiplegt_dyn(Y, D, effects, placebos, X=X, **options)
-    names, beta, scores = [], [], []
+    W = wide(frame, weights) if weights else None
+    strata = None
+    if trends_by:
+        codes = frame.group_by("id").agg(pl.col(trends_by).first()).sort("id")[trends_by]
+        strata = codes.rank("dense").to_numpy().astype(float)
+    out = dcdh_oracle.did_multiplegt_dyn(
+        Y, D, effects, placebos, X=X, W=W, strata=strata, **options
+    )
+    names, beta, scores, switchers = [], [], [], []
     for (kind, ell), value in ((k, v) for k, v in out.items() if k != "average"):
         names.append(f"{kind}::{ell}")
         beta.append(value["estimate"])
         scores.append(value["Uvar"])
-    names.append("average_total_effect")
-    beta.append(out["average"]["estimate"])
-    scores.append(out["average"]["Uvar"])
+        switchers.append([value["parts"][s][0] for s in (1, 0)])
+    if "average" in out:
+        names.append("average_total_effect")
+        beta.append(out["average"]["estimate"])
+        scores.append(out["average"]["Uvar"])
     S = np.array(scores)
+    if counts:
+        return names, np.array(beta), S @ S.T, np.array(switchers)
     return names, np.array(beta), S @ S.T
 
 
@@ -163,6 +185,176 @@ def test_unbalanced_panels_with_covariates(seed):
     assert_allclose(fit.vcov, vcov, rtol=1e-8, atol=1e-14)
 
 
+def with_extras(frame, seed):
+    """A weight that varies over time, three regions, and an outcome with a trend by
+    region and a linear trend by group."""
+    rng = np.random.default_rng(seed + 100)
+    frame = frame.sort("id", "time")
+    ids = frame["id"].unique().sort()
+    region = pl.DataFrame(
+        {
+            "id": ids,
+            "region": rng.choice(["a", "b", "c"], len(ids)),
+            "slope": 0.3 * rng.normal(size=len(ids)),
+        }
+    )
+    return (
+        frame.join(region, on="id")
+        .with_columns(
+            pl.Series("w", np.exp(0.3 * rng.normal(size=len(frame)))),
+            (
+                pl.col("y")
+                + (pl.col("region").rank("dense").cast(pl.Float64) * 0.25 + pl.col("slope"))
+                * pl.col("time")
+            ).alias("y_trend"),
+        )
+        .drop("slope")
+    )
+
+
+TRENDS = {
+    "weights": ("y ~ 1", {"weights": "w"}),
+    "trends_by": ("y_trend ~ 1", {"trends_by": "region"}),
+    "linear_trends": ("y_trend ~ 1", {"linear_trends": True}),
+    "linear_trends_normalized": ("y_trend ~ 1", {"linear_trends": True, "normalized": True}),
+    "linear_trends_only_never": (
+        "y_trend ~ 1",
+        {"linear_trends": True, "only_never_switchers": True},
+    ),
+    "linear_trends_out": ("y_trend ~ 1", {"linear_trends": True, "switchers": "out"}),
+    "linear_trends_weights": ("y_trend ~ 1", {"linear_trends": True, "weights": "w"}),
+    "all": ("y_trend ~ x + z", {"linear_trends": True, "trends_by": "region", "weights": "w"}),
+}
+
+
+def fit_and_oracle(frame, name, effects=3, placebos=2, **extra):
+    fml, options = TRENDS[name]
+    outcome, rhs = (part.strip() for part in fml.split("~"))
+    covariates = () if rhs == "1" else tuple(c.strip() for c in rhs.split("+"))
+    fit = did_dcdh(
+        fml,
+        frame,
+        **KW,
+        effects=effects,
+        placebos=placebos,
+        allow_time_varying_weights=True,
+        **options,
+        **extra,
+    )
+    expected = oracle(frame, effects, placebos, covariates, outcome=outcome, counts=True, **options)
+    return fit, expected
+
+
+@pytest.mark.parametrize("seed", [1, 2])
+@pytest.mark.parametrize("name", TRENDS)
+def test_weights_and_trends_match_the_dense_transcription(seed, name):
+    frame = with_extras(with_covariates(switching_panel(seed, n=400), seed), seed)
+    fit, (names, beta, vcov, switchers) = fit_and_oracle(frame, name)
+    assert fit.coefnames == names
+    assert_allclose(fit.beta, beta, rtol=1e-9, atol=1e-12)
+    assert_allclose(fit.vcov, vcov, rtol=1e-8, atol=1e-14)
+    table = fit.switchers()
+    weighted = "weights" in TRENDS[name][1]
+    column = "weight" if weighted else "switchers"
+    assert_allclose(table[f"{column}_in"], switchers[:, 0], rtol=1e-12)
+    assert_allclose(table[f"{column}_out"], switchers[:, 1], rtol=1e-12)
+
+
+@pytest.mark.parametrize("seed", [3, 4])
+@pytest.mark.parametrize("name", ["weights", "trends_by", "linear_trends", "all"])
+def test_weights_and_trends_in_unbalanced_panels(seed, name):
+    """With linear trends, a first difference is used only where both of its periods
+    are observed."""
+    frame = drop_rows(with_extras(with_covariates(switching_panel(seed, n=400), seed), seed), seed)
+    fit, (names, beta, vcov, _) = fit_and_oracle(frame, name, incomplete_units="keep")
+    assert fit.coefnames == names
+    assert_allclose(fit.beta, beta, rtol=1e-9, atol=1e-12)
+    assert_allclose(fit.vcov, vcov, rtol=1e-8, atol=1e-14)
+
+
+def test_linear_trends_use_the_same_switchers_for_every_horizon():
+    """Effect l sums horizons 1..l for the switchers with all l; switchers first
+    switching in period 2 are not used."""
+    frame = with_extras(switching_panel(5, n=500), 5)
+    fit = did_dcdh("y_trend ~ 1", frame, **KW, effects=3, linear_trends=True)
+    assert "average_total_effect" not in fit.coefnames
+    counts = fit.switchers()
+    total = (counts["switchers_in"] + counts["switchers_out"]).to_list()
+    assert total == sorted(total, reverse=True) and total[0] > total[-1]
+    D = wide(frame, "d")
+    second = (D[:, 1] != D[:, 0]).sum()
+    plain = did_dcdh("y_trend ~ 1", frame, **KW, effects=1)
+    assert total[0] < plain.switchers()["switchers_in"][0] + plain.switchers()["switchers_out"][0]
+    assert second > 0
+
+
+def test_weights_are_scale_free_and_checked():
+    frame = with_extras(switching_panel(6), 6)
+    a = did_dcdh(
+        "y ~ 1", frame, **KW, effects=3, placebos=2, weights="w", allow_time_varying_weights=True
+    )
+    b = did_dcdh(
+        "y ~ 1",
+        frame.with_columns(pl.col("w") * 7.5),
+        **KW,
+        effects=3,
+        placebos=2,
+        weights="w",
+        allow_time_varying_weights=True,
+    )
+    assert_allclose(b.beta, a.beta, rtol=1e-12)
+    assert_allclose(b.vcov, a.vcov, rtol=1e-10)
+    with pytest.raises(ValueError, match="constant within unit"):
+        did_dcdh("y ~ 1", frame, **KW, weights="w")
+    fixed = frame.with_columns(pl.col("w").first().over("id"))
+    c = did_dcdh("y ~ 1", fixed, **KW, effects=3, weights="w")
+    assert np.isfinite(c.beta).all()
+
+
+def test_trends_by_several_columns_and_errors():
+    frame = with_extras(switching_panel(7), 7).with_columns((pl.col("id") % 2).alias("half"))
+    two = did_dcdh("y_trend ~ 1", frame, **KW, effects=2, trends_by=["region", "half"])
+    names, beta, _ = oracle(
+        frame.with_columns(pl.concat_str("region", "half").alias("cell")),
+        2,
+        0,
+        outcome="y_trend",
+        trends_by="cell",
+    )
+    assert_allclose(two.beta, beta, rtol=1e-10)
+    assert two.diagnostics["trends_by"] == ["region", "half"]
+    assert any("|" in key for key in two.diagnostics["last_period_with_controls"])
+    varying = frame.with_columns(
+        pl.when(pl.col("time") == 3).then(pl.lit("z")).otherwise(pl.col("region")).alias("region")
+    )
+    with pytest.raises(ValueError, match="constant within each group"):
+        did_dcdh("y ~ 1", varying, **KW, trends_by="region")
+    with pytest.raises(ValueError, match="missing values"):
+        did_dcdh(
+            "y ~ 1",
+            frame.with_columns(
+                pl.when(pl.col("id") == 3).then(None).otherwise(pl.col("region")).alias("region")
+            ),
+            **KW,
+            trends_by="region",
+        )
+    with pytest.raises(ValueError, match="cannot include"):
+        did_dcdh("y ~ 1", frame, **KW, trends_by="d")
+    with pytest.raises(ValueError, match="unknown trends_by"):
+        did_dcdh("y ~ 1", frame, **KW, trends_by="state")
+    with pytest.raises(ValueError, match="linear_trends"):
+        did_dcdh("y ~ 1", frame, **KW, linear_trends="yes")
+
+
+def test_linear_trends_do_not_depend_on_batches():
+    frame = with_extras(with_covariates(switching_panel(8, n=700), 8), 8)
+    options = dict(effects=3, placebos=2, linear_trends=True, trends_by="region")
+    a = did_dcdh("y_trend ~ x", frame, **KW, **options)
+    b = did_dcdh("y_trend ~ x", frame, **{**KW, "n_threads": 1}, batch_units=61, **options)
+    assert_allclose(a.beta, b.beta, rtol=1e-12)
+    assert_allclose(a.vcov, b.vcov, rtol=1e-10)
+
+
 def test_baselines_without_never_switchers():
     """Where every group of a baseline eventually switches, its last period with
     controls ends before the panel does."""
@@ -240,7 +432,24 @@ def test_errors():
 
 
 @pytest.mark.resource
-def test_constrained_fit_matches_unconstrained_fit(resource_runner, resource_enforcement, tmp_path):
+@pytest.mark.parametrize(
+    "fml, extra",
+    [
+        ("y ~ 1", {}),
+        (
+            "y_trend ~ x",
+            {
+                "linear_trends": True,
+                "trends_by": "region",
+                "weights": "w",
+                "allow_time_varying_weights": True,
+            },
+        ),
+    ],
+)
+def test_constrained_fit_matches_unconstrained_fit(
+    resource_runner, resource_enforcement, tmp_path, fml, extra
+):
     """Under a memory watchdog, with small staging pieces and batches, the same fit."""
     import json
     import os
@@ -248,12 +457,12 @@ def test_constrained_fit_matches_unconstrained_fit(resource_runner, resource_enf
     from pathlib import Path
 
     path = tmp_path / "panel.parquet"
-    switching_panel(8, n=600).write_parquet(path)
-    options = dict(effects=3, placebos=2, preprocess_mb=4, batch_units=37, n_threads=2)
+    with_extras(with_covariates(switching_panel(8, n=600), 8), 8).write_parquet(path)
+    options = dict(effects=3, placebos=2, preprocess_mb=4, batch_units=37, n_threads=2, **extra)
     code = f"""
 import json
 from diff_stream import did_dcdh
-r = did_dcdh("y ~ 1", {str(path)!r}, panel=("id", "time"), treatment="d",
+r = did_dcdh({fml!r}, {str(path)!r}, panel=("id", "time"), treatment="d",
     workdir={str(tmp_path / "child")!r}, **{options!r})
 print(json.dumps(dict(beta=r.beta.tolist(), vcov=r.vcov.tolist())))
 """
@@ -269,12 +478,15 @@ print(json.dumps(dict(beta=r.beta.tolist(), vcov=r.vcov.tolist())))
     assert result.status == "ok", result.as_dict()
     assert result.mode == resource_enforcement["mode"]
     fitted = json.loads(result.stdout)
-    baseline = did_dcdh("y ~ 1", path, panel=("id", "time"), treatment="d", effects=3, placebos=2)
+    baseline = did_dcdh(
+        fml, path, panel=("id", "time"), treatment="d", effects=3, placebos=2, **extra
+    )
     assert_allclose(fitted["beta"], baseline.beta, rtol=1e-12)
     assert_allclose(fitted["vcov"], baseline.vcov, rtol=1e-10)
 
 
 REF = Path(__file__).parent / "data" / "dcdh_reference"
+TIME_WEIGHTS = {"weights": "w", "allow_time_varying_weights": True}
 R_CASES = {
     "switching": ("switching", "y ~ 1", {}),
     "no_never": ("no_never", "y ~ 1", {}),
@@ -285,6 +497,25 @@ R_CASES = {
     "covariates": ("switching", "y ~ x + z", {}),
     "unbalanced": ("unbalanced", "y ~ 1", {"incomplete_units": "keep"}),
     "unbalanced_covariates": ("unbalanced", "y ~ x + z", {"incomplete_units": "keep"}),
+    "weights": ("switching", "y ~ 1", TIME_WEIGHTS),
+    "weights_covariates": ("switching", "y ~ x + z", TIME_WEIGHTS),
+    "weights_unbalanced": ("unbalanced", "y ~ 1", {"incomplete_units": "keep", **TIME_WEIGHTS}),
+    "trends_by": ("switching", "y_trend ~ 1", {"trends_by": "region"}),
+    "trends_by_covariates": ("switching", "y_trend ~ x + z", {"trends_by": "region"}),
+    "linear_trends": ("switching", "y_trend ~ 1", {"linear_trends": True}),
+    "linear_trends_covariates": ("switching", "y_trend ~ x + z", {"linear_trends": True}),
+    "linear_trends_normalized": (
+        "switching",
+        "y_trend ~ 1",
+        {"linear_trends": True, "normalized": True},
+    ),
+    "linear_trends_weights": ("switching", "y_trend ~ 1", {"linear_trends": True, **TIME_WEIGHTS}),
+    "linear_trends_no_never": ("no_never", "y_trend ~ 1", {"linear_trends": True}),
+    "linear_trends_trends_by": (
+        "switching",
+        "y_trend ~ 1",
+        {"linear_trends": True, "trends_by": "region"},
+    ),
 }
 
 
@@ -302,14 +533,25 @@ def test_matches_did_multiplegt_dyn(reference_panels, name):
     panel, fml, options = R_CASES[name]
     frame = reference_panels.filter(pl.col("panel") == panel).drop("panel")
     fit = did_dcdh(fml, frame, **KW, effects=4, placebos=3, **options)
-    ref = read_csv(REF / f"{name}.csv")
+    # with trends_lin, the package estimates no average total effect (an empty row)
+    ref = read_csv(REF / f"{name}.csv").filter(pl.col("estimate").is_not_null())
     assert fit.coefnames == ref["coefficient"].to_list()
     assert_allclose(fit.beta, ref["estimate"].to_numpy(), rtol=1e-10, atol=1e-12)
     assert_allclose(fit.se, ref["se"].to_numpy(), rtol=1e-10)
     table = fit.switchers()
+    n = len(table)
     assert_allclose(
-        table["switchers_in"] + table["switchers_out"], ref["switchers"].to_numpy()[:-1]
+        table["weight_in"] + table["weight_out"],
+        ref["switchers_weighted"].to_numpy()[:n],
+        rtol=1e-12,
     )
+    if not options.get("linear_trends"):
+        # (with trends_lin, the package's unweighted count for every estimate is that of
+        # the last estimate it computed for the same horizon; its weighted count, above,
+        # is right)
+        assert_allclose(
+            table["switchers_in"] + table["switchers_out"], ref["switchers"].to_numpy()[:n]
+        )
     tests = dict(read_csv(REF / f"{name}_tests.csv").iter_rows())
     assert_allclose(fit.pretrend_test()["pvalue"], tests["placebos_zero"], rtol=1e-8, atol=1e-14)
     assert_allclose(

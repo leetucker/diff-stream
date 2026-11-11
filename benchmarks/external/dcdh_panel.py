@@ -13,7 +13,9 @@ Three panels of 400 groups over 8 periods, in one file (column ``panel``):
   are not observed just before their switch.
 
 Effects grow with the change in treatment and with its duration; trends are parallel
-within each baseline.
+within each baseline. Three more columns, drawn separately so that the others do not
+change: ``w``, a weight that varies over time; ``region``, one of three; and
+``y_trend``, the outcome plus a trend by region and a linear trend by group.
 """
 
 import sys
@@ -49,6 +51,11 @@ def panel(seed, n, periods, never, baselines):
     x = rng.normal(size=(n, periods)).cumsum(axis=1) + 0.5 * dev
     z = rng.normal(size=(n, periods))
     y = y + 0.7 * x - 0.3 * z
+    extra = np.random.default_rng(seed + 1000)
+    w = np.exp(0.3 * extra.normal(size=(n, 1)) + 0.2 * extra.normal(size=(n, periods)))
+    region = extra.integers(0, 3, n)
+    slope = 0.3 * extra.normal(size=n)
+    y_trend = y + (0.25 * region[:, None] + slope[:, None]) * t
     return pl.DataFrame(
         {
             "id": np.repeat(np.arange(n), periods),
@@ -57,6 +64,9 @@ def panel(seed, n, periods, never, baselines):
             "x": x.ravel(),
             "z": z.ravel(),
             "y": y.ravel(),
+            "w": w.ravel(),
+            "region": np.array(["north", "south", "west"])[np.repeat(region, periods)],
+            "y_trend": y_trend.ravel(),
         }
     )
 
