@@ -120,7 +120,20 @@ differences:
   treatment and fills the treatment in by its own rules. Here such rows are an error;
   missing periods (no row) are supported, with `incomplete_units="keep"`, as
   `did_multiplegt_dyn` treats them.
-- *Options not implemented:* `trends_nonparam`, `trends_lin`, `continuous`, `weight`,
+- *Linear trends with missing periods.* With `trends_lin`, `did_multiplegt_dyn` takes
+  each row's first difference from the group's previous row, so across a missing
+  period it uses a two-period difference as if it were one. `linear_trends=True` here
+  uses a first difference only where both of its periods are observed. In balanced
+  panels the two agree.
+- *Switcher counts with linear trends.* With `trends_lin`, the number of switchers
+  `did_multiplegt_dyn` reports for an effect ("Switchers") is that of the last
+  estimate it computed for the same horizon (with 4 effects, every effect shows the
+  switchers of effect 4). Its weighted count ("Switchers.w") and its estimates use the
+  right switchers, and `switchers()` here reports them.
+- *Names.* `trends_nonparam` is `trends_by`, `trends_lin` is `linear_trends`, and
+  `weight` is `weights` (with `allow_time_varying_weights=True` for weights that
+  change over time).
+- *Options not implemented:* `continuous`,
   `cluster` (standard errors are clustered by group), `same_switchers`,
   `same_switchers_pl`, `less_conservative_se`, `more_granular_demeaning`,
   `dont_drop_larger_lower`, `drop_if_d_miss_before_first_switch`, `date_first_switch`,
@@ -141,9 +154,9 @@ matches the `feTR` type of the authors' TwoWayFEWeights. The other types
 
 ## Not implemented
 
-- For a switching treatment (`did_dcdh`): group-specific trends, a continuous
-  first-period treatment, sampling weights and clustering above the group;
-  de Chaisemartin and D'Haultfoeuille's `did_multiplegt_dyn` (R, Stata) has them.
+- For a switching treatment (`did_dcdh`): a continuous first-period treatment and
+  clustering above the group; de Chaisemartin and D'Haultfoeuille's
+  `did_multiplegt_dyn` (R, Stata) has them.
 - Nonlinear ETWFE (logit, Poisson): R's etwfe, Stata's `jwdid`.
 - Fixed effects interacted with the unit (unit-specific trends).
 - Sensitivity analysis for parallel trends: pass `fit.aggregate().beta` and

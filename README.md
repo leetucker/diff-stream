@@ -49,7 +49,7 @@ tested; the [benchmarks](docs/benchmarks/index.md) compare them with other imple
   response, and event studies.
 - `did_dcdh`: de Chaisemartin and D'Haultfoeuille's event study for a
   treatment that takes several values and switches on and off, with placebos,
-  covariates and unbalanced panels.
+  covariates, weights, group-specific trends and unbalanced panels.
 
 **Data**
 - Unbalanced panels, sampling weights (also time-varying), anticipation, and

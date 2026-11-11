@@ -39,6 +39,10 @@ fit.switchers()             # switching groups behind each estimate
   before its switch has an uncertain switch date: it is used only as a control, until
   its last observed period before the switch. Rows with an outcome but no treatment
   are not supported; drop them or fill the treatment in first.
+- **`weights`**: sampling weights, which may change over time with
+  `allow_time_varying_weights=True`. A group enters each comparison with its weight in
+  the period the effect is measured at (for a placebo, that of the matching effect),
+  as in `did_multiplegt_dyn`.
 
 ## The estimates
 
@@ -62,6 +66,18 @@ fit.switchers()             # switching groups behind each estimate
   with period effects, and each comparison uses the outcome changes net of the
   covariates' fitted part. The standard errors account for estimating that
   regression.
+- **`trends_by="region"`** (or a list of columns, constant within each group) lets
+  trends differ across regions: switchers are compared only with groups of the same
+  region as well as the same first-period treatment. With covariates, their
+  coefficients are still estimated per first-period treatment, with period effects by
+  region.
+- **`linear_trends=True`** allows each group its own linear trend. The comparisons
+  use the first differences of the outcome and covariates, and effect l is the sum of
+  the first l of them, for the switchers that have all l (so that the trend is
+  removed from the same groups at every horizon); placebo l likewise. Groups that
+  first switch in the second period have no trend to remove and are not used, and
+  the average total effect is not estimated. With missing periods, a first difference
+  is used only where both of its periods are observed.
 
 Some groups are not used, as in `did_multiplegt_dyn`: groups whose treatment goes both
 above and below their baseline, baselines in which every group first switches in the
@@ -79,14 +95,18 @@ covariance of all the estimates is in `fit.vcov`; `pretrend_test()` and
 `effects_equal_test()` are Wald tests that use it.
 
 The fit stages the panel once and reads it three times: for the baselines and switch
-periods, for sums by baseline and period, and for each group's scores.
+periods, for sums by baseline and period, and for each group's scores. With
+`linear_trends`, the switchers' sums take a read of their own, since which switchers
+each effect uses depends on the controls' sums.
 
 ## Validated against
 
 The authors' R package DIDmultiplegtDYN: estimates, standard errors, the numbers of
 switchers and the p-values of its joint placebo and equal-effects tests, which use the
 covariances between the estimates, with each option above, covariates, a panel in which
-every group switches, and an unbalanced panel with and without covariates. See
+every group switches, an unbalanced panel with and without covariates, weights that
+change over time, trends by region and group-specific linear trends, alone and
+combined. See
 [Differences from other packages](../implementations.md#conventions-that-differ) and
 [Validation](../validation.md).
 

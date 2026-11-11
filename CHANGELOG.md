@@ -15,10 +15,13 @@
   (`did_multiplegt_dyn`) for a treatment that may take several values and switch on and
   off. It gives the effects l periods after the first switch, placebos and the average
   total effect with their joint covariance, with normalized effects, switchers in or
-  out only, comparisons with never-switchers only, covariates and unbalanced panels
-  (`incomplete_units="keep"`), and tests that the placebos are zero and that the
-  effects are equal. It matches the authors' R DIDmultiplegtDYN, except that its
-  covariance matrix is a valid one (see Differences from other packages).
+  out only, comparisons with never-switchers only, covariates, unbalanced panels
+  (`incomplete_units="keep"`), weights (also time-varying), trends that differ by
+  group-level variables (`trends_by`) and group-specific linear trends
+  (`linear_trends`), and tests that the placebos are zero and that the effects are
+  equal. It matches the authors' R DIDmultiplegtDYN, except that its covariance matrix
+  is a valid one and, with linear trends, it takes no first differences across missing
+  periods (see Differences from other packages).
 
 ## 0.1.0
 

@@ -57,10 +57,10 @@ Use something else when:
   [etwfe](https://grantmcdermott.com/etwfe/), and Stata's `csdid`,
   `did_imputation`, `did2s` and `jwdid`, are just as fast, and their
   ecosystems (plots, sensitivity analysis) are larger.
-- **Treatment switches on and off, with trends or weights.** `did_dcdh` handles
-  switching treatment but not group-specific trends, a continuous first-period
-  treatment or sampling weights; de Chaisemartin and D'Haultfoeuille's
-  `did_multiplegt_dyn` (R, Stata) does. `twfe_weights()` here
+- **Treatment switches on and off, and its first-period values are continuous, or you
+  need clustering above the group.** `did_dcdh` compares groups with the same
+  first-period treatment and clusters by group; de Chaisemartin and D'Haultfoeuille's
+  `did_multiplegt_dyn` (R, Stata) also handles these. `twfe_weights()` here
   accepts switching treatment, as a diagnostic.
 - **The outcome needs a nonlinear model** (logit, Poisson ETWFE): use R's
   etwfe or Stata's `jwdid`.
