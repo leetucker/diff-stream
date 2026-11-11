@@ -109,6 +109,13 @@ its point estimates, with these differences:
   holds for diff-diff's continuous dose, whose overall ACRT standard error treats
   the treated units' average slope of the spline as known (0.4% smaller on the
   validation panel).
+- *Covariates (experimental here).* contdid takes none. diff-diff 4.0.0's
+  regression adjustment (`estimation_method="reg"`) is the same method, and its
+  estimates, curves and curve standard errors match these; its overall standard errors
+  treat the estimated shares as known, as above. diff-diff's default adjustment is
+  doubly robust (`"dr"`), which is not implemented here, so compare with
+  `estimation_method="reg"`. diff-diff absorbs no fixed effects: here one fixed-effect
+  term is absorbed, which equals entering its levels as dummies.
 - *The overall ATT* is a cohort-weighted average of post-treatment cells, R did's
   `aggte(type = "group")`. `aggregate("overall")` weights cells by their units
   instead, as for Callaway-Sant'Anna.

@@ -32,7 +32,8 @@ fit.aggregate(target="slope").summary()  # event study of the ACRT
   [Your data](../data.md)). Units may be treated at different times; the panel needs
   never-treated units.
 - The panel must be balanced: `incomplete_units="drop"` drops units with missing
-  periods. Covariates and sampling weights are not supported.
+  periods. Sampling weights are not supported. Covariates and a fixed effect are
+  experimental (see [Covariates](#covariates-experimental)).
 
 ## The estimates
 
@@ -70,6 +71,73 @@ is subtracted. The comparisons are those of
   Callaway-Sant'Anna, so it can differ from the coefficients, which weight cohorts.
 - **`cohort_time(target)`**: the cohort-period effects.
 
+## Covariates (experimental)
+
+```python
+fit = did_continuous(
+    "y ~ income | region",
+    "panel.parquet",
+    panel=("id", "time"),
+    cohort="first_treat",
+    dose="dose",
+)
+```
+
+Callaway, Goodman-Bacon and Sant'Anna do not develop an estimator with covariates.
+Their paper shows which effects given the covariates are identified (Supplementary
+Appendix SE.3), and their R package contdid takes no covariates. Covariates here are
+an extension, and every fit with them issues an `ExperimentalWarning` that links to
+this section.
+
+**How they enter.** In each cohort and period, the comparison units' outcome change is
+regressed on the covariates and the fixed effect. Each treated unit's change less its
+predicted change is then fitted on the dose, as without covariates. This is Callaway
+and Sant'Anna's outcome-regression adjustment, and the effect of being treated equals
+`did_callaway_santanna(..., adjustment="regression")` with the same covariates.
+
+- **The formula**: covariates before `|`, and one fixed-effect term after it, which
+  may be an interaction (`region^industry`). The fixed effect is absorbed exactly,
+  whatever its number of levels. Because each cohort and period has its own
+  regression, `| region` gives region-by-period effects. The unit and the period
+  cannot be fixed effects: unit effects are already differenced out, and the
+  regressions already differ by period. Several fixed-effect terms are not supported
+  yet; a categorical variable with few levels can be given as a covariate,
+  `C(industry)`.
+- **Covariate values**: each unit's covariates and fixed-effect level are taken in the
+  base period, or in the period itself when it comes first (pre-treatment periods with
+  `base_period="universal"`), as in R's did. Values after treatment, which treatment
+  may have changed, are not used.
+- **Units left out**: a treated unit whose fixed-effect level has no comparison units
+  in one of its cohort's periods cannot be adjusted. It is left out of its cohort's
+  estimates, with a warning, and stays a comparison unit for other cohorts. The
+  numbers are in `diagnostics["treated_units_left_out"]`.
+
+**What the estimates mean, and when.** ATT(d) is the average effect of dose d on the
+units that received it, averaged over their covariates. It needs:
+
+- *Parallel trends given the covariates*: among units with the same covariates (and
+  fixed-effect level), the outcome without treatment would have changed in the same
+  way whatever the cohort and the dose.
+- *Overlap*: comparison units with covariates like the treated units'. For the fixed
+  effect, comparison units in each level, each period.
+- *A linear comparison regression*: the untreated change is linear in the
+  covariates. This holds by construction for the fixed effect and for categorical
+  covariates; for continuous covariates it is an assumption.
+
+ACRT(d), the overall ACRT and any comparison of the effects of different doses also
+need *strong parallel trends given the covariates*: units at each dose would have had
+the same effect of any dose as units at other doses with the same covariates. Even
+then, ACRT(d) is the slope of the covariate-averaged ATT(d). If the covariates of the
+units change with the dose, and the effects vary with the covariates, that slope mixes
+the effect of a little more dose with the change in which units receive it. It is an
+average causal response only if the effects do not vary with the covariates or the
+dose is unrelated to them.
+
+The standard errors include the estimation of the comparison regressions. Once you
+have weighed these conditions, you can silence the warning with
+`warnings.filterwarnings("ignore", category=diff_stream.ExperimentalWarning)`;
+`hdfe_stream.ExperimentalWarning` silences it for every package built on hdfe-stream.
+
 ## Inference
 
 Standard errors come from the influence functions of the estimates, clustered by
@@ -101,7 +169,15 @@ both comparison groups: the estimates, both curves and their standard errors, th
 cohort-period effects and the event study. diff-diff holds the estimated shares
 fixed in its overall and event-study standard errors; those are checked against a
 direct calculation from the units' influence on each estimate, which gives
-diff-diff's numbers when the shares are held fixed. See
+diff-diff's numbers when the shares are held fixed.
+
+Covariates are checked against diff-diff's regression adjustment
+(`estimation_method="reg"`), with a covariate that changes over time and the region
+entered as dummies, for both dose types and comparison groups: the estimates, both
+curves and their standard errors, the cohort-period effects and the event study. The
+effect of being treated equals Callaway-Sant'Anna's regression adjustment, an absorbed
+fixed effect equals its dummies, and every standard error equals a direct calculation.
+See
 [Differences from other packages](../implementations.md#conventions-that-differ) and
 [Validation](../validation.md).
 

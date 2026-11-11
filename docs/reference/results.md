@@ -40,6 +40,7 @@
 
 .. autoexception:: ReferenceWindowWarning
 .. autoexception:: UnimputedObservationsWarning
+.. autoexception:: ExperimentalWarning
 
 .. autoexception:: BootstrapFailureWarning
 ```

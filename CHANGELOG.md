@@ -7,7 +7,10 @@
   curves ATT(d) and ACRT(d) (`dose_response()`, with simultaneous bands from the
   multiplier bootstrap), the overall ATT and average causal response, and event
   studies of either (`aggregate(target=...)`). The dose can be continuous (a
-  B-spline) or take a few values (`dose_type="discrete"`, a mean for each). It takes
+  B-spline) or take a few values (`dose_type="discrete"`, a mean for each).
+  Covariates and one absorbed fixed effect (`"y ~ x | region"`) are experimental: the
+  authors have not developed them, and fits with them issue an `ExperimentalWarning`
+  (a subclass of hdfe-stream's) that links to their assumptions. It takes
   staggered adoption, never-treated or not-yet-treated comparisons and both base
   periods, and runs out of core like the other estimators. It matches R's contdid
   except where contdid has known problems, in its dose-response curves and its
