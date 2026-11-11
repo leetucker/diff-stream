@@ -47,11 +47,18 @@ is subtracted. The comparisons are those of
   at quantiles of the treated doses. With no interior knots the dose-response curve
   is a polynomial of that degree. The spline's boundary is the range of the treated
   doses, and doses outside it cannot be evaluated.
+- **A discrete dose**: with `dose_type="discrete"`, a dose that takes a few values
+  gets a separate mean for each value in place of the spline (the paper's saturated
+  regression). ATT(d) is then the mean outcome change of the units at dose d less the
+  comparison units', and ACRT(d) is the change in ATT(d) from the next lower dose, or
+  from no dose, divided by the difference in doses. The curves are evaluated at the
+  dose values only. Every cohort needs units at every dose value, and the dose can
+  take at most 1,000 values; `degree` and `interior_knots` do not apply.
 - **`dose_response(target, dose)`**: ATT(d) (`target="level"`, default) or ACRT(d)
   (`"slope"`), averaged over the post-treatment cohort-period cells. Each cohort's
   weight is its share of the treated units, split evenly over its post-treatment
   periods. `dose` defaults to `dose_grid`, which by default is the 10th to 99th
-  percentiles of the treated doses.
+  percentiles of the treated doses, or a discrete dose's values.
 - **The coefficients**: the overall ATT, the effect of being treated at the doses
   received, and the overall ACRT, the average of ACRT(d) over the treated units'
   doses, both with the same weights as the curves. The overall ATT equals R did's
@@ -68,12 +75,15 @@ is subtracted. The comparisons are those of
 Standard errors come from the influence functions of the estimates, clustered by
 unit. For the overall ATT and for `aggregate()`, they include the uncertainty of the
 estimated cohort shares that weight them, as R's did does. The curves and the overall
-ACRT treat those weights as fixed, as R's contdid does. With
+ACRT treat those weights as fixed, as R's contdid does. The overall ACRT includes the
+uncertainty of the treated units' doses it averages over, which for a discrete dose
+are each cohort's shares of units at each dose. With
 `multiplier_bootstrap_reps`, `dose_response(uniform=True)` gives confidence bands that
 hold over all doses at once, studentized by the draws' interquartile range.
 
 The fit makes three passes over the staged panel, after staging it. It keeps the
-treated units' doses in memory to place the knots, 8 bytes per treated unit.
+treated units' doses in memory to place the knots, 8 bytes per treated unit; a
+discrete dose keeps only its values.
 
 ## Validated against
 
@@ -84,7 +94,14 @@ comparisons and a varying base period (the only settings contdid 0.1.1 applies).
 The estimates match contdid's where its curves are evaluated with the basis they
 were fitted with; the standard errors match once three problems in contdid 0.1.1
 and ptetools 1.0.1 are corrected. The other settings are checked against R did and
-against a regression of each cell's outcome change on the dose. See
+against a regression of each cell's outcome change on the dose.
+
+contdid has no discrete dose. That is checked against Python's diff-diff 4.0.0, with
+both comparison groups: the estimates, both curves and their standard errors, the
+cohort-period effects and the event study. diff-diff holds the estimated shares
+fixed in its overall and event-study standard errors; those are checked against a
+direct calculation from the units' influence on each estimate, which gives
+diff-diff's numbers when the shares are held fixed. See
 [Differences from other packages](../implementations.md#conventions-that-differ) and
 [Validation](../validation.md).
 

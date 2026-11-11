@@ -98,6 +98,17 @@ its point estimates, with these differences:
     cohort shares that differs from R did's, which these follow: ptetools'
     `pte_aggte` centers each cohort indicator at the cohort's share of the treated
     units rather than of all units. The differences were under 0.2%.
+- *A discrete dose.* contdid 0.1.1 has none ("discrete treatment not supported
+  yet"). Python's diff-diff 4.0.0 (`ContinuousDiD(treatment_type="discrete")`) is the
+  same estimator, and its estimates, curves and curve standard errors match these.
+  Its overall and event-study standard errors treat the cohort shares and each
+  cohort's shares of units at each dose as known; here they include the uncertainty
+  of those estimated shares, as R did does for cohort shares and contdid for the
+  doses. On the validation panel diff-diff's overall ACRT standard error was 18%
+  smaller, and its overall ATT and event-study ones up to 2% smaller. The same
+  holds for diff-diff's continuous dose, whose overall ACRT standard error treats
+  the treated units' average slope of the spline as known (0.4% smaller on the
+  validation panel).
 - *The overall ATT* is a cohort-weighted average of post-treatment cells, R did's
   `aggte(type = "group")`. `aggregate("overall")` weights cells by their units
   instead, as for Callaway-Sant'Anna.

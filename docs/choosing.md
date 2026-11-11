@@ -59,7 +59,8 @@ So the choice is mostly between two families: comparisons with one base period
   switch.
 - **A treatment that comes in doses** (the size of a subsidy, the strength of a
   policy), each unit's received once and kept: `did_continuous`, for the effect of
-  each dose, ATT(d), and of a little more of it, ACRT(d). Its effect of being
+  each dose, ATT(d), and of a little more of it, ACRT(d); with
+  `dose_type="discrete"` for a dose that takes a few values. Its effect of being
   treated is Callaway-Sant'Anna's. Comparing the effects of different doses needs a
   stronger assumption than parallel trends: that the units receiving each dose would
   have had the same effect of it as the units receiving others (Callaway,

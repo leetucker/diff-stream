@@ -45,8 +45,8 @@ tested; the [benchmarks](docs/benchmarks/index.md) compare them with other imple
 - `did_stacked`: stacked DiD with corrective weights, without building the
   stack.
 - `did_continuous`: Callaway, Goodman-Bacon and Sant'Anna's DiD with a
-  continuous treatment (a dose): dose-response curves, the average causal
-  response, and event studies.
+  continuous or discrete treatment (a dose): dose-response curves, the average
+  causal response, and event studies.
 - `did_dcdh`: de Chaisemartin and D'Haultfoeuille's event study for a
   treatment that takes several values and switches on and off, with placebos,
   covariates, weights, group-specific trends and unbalanced panels.

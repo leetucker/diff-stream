@@ -6,11 +6,13 @@
   difference-in-differences with a continuous treatment. It gives the dose-response
   curves ATT(d) and ACRT(d) (`dose_response()`, with simultaneous bands from the
   multiplier bootstrap), the overall ATT and average causal response, and event
-  studies of either (`aggregate(target=...)`). It takes staggered adoption,
-  never-treated or not-yet-treated comparisons and both base periods, and runs out of
-  core like the other estimators. It matches R's contdid except where contdid has known
-  problems, in its dose-response curves and its standard errors (see Differences from
-  other packages).
+  studies of either (`aggregate(target=...)`). The dose can be continuous (a
+  B-spline) or take a few values (`dose_type="discrete"`, a mean for each). It takes
+  staggered adoption, never-treated or not-yet-treated comparisons and both base
+  periods, and runs out of core like the other estimators. It matches R's contdid
+  except where contdid has known problems, in its dose-response curves and its
+  standard errors, and its discrete dose matches Python's diff-diff except in standard
+  errors that treat estimated shares as known (see Differences from other packages).
 - **`did_dcdh`**: de Chaisemartin and D'Haultfoeuille's event-study estimator
   (`did_multiplegt_dyn`) for a treatment that may take several values and switch on and
   off. It gives the effects l periods after the first switch, placebos and the average
