@@ -9,9 +9,11 @@ The fit reuses the Callaway-Sant'Anna cells, base periods and control groups
 (``estimators.setup``), the cohort-period means of staging, and the cohort-block
 covariance. The dose is staged as the only covariate. Three passes over the staged
 units follow: the treated doses (for the knots), each cohort's spline moments, and
-the units' influence scores.
+the units' influence scores. With covariates or a fixed effect the cells come from
+``continuous_covariates`` instead (experimental).
 """
 
+import warnings
 from dataclasses import dataclass, field
 from numbers import Integral, Real
 from pathlib import Path
@@ -26,7 +28,7 @@ from scipy.interpolate import BSpline
 from scipy.special import ndtri
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
-from . import _docs, _options
+from . import _docs, _options, continuous_covariates
 from ._core.dose_kernels import dose_scores
 from ._core.multiplier import (
     MAX_DRAW_ENTRIES,
@@ -39,7 +41,7 @@ from ._present import present, public_diagnostics, public_profile
 from .cohort_scores import CohortScoreCovariance
 from .estimators import fit_means, setup
 from .results import DIDResult
-from .store import PanelStore, inspect
+from .store import PanelStore, inspect, source
 
 PUBLIC = "did_continuous"
 
@@ -139,11 +141,11 @@ class DiscreteDoseBasis:
 MAX_DOSE_LEVELS = 1000
 
 
-def _dose_levels(store):
+def _dose_levels(store, column=0):
     """The treated units' distinct doses, in one pass over the staged units."""
     levels = np.empty(0)
     for g, _, x in store.batches(include_x=True):
-        mine = x[g != 0, 0, 0]
+        mine = x[g != 0, 0, column]
         if np.any(mine <= 0):
             raise ValueError("treated units must have a positive dose")
         levels = np.union1d(levels, mine)
@@ -161,18 +163,6 @@ def _validated(name, value, low, kind=Integral):
     if isinstance(value, (bool, np.bool_)) or not isinstance(value, kind) or value < low:
         raise ValueError(f"{name} must be an integer >= {low}")
     return int(value)
-
-
-def _outcome(fml):
-    if not isinstance(fml, str) or fml.count("~") != 1:
-        raise ValueError("use an outcome formula without covariates: 'y ~ 1'")
-    y, rhs = [s.strip() for s in fml.split("~")]
-    if rhs != "1" or not y.isidentifier():
-        raise ValueError(
-            "did_continuous takes no covariates or fixed effects: use 'y ~ 1' "
-            "(the dose is given by dose=)"
-        )
-    return y
 
 
 def overall_weights(cells, cohort_sizes):
@@ -317,11 +307,16 @@ class DoseResponseResult(RegressionResult):
             dose = f"discrete dose: {len(d['dose_levels'])} levels"
         else:
             dose = f"dose spline: degree {d['degree']}, {d['interior_knots']} interior knots"
-        return [
+        lines = [
             f"estimator: {PUBLIC}; units: {self.n_units:,}",
             *super()._summary_lines(),
             f"{dose}; control group: {d['control_group']}",
         ]
+        if d.get("covariate_names") is not None:
+            fe = f"; fixed effect: {d['fixed_effect']}" if d.get("fixed_effect") else ""
+            covariates = ", ".join(d["covariate_names"]) or "none"
+            lines.append(f"covariates: {covariates}{fe} (experimental: see the docs)")
+        return lines
 
 
 def _continuous(
@@ -352,7 +347,13 @@ def _continuous(
     batch_units=None,
     preprocess_mb=None,
 ):
-    yname = _outcome(fml)
+    yname, covariates, fixed_effect = continuous_covariates.parse(fml, dose, panel)
+    adjusted = covariates is not None or fixed_effect is not None
+    if adjusted and not profile:
+        # stacklevel 3: the caller of did_continuous
+        warnings.warn(
+            continuous_covariates.EXPERIMENTAL, continuous_covariates.ExperimentalWarning, 3
+        )
     if not isinstance(dose, str) or not dose.isidentifier():
         raise ValueError("dose must name a numeric column")
     if panel is None or len(panel) != 2 or dose in panel or dose == yname:
@@ -386,9 +387,25 @@ def _continuous(
     preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline = current_rss_gb() or 0
     with thread_scope(threads):
+        n_levels = 1
+        if adjusted:
+            # The design keeps its intercept, so that categorical covariates are coded
+            # against a reference level; the intercept and the dose are not covariates.
+            staged_data = source(data)
+            if fixed_effect is not None:
+                staged_data, n_levels = continuous_covariates.join_levels(staged_data, fixed_effect)
+            rhs = " + ".join(
+                [dose]
+                + ([covariates] if covariates is not None else [])
+                + ([continuous_covariates.FE] if fixed_effect is not None else [])
+            )
+            staged_formula = f"{yname} ~ {rhs}"
+        else:
+            staged_data = data
+            staged_formula = f"{yname} ~ 0 + {dose}"  # the dose alone: no column of ones
         lf, _, design = inspect(
-            f"{yname} ~ 0 + {dose}",  # the dose alone: no column of ones per row
-            data,
+            staged_formula,
+            staged_data,
             panel,
             cohort,
             treatment=treatment,
@@ -411,7 +428,23 @@ def _continuous(
                 panel_mode,
                 anticipation,
             )
-            if not store.x_time_invariant:
+            if adjusted:
+                names = list(store.design.names)
+                if dose not in names or "Intercept" not in names:
+                    raise ValueError("cannot find the dose in the covariates' design")
+                dose_column = names.index(dose)
+                fe_column = (
+                    names.index(continuous_covariates.FE) if fixed_effect is not None else None
+                )
+                covariate_columns = [
+                    j
+                    for j, c in enumerate(names)
+                    if c not in ("Intercept", dose, continuous_covariates.FE)
+                ]
+                covariate_names = [names[j] for j in covariate_columns]
+            else:
+                dose_column = 0
+            if not adjusted and not store.x_time_invariant:
                 raise ValueError("the dose must be constant within each unit")
             pa.default_memory_pool().release_unused()
             times, gc, N, means = store.times, store.gc, store.n_units, store.means
@@ -420,7 +453,7 @@ def _continuous(
             )
             M, T, G = len(cells), len(times), len(groups)
             # a discrete dose's levels set the width of its basis, so they come first
-            levels = _dose_levels(store) if discrete else None
+            levels = _dose_levels(store, dose_column) if discrete else None
             K = len(levels) if discrete else degree + interior_knots + 1
             W = M * (K + 3)
             treated_units = N - gc.get(0, 0)
@@ -432,6 +465,11 @@ def _continuous(
                         2 * bootstrap_reps * W
                         + 2 * max(bootstrap_reps, min(B * bootstrap_reps, MAX_DRAW_ENTRIES))
                     )
+                if adjusted:
+                    Q = 1 if store.x_time_invariant else T
+                    numeric += continuous_covariates.table_bytes(
+                        G, Q, n_levels, len(covariate_columns), T, M, K
+                    ) + 8 * B * T * (len(covariate_columns) + 1)
                 return numeric + 8 * treated_units
 
             B = min(batch_units or 16384, N)
@@ -493,7 +531,7 @@ def _continuous(
                 positive = np.empty(treated_units)
                 filled = 0
                 for g, _, x in store.batches(include_x=True):
-                    mine = x[g != 0, 0, 0]
+                    mine = x[g != 0, 0, dose_column]
                     if np.any(mine <= 0):
                         raise ValueError("treated units must have a positive dose")
                     positive[filled : filled + len(mine)] = mine
@@ -519,113 +557,140 @@ def _continuous(
                     raise ValueError("dose_grid must be a one-dimensional array of doses")
                 basis.values(grid)  # checks the doses
 
-            # Pass 2: each cohort's spline moments.
-            A = np.zeros((G, K, K))
-            S = np.zeros((G, K, T))
-            slope_sums = np.zeros((G, K))
-            control_sums = np.zeros(G)
-            for g, y, x in store.batches(include_x=True):
-                treated = g != 0
-                if not treated.any():
-                    continue
-                idx = np.searchsorted(groups, g[treated])
-                d = x[treated, 0, 0]
-                P, D, Y = basis.values(d), basis.slopes(d), y[treated]
-                C = basis.slope_control(d)
-                for k in np.unique(idx):
-                    rows = idx == k
-                    A[k] += P[rows].T @ P[rows]
-                    S[k] += P[rows].T @ Y[rows]
-                    slope_sums[k] += D[rows].sum(axis=0)
-                    control_sums[k] += C[rows].sum()
-            ainv = np.zeros((G, K, K))
-            for k, g in enumerate(groups):
-                if g == 0:
-                    continue
-                missing = levels[np.diag(A[k]) == 0] if discrete else []
-                if len(missing):
-                    raise ValueError(
-                        f"cohort {g} has no units at dose {missing[0]:g}: with a discrete "
-                        "dose, every cohort needs units at every dose level"
-                    )
-                if np.linalg.cond(A[k]) > 1e12:
-                    raise ValueError(
-                        f"the dose spline is not identified in cohort {g}: it has too few "
-                        "distinct doses for the spline's columns; reduce degree or interior_knots"
-                    )
-                ainv[k] = np.linalg.inv(A[k])
-            dbar = slope_sums / np.maximum(sizes, 1)[:, None]
-            # each cohort's mean weight of the control mean change in its units' ACRT
-            # (nonzero only for a discrete dose: the share at the lowest dose / d_1)
-            cbar = control_sums / np.maximum(sizes, 1)
-
-            att, counts, args = fit_means(
-                "cs", times, groups, cells, bases, controls, sizes, means, anticipation
-            )
-            gi, ti, _, _, nc, _, control_mean = args
-            beta = np.array(
-                [ainv[gi[j]] @ (S[gi[j]][:, ti[j]] - S[gi[j]][:, bases[j]]) for j in range(M)]
-            ).reshape(M, K)
-            acrt = np.einsum("jk,jk->j", dbar[gi], beta) - cbar[gi] * control_mean
-
-            # Pass 3: the units' influence scores.
-            labels = np.r_[gi, gi, np.repeat(gi, K), gi]
-            covariance = CohortScoreCovariance(labels)
-            # A unit's scores are nonzero only in its cohort's cells (all four kinds)
-            # and in the cells it is a control in (the ATT and the control mean, and
-            # with a discrete dose the ACRT).
-            columns = {}
-            for k in range(G):
-                own, control = np.flatnonzero(gi == k), np.flatnonzero(controls[:, k])
-                columns[k] = np.sort(
-                    np.r_[
-                        own,
-                        control,
-                        M + (np.union1d(own, control) if discrete else own),
-                        (2 * M + K * own[:, None] + np.arange(K)).ravel(),
-                        2 * M + M * K + control,
-                    ]
+            if adjusted:
+                fit = continuous_covariates.fit_adjusted(
+                    store,
+                    basis,
+                    groups,
+                    cells,
+                    bases,
+                    controls,
+                    dose_column=dose_column,
+                    fe_column=fe_column,
+                    n_levels=n_levels,
+                    covariate_columns=covariate_columns,
+                    bootstrap_reps=bootstrap_reps,
+                    bootstrap_seed=bootstrap_seed,
+                    bootstrap_weights=bootstrap_weights,
                 )
-            # Each cohort's scores go to a compact layout of its own columns, so that
-            # a batch sorted by cohort gives each cohort a contiguous block.
-            W = M * (K + 3)
-            local = np.zeros((G, W), dtype=np.int64)
-            for k, used in columns.items():
-                local[k, used] = np.arange(len(used))
-            compact = max(len(used) for used in columns.values())
-            # The multiplier bootstrap draws one multiplier per unit for all its
-            # scores, so it takes them in one layout for every unit.
-            identity = np.broadcast_to(np.arange(W), (G, W)).copy()
-            multiplier = (
-                StreamingMultiplier(M * K + M, bootstrap_reps, bootstrap_seed, bootstrap_weights)
-                if bootstrap_reps
-                else None
-            )
-            for g, y, x in store.batches(include_x=True):
-                idx = np.searchsorted(groups, g)
-                order = np.argsort(idx, kind="stable")
-                idx, y, g, d = idx[order], y[order], g[order], x[order, 0, 0]
-                treated = g != 0
-                P, D, C = np.zeros((len(g), K)), np.zeros((len(g), K)), np.zeros(len(g))
-                if treated.any():
-                    P[treated], D[treated] = basis.values(d[treated]), basis.slopes(d[treated])
-                    C[treated] = basis.slope_control(d[treated])
-                common = (gi, ti, bases, controls, nc, means, control_mean, sizes, beta, acrt)
-                scores = dose_scores(idx, y, P, D, C, *common, ainv, dbar, cbar, local, compact)
-                starts = np.r_[0, np.flatnonzero(idx[1:] != idx[:-1]) + 1, len(idx)]
-                for a, b in zip(starts[:-1], starts[1:], strict=True):
-                    k = int(idx[a])
-                    used = columns[k]
-                    covariance.add_block(k, scores[a:b, : len(used)], used, count=True)
-                if multiplier is not None:
-                    full = dose_scores(idx, y, P, D, C, *common, ainv, dbar, cbar, identity, W)
-                    # in the staged unit order, so draws do not depend on the batches
-                    multiplier.update(full[np.argsort(order), 2 * M :])
-            V, cross, shares = covariance.blocks()
+                att, acrt, beta = fit["att"], fit["acrt"], fit["beta"]
+                V, cross, shares = fit["V"], fit["cross"], fit["shares"]
+                control_mean = np.zeros(M)
+                used_sizes = fit["sizes"]
+                counts = np.array([used_sizes[g] for g, t in cells], dtype=float)
+                draws = fit["draws"]
+            else:
+                # Pass 2: each cohort's spline moments.
+                A = np.zeros((G, K, K))
+                S = np.zeros((G, K, T))
+                slope_sums = np.zeros((G, K))
+                control_sums = np.zeros(G)
+                for g, y, x in store.batches(include_x=True):
+                    treated = g != 0
+                    if not treated.any():
+                        continue
+                    idx = np.searchsorted(groups, g[treated])
+                    d = x[treated, 0, 0]
+                    P, D, Y = basis.values(d), basis.slopes(d), y[treated]
+                    C = basis.slope_control(d)
+                    for k in np.unique(idx):
+                        rows = idx == k
+                        A[k] += P[rows].T @ P[rows]
+                        S[k] += P[rows].T @ Y[rows]
+                        slope_sums[k] += D[rows].sum(axis=0)
+                        control_sums[k] += C[rows].sum()
+                ainv = np.zeros((G, K, K))
+                for k, g in enumerate(groups):
+                    if g == 0:
+                        continue
+                    missing = levels[np.diag(A[k]) == 0] if discrete else []
+                    if len(missing):
+                        raise ValueError(
+                            f"cohort {g} has no units at dose {missing[0]:g}: with a discrete "
+                            "dose, every cohort needs units at every dose level"
+                        )
+                    if np.linalg.cond(A[k]) > 1e12:
+                        raise ValueError(
+                            f"the dose spline is not identified in cohort {g}: it has too few "
+                            "distinct doses for the spline's columns; reduce degree or interior_knots"
+                        )
+                    ainv[k] = np.linalg.inv(A[k])
+                dbar = slope_sums / np.maximum(sizes, 1)[:, None]
+                # each cohort's mean weight of the control mean change in its units' ACRT
+                # (nonzero only for a discrete dose: the share at the lowest dose / d_1)
+                cbar = control_sums / np.maximum(sizes, 1)
+
+                att, counts, args = fit_means(
+                    "cs", times, groups, cells, bases, controls, sizes, means, anticipation
+                )
+                gi, ti, _, _, nc, _, control_mean = args
+                beta = np.array(
+                    [ainv[gi[j]] @ (S[gi[j]][:, ti[j]] - S[gi[j]][:, bases[j]]) for j in range(M)]
+                ).reshape(M, K)
+                acrt = np.einsum("jk,jk->j", dbar[gi], beta) - cbar[gi] * control_mean
+
+                # Pass 3: the units' influence scores.
+                labels = np.r_[gi, gi, np.repeat(gi, K), gi]
+                covariance = CohortScoreCovariance(labels)
+                # A unit's scores are nonzero only in its cohort's cells (all four kinds)
+                # and in the cells it is a control in (the ATT and the control mean, and
+                # with a discrete dose the ACRT).
+                columns = {}
+                for k in range(G):
+                    own, control = np.flatnonzero(gi == k), np.flatnonzero(controls[:, k])
+                    columns[k] = np.sort(
+                        np.r_[
+                            own,
+                            control,
+                            M + (np.union1d(own, control) if discrete else own),
+                            (2 * M + K * own[:, None] + np.arange(K)).ravel(),
+                            2 * M + M * K + control,
+                        ]
+                    )
+                # Each cohort's scores go to a compact layout of its own columns, so that
+                # a batch sorted by cohort gives each cohort a contiguous block.
+                W = M * (K + 3)
+                local = np.zeros((G, W), dtype=np.int64)
+                for k, used in columns.items():
+                    local[k, used] = np.arange(len(used))
+                compact = max(len(used) for used in columns.values())
+                # The multiplier bootstrap draws one multiplier per unit for all its
+                # scores, so it takes them in one layout for every unit.
+                identity = np.broadcast_to(np.arange(W), (G, W)).copy()
+                multiplier = (
+                    StreamingMultiplier(
+                        M * K + M, bootstrap_reps, bootstrap_seed, bootstrap_weights
+                    )
+                    if bootstrap_reps
+                    else None
+                )
+                for g, y, x in store.batches(include_x=True):
+                    idx = np.searchsorted(groups, g)
+                    order = np.argsort(idx, kind="stable")
+                    idx, y, g, d = idx[order], y[order], g[order], x[order, 0, 0]
+                    treated = g != 0
+                    P, D, C = np.zeros((len(g), K)), np.zeros((len(g), K)), np.zeros(len(g))
+                    if treated.any():
+                        P[treated], D[treated] = basis.values(d[treated]), basis.slopes(d[treated])
+                        C[treated] = basis.slope_control(d[treated])
+                    common = (gi, ti, bases, controls, nc, means, control_mean, sizes, beta, acrt)
+                    scores = dose_scores(idx, y, P, D, C, *common, ainv, dbar, cbar, local, compact)
+                    starts = np.r_[0, np.flatnonzero(idx[1:] != idx[:-1]) + 1, len(idx)]
+                    for a, b in zip(starts[:-1], starts[1:], strict=True):
+                        k = int(idx[a])
+                        used = columns[k]
+                        covariance.add_block(k, scores[a:b, : len(used)], used, count=True)
+                    if multiplier is not None:
+                        full = dose_scores(idx, y, P, D, C, *common, ainv, dbar, cbar, identity, W)
+                        # in the staged unit order, so draws do not depend on the batches
+                        multiplier.update(full[np.argsort(order), 2 * M :])
+                V, cross, shares = covariance.blocks()
+                used_sizes = gc
+                draws = multiplier.draws if multiplier is not None else None
 
             factor = N / (N - 1) if vcov == "CRV1" else 1.0
             names = [f"g::{g}:t::{t}" for g, t in cells]
-            weights = overall_weights(cells, gc)
+            weights = overall_weights(cells, used_sizes)
             diagnostics = dict(
                 control_group=control_group,
                 base_period=base_period,
@@ -641,7 +706,7 @@ def _continuous(
                         boundary_knots=[float(lower), float(upper)],
                     )
                 ),
-                cohort_sizes={str(g): int(n) for g, n in gc.items()},
+                cohort_sizes={str(g): int(n) for g, n in used_sizes.items()},
                 time_min=int(times[0]),
                 time_max=int(times[-1]),
                 input_units=store.n_units_input,
@@ -653,6 +718,22 @@ def _continuous(
                 inference="unit clustered; analytic influence functions",
                 warnings=[],
             )
+            if adjusted:
+                diagnostics.update(
+                    covariate_names=covariate_names,
+                    fixed_effect="^".join(fixed_effect) if fixed_effect is not None else None,
+                    fixed_effect_levels=n_levels if fixed_effect is not None else None,
+                    covariates_time_invariant=store.x_time_invariant,
+                    treated_units_left_out=fit["left_out"],
+                )
+                diagnostics["warnings"].append(continuous_covariates.EXPERIMENTAL)
+                if any(fit["left_out"].values()):
+                    left = sum(fit["left_out"].values())
+                    diagnostics["warnings"].append(
+                        f"{left:,} treated units are left out of their cohort's estimates: "
+                        "their fixed-effect level has no comparison units in some of the "
+                        "cohort's periods (see treated_units_left_out)."
+                    )
 
             def cells_result(block, values):
                 s = slice(block * M, (block + 1) * M)
@@ -671,10 +752,15 @@ def _continuous(
                         estimator="cs",
                         cells=cells,
                         counts=counts,
-                        observed_counts=np.array(
-                            [store.cell_counts[g][t - times[0]] for g, t in cells], dtype=float
+                        observed_counts=(
+                            counts
+                            if adjusted
+                            else np.array(
+                                [store.cell_counts[g][t - times[0]] for g, t in cells],
+                                dtype=float,
+                            )
                         ),
-                        cohort_counts=np.array([gc[g] for g, t in cells], dtype=float),
+                        cohort_counts=np.array([used_sizes[g] for g, t in cells], dtype=float),
                         n_units=N,
                         diagnostics=dict(diagnostics),
                         _share_cross=cross[s, s] * factor,
@@ -693,7 +779,7 @@ def _continuous(
             joint = np.zeros((2, 2 * M))
             joint[0, :M], joint[1, M:] = weights, weights
             overall_vcov = joint @ V[: 2 * M, : 2 * M] @ joint.T
-            n_cell = np.array([gc[g] for g, t in cells], dtype=float)
+            n_cell = np.array([used_sizes[g] for g, t in cells], dtype=float)
             share = weights * (att - weights @ att) / n_cell
             centered = shares[:M, :M] - np.outer(counts, counts) / N
             overall_vcov[0, 0] += 2 * weights @ cross[:M, :M] @ share + share @ centered @ share
@@ -722,7 +808,7 @@ def _continuous(
                 _weights=weights,
                 _theta=theta,
                 _theta_cov=V[2 * M :, 2 * M :],
-                _theta_draws=multiplier.draws if multiplier is not None else None,
+                _theta_draws=draws,
                 _periods=store.period_labels,
             )
             result._internal = dict(diagnostics)
@@ -781,7 +867,13 @@ def did_continuous(
     Parameters
     ----------
     fml : str
-        ``"y ~ 1"``. Covariates are not supported.
+        ``"y ~ 1"``; experimental: covariates and one absorbed fixed effect,
+        ``"y ~ x + C(industry) | region"``. In each cohort and period, the comparison
+        units' change is regressed on them (at the base period) and the treated units'
+        changes less their predictions are fitted on the dose; a fixed effect is
+        region-by-period. The authors have not developed this, and a fit with
+        covariates issues an ``ExperimentalWarning``; see the documentation for the
+        assumptions it needs.
     {DATA}
     dose : str
         Each unit's dose: positive and constant within a treated unit. The doses
