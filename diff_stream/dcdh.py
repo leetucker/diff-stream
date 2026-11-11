@@ -29,11 +29,14 @@ from . import _docs, _options
 from ._core.dcdh_kernels import group_terms
 from ._core.partition import preprocess_budget_mb, staging_bytes
 from ._present import public_profile
-from .store import PanelStore, inspect
+from .store import PanelStore, inspect, source
 
 PUBLIC = "did_dcdh"
-# Distinct first-period treatment values: each needs a row of every cell table.
+# Distinct first-period treatment values (within trend groups): each needs a row of
+# every cell table.
 MAX_BASELINES = 10_000
+# The column that carries each row's trend group (trends_by) through staging.
+TREND = "__dcdh_trend"
 
 
 @dataclass(kw_only=True)
@@ -110,29 +113,34 @@ def _count(name, value, low):
 
 
 class Paths:
-    """Each group's baseline, first switch, direction and window, from its treatment path.
+    """Each group's cell, first switch, direction and window, from its treatment path.
 
-    ``D`` is groups by periods, NaN in periods the group is not observed. Periods are
-    1..T; F = T + 1 for groups that never switch. As in DIDmultiplegtDYN:
+    ``D`` is groups by periods, NaN in periods the group is not observed, and ``code``
+    the group's trend group (0 without ``trends_by``). Periods are 1..T; F = T + 1 for
+    groups that never switch. A cell is a first-period treatment within a trend group,
+    keyed ``d + 1j * code``. As in DIDmultiplegtDYN:
 
     - the baseline is the treatment in the group's first observed period, and the
       first switch the first observed period with another treatment;
     - groups whose treatment goes both above and below its baseline are dropped, as are
-      baselines in which every group first switches in the same period;
+      cells in which every group first switches in the same period (there is no one
+      to compare with);
     - a group not observed in the period before its switch has an uncertain switch
       date: it is a control until its last observed period before the switch, and its
       later outcomes are not used;
-    - each baseline's last period with controls, T_d, is one before the latest period
-      any of its groups is known not to have switched by;
-    - periods in which no group of a baseline is observed unswitched are not used for it;
+    - with linear trends, groups first switching in period 2 are dropped (they have no
+      trend to remove), after the design restriction;
+    - each cell's last period with controls, T_d, is one before the latest period any
+      of its groups is known not to have switched by;
+    - periods in which no group of a cell is observed unswitched are not used for it;
     - switchers whose average treatment after the switch (through T_d) equals their
       baseline are dropped.
 
-    ``base`` indexes the retained baselines (-1 for a dropped group) and ``present``
-    marks the periods whose outcomes are used.
+    ``base`` indexes the retained cells (-1 for a dropped group) and ``present`` marks
+    the periods whose outcomes are used.
     """
 
-    def __init__(self, D, T, baselines=None, T_d=None, open_=None):
+    def __init__(self, D, T, code=None, cells=None, T_d=None, open_=None, linear_trends=False):
         n = len(D)
         rows = np.arange(n)
         t = np.arange(1, T + 1)[None, :]
@@ -141,6 +149,8 @@ class Paths:
         first_obs = obs.argmax(axis=1)
         last_obs = T - obs[:, ::-1].argmax(axis=1)  # 1..T
         self.d_sq = D[rows, first_obs]
+        self.code = np.zeros(n) if code is None else code
+        self.key = self.d_sq + 1j * self.code
         dev = np.where(obs, D - self.d_sq[:, None], 0.0)
         self.dev = dev
         self.mixed = ((dev > 0).any(axis=1) & (dev < 0).any(axis=1)) | ~self.observed
@@ -151,6 +161,8 @@ class Paths:
         self.last_before = np.where(before.any(axis=1), T - before[:, ::-1].argmax(axis=1), 0)
         self.gap = (self.F_first <= T) & (self.last_before < self.F_first - 1)
         self.F = np.where(self.gap, T + 1, self.F_first)
+        # dropped with linear trends, though counted in G and in the design restriction
+        self.second = linear_trends & (self.F == 2)
         # the first period the group is not known to be unswitched
         self.F_trunc = np.where(
             self.gap,
@@ -158,11 +170,10 @@ class Paths:
             np.where(self.F_first > T, last_obs + 1, self.F_first),
         )
         self.unswitched = obs & (t < self.F_first[:, None])
-        if baselines is None:
+        if cells is None:
             return
-        b = np.searchsorted(baselines, self.d_sq)
-        b = np.minimum(b, len(baselines) - 1)
-        found = (len(baselines) > 0) & (baselines[b] == self.d_sq) & ~self.mixed
+        b = np.minimum(np.searchsorted(cells, self.key), len(cells) - 1)
+        found = (len(cells) > 0) & (cells[b] == self.key) & ~self.mixed
         self.counted = found
         self.Td = np.where(found, T_d[b], 0)
         self.present = (
@@ -176,7 +187,7 @@ class Paths:
         with np.errstate(invalid="ignore", divide="ignore"):
             avg = np.where(window, D, 0.0).sum(axis=1) / filled
         back = (filled > 0) & (avg == self.d_sq)
-        self.base = np.where(found & ~back, b, -1)
+        self.base = np.where(found & ~back & ~self.second, b, -1)
         self.L = self.Td - self.F + 1
         switcher = (self.base >= 0) & (self.F <= T) & (self.L >= 1)
         self.up = np.where(switcher, (avg > self.d_sq).astype(np.int64), -1)
@@ -184,6 +195,63 @@ class Paths:
     def outcomes(self, y):
         """The outcomes used: NaN outside ``present``."""
         return np.where(self.present, y, np.nan)
+
+
+def _trend_groups(trends_by, src, reserved):
+    """The trend-group columns, their distinct values (one code each) and the source
+    with the code joined on as ``TREND``."""
+    columns = [trends_by] if isinstance(trends_by, str) else list(trends_by)
+    if not columns or not all(isinstance(c, str) and c for c in columns):
+        raise ValueError("trends_by must be a column name or a list of column names")
+    if len(set(columns)) != len(columns):
+        raise ValueError("trends_by lists a column twice")
+    clash = set(columns) & set(reserved)
+    if clash:
+        raise ValueError(
+            f"trends_by cannot include the outcome, panel, treatment or weights: {sorted(clash)}"
+        )
+    missing = set(columns) - set(src.collect_schema())
+    if missing:
+        raise ValueError(f"unknown trends_by columns: {sorted(missing)}")
+    levels = src.select(columns).unique().collect(engine="streaming")
+    if levels.null_count().sum_horizontal().item():
+        raise ValueError("trends_by has missing values; fill or drop them first")
+    if len(levels) > MAX_BASELINES:
+        raise ValueError(f"trends_by takes more than {MAX_BASELINES:,} distinct values")
+    levels = levels.sort(columns).with_row_index(TREND)
+    labels = [", ".join(str(v) for v in row) for row in levels.drop(TREND).iter_rows()]
+    joined = src.join(
+        levels.with_columns(pl.col(TREND).cast(pl.Float64)).lazy(), on=columns, how="left"
+    )
+    return columns, labels, joined
+
+
+def _group_codes(codes):
+    """Each group's trend-group code, which must not change over its observed periods."""
+    high, low = np.fmax.reduce(codes, axis=1), np.fmin.reduce(codes, axis=1)
+    if np.any((high != low) & np.isfinite(high)):
+        raise ValueError("trends_by must be constant within each group")
+    return np.nan_to_num(high)
+
+
+def _slots(Lm, P, linear_trends):
+    """The horizons estimated: (kind, horizon index, same-switcher horizon r).
+
+    Without linear trends, effect l and placebo l are each one horizon of all their
+    switchers (r = 0). With linear trends, effect (placebo) l sums horizons 1..l, each
+    for the switchers that have all l: r = l."""
+    if not linear_trends:
+        return [(0, li, 0) for li in range(Lm)] + [(1, li, 0) for li in range(P)]
+    return [(0, k - 1, i) for i in range(1, Lm + 1) for k in range(1, i + 1)] + [
+        (1, k - 1, i) for i in range(1, P + 1) for k in range(1, i + 1)
+    ]
+
+
+def _first_difference(a):
+    """a_t - a_{t-1} along periods (axis 1); NaN unless both periods are observed."""
+    out = np.full(a.shape, np.nan)
+    out[:, 1:] = a[:, 1:] - a[:, :-1]
+    return out
 
 
 def _dcdh(
@@ -197,6 +265,10 @@ def _dcdh(
     normalized=False,
     switchers="both",
     only_never_switchers=False,
+    trends_by=None,
+    linear_trends=False,
+    weights=None,
+    allow_time_varying_weights=False,
     panel_mode="balanced",
     threads=None,
     memory_gb=None,
@@ -213,7 +285,12 @@ def _dcdh(
         raise ValueError("give panel=(group, time)")
     effects = _count("effects", effects, 1)
     placebos = _count("placebos", placebos, 0)
-    for name, value in (("normalized", normalized), ("only_never_switchers", only_never_switchers)):
+    for name, value in (
+        ("normalized", normalized),
+        ("only_never_switchers", only_never_switchers),
+        ("linear_trends", linear_trends),
+        ("allow_time_varying_weights", allow_time_varying_weights),
+    ):
         if not isinstance(value, bool):
             raise ValueError(f"{name} must be True or False")
     if switchers not in ("both", "in", "out"):
@@ -235,12 +312,22 @@ def _dcdh(
     preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline_gb = current_rss_gb() or 0
     with thread_scope(threads):
+        src = source(data)
+        trend_columns, trend_labels = [], ["all"]
+        if trends_by is not None:
+            reserved = [yname, *panel, treatment] + ([weights] if isinstance(weights, str) else [])
+            trend_columns, trend_labels, src = _trend_groups(trends_by, src, reserved)
+        n_trend = 1 if trends_by is not None else 0
+        rhs = " + ".join(
+            [treatment] + ([TREND] if n_trend else []) + ([covariates] if covariates else [])
+        )
         lf, _, design = inspect(
-            f"{yname} ~ 0 + {treatment}" + (f" + {covariates}" if covariates else ""),
-            data,
+            f"{yname} ~ 0 + {rhs}",
+            src,
             panel,
             treatment=treatment,
             allow_covariates=True,
+            weights=weights,
             switching=True,
         )
         if not budget.fits((preprocess_mb * 1e6 + 96e6) / 1e9):
@@ -259,20 +346,28 @@ def _dcdh(
                 design,
                 panel_mode,
                 require_never_treated=False,
+                allow_time_varying_weights=allow_time_varying_weights,
                 switching=True,
             )
             pa.default_memory_pool().release_unused()
             T, N = store.periods, store.n_units
             if design.names[0] != treatment:
                 raise ValueError("the treatment cannot also be a covariate")
-            covariate_names = design.names[1:]
+            covariate_names = design.names[1 + n_trend :]
+            if any(name in trend_columns for name in covariate_names):
+                raise ValueError("a trends_by column cannot also be a covariate")
             Kc = len(covariate_names)
             Lm = min(effects, T - 1)
             P = min(placebos, Lm)
             K = 2 if P else 1
+            slots = _slots(Lm, P, linear_trends)
+            S = len(slots)
+            slot_kind = np.array([k for k, _, _ in slots], dtype=np.int64)
+            slot_horizon = np.array([li for _, li, _ in slots], dtype=np.int64)
+            slot_index = {slot: j for j, slot in enumerate(slots)}
 
             def buffers(B):
-                return 8 * B * (6 * T + 4 * K * Lm) + 1024 * T * T
+                return 8 * B * (8 * T + 4 * S + 2 * S * Kc) + B * S + 1024 * T * T
 
             B = min(batch_units or 16384, N)
             if batch_units is None:
@@ -299,8 +394,8 @@ def _dcdh(
                         ),
                         Component(
                             "snapshot, hash partitions and sorted leaves",
-                            72 * N * T,
-                            144 * N * T,
+                            80 * N * T,
+                            160 * N * T,
                             where="disk",
                         ),
                     ],
@@ -316,92 +411,138 @@ def _dcdh(
                 )
 
             def batches():
-                for _, y, x, w in store.batches(include_x=True, include_weights=True):
-                    yield y, x[:, :, 0], x[:, :, 1:], w
+                for _, y, x, w in store.batches(
+                    include_x=True, include_weights=True, row_weights=True
+                ):
+                    code = _group_codes(x[:, :, 1]) if n_trend else None
+                    X = x[:, :, 1 + n_trend :]
+                    if linear_trends:
+                        y, X = _first_difference(y), _first_difference(X)
+                    yield y, x[:, :, 0], X, w, code
 
-            # Pass 1: the switch periods of each baseline.
+            # Pass 1: the switch periods of each cell.
             pairs = set()
             switch_values = np.zeros(0)
             reach, opened = {}, {}
-            for _, D, _, _ in batches():
-                p = Paths(D, T)
+            for _, D, _, _, code in batches():
+                p = Paths(D, T, code, linear_trends=linear_trends)
                 keep = ~p.mixed
                 for f in np.unique(p.F_first[keep]).tolist():
-                    pairs.update(
-                        (d, f) for d in np.unique(p.d_sq[keep & (p.F_first == f)]).tolist()
-                    )
+                    pairs.update((c, f) for c in np.unique(p.key[keep & (p.F_first == f)]).tolist())
                 switch_values = np.union1d(switch_values, np.unique(p.d_fg[keep & (p.F <= T)]))
-                for d in np.unique(p.d_sq[keep]).tolist():
-                    mine = keep & (p.d_sq == d)
-                    reach[d] = max(reach.get(d, 0), int(p.F_trunc[mine].max()))
+                for c in np.unique(p.key[keep]).tolist():
+                    mine = keep & (p.key == c)
+                    used = mine & ~p.second
+                    if used.any():
+                        reach[c] = max(reach.get(c, 0), int(p.F_trunc[used].max()))
                     seen = np.r_[False, p.unswitched[mine].any(axis=0)]
-                    opened[d] = opened[d] | seen if d in opened else seen
-                if len({d for d, f in pairs}) > MAX_BASELINES:
+                    opened[c] = opened[c] | seen if c in opened else seen
+                if len({c for c, f in pairs}) > MAX_BASELINES:
                     raise ValueError(
-                        f"the first-period treatment takes more than {MAX_BASELINES:,} values; "
-                        "groups are compared only with groups of the same first-period treatment"
+                        f"the first-period treatment takes more than {MAX_BASELINES:,} values "
+                        "(within trend groups); groups are compared only with groups of the "
+                        "same first-period treatment"
                     )
             first_switches = {}
-            for d, f in pairs:
-                first_switches.setdefault(d, set()).add(f)
-            valid = sorted(d for d, fs in first_switches.items() if len(fs) >= 2)
+            for c, f in pairs:
+                first_switches.setdefault(c, set()).add(f)
+            valid = np.sort(np.array([c for c, fs in first_switches.items() if len(fs) >= 2]))
+            valid = valid.tolist()
             if not valid:
                 raise ValueError(
                     "no effect can be estimated: in every first-period treatment, all groups first "
                     "switch in the same period (Design Restriction 1 of de Chaisemartin and "
                     "D'Haultfoeuille)"
                 )
-            baselines = np.array(valid)
-            T_d = np.array([reach[d] - 1 for d in valid], dtype=np.int64)
-            open_ = np.stack([opened[d] for d in valid])
-            nB = len(baselines)
+            cells = np.array(valid, dtype=complex)
+            T_d = np.array([reach.get(c, 1) - 1 for c in valid], dtype=np.int64)
+            open_ = np.stack([opened[c] for c in valid])
+            nB = len(cells)
+            # baselines: the first-period treatments; theta is estimated per baseline,
+            # pooled over its trend groups
+            baselines, level = np.unique(cells.real, return_inverse=True)
+            level = level.ravel()
+            nL = len(baselines)
 
-            # Pass 2: sums by baseline and period, and by switching cohort.
+            # Pass 2: sums by cell and period for the controls, and by cell, period and
+            # switching cohort for the switchers (with linear trends, in a pass of their
+            # own: which switchers each estimate uses depends on the controls' sums).
             shape = (K, Lm, nB, T + 1)
             ctrl_w, ctrl_wy, ctrl_n = np.zeros(shape), np.zeros(shape), np.zeros(shape)
-            sw_shape = (K, Lm, 2, nB, T + 1)
+            ctrl_wx = np.zeros(shape + (Kc,))
+            lead_w = np.zeros((P, nB, T + 1))  # controls for the placebos' same-switcher check
+            sw_shape = (S, 2, nB, T + 1)
             sw_w, sw_wy, sw_n = np.zeros(sw_shape), np.zeros(sw_shape), np.zeros(sw_shape)
             sw_cum, sw_now = np.zeros(sw_shape), np.zeros(sw_shape)
-            codes, coh = np.zeros(0, dtype=np.int64), np.zeros((0, K, Lm, 3))
+            sw_wx = np.zeros(sw_shape + (Kc,))
             coder = CohortCodes(T, switch_values)
+            cohorts = dict(codes=np.zeros(0, dtype=np.int64), coh=np.zeros((0, S, 3)))
+            cohorts["wx"] = np.zeros((0, S, Kc))
             L_max = {0: 0, 1: 0}
             P_max = {0: 0, 1: 0}
             groups_used = 0
             counted = 0  # groups after the design restriction, as G in DIDmultiplegtDYN
             tgrid = np.arange(1, T + 1)[None, :]
-            ctrl_wx = np.zeros(shape + (Kc,))
-            sw_wx = np.zeros(sw_shape + (Kc,))
-            coh_wx = np.zeros((0, K, Lm, Kc))
-            one_n, one_w, one_wy = (
-                np.zeros((nB, T + 1)),
-                np.zeros((nB, T + 1)),
-                np.zeros((nB, T + 1)),
-            )
+            one_n, one_w, one_wy = (np.zeros((nB, T + 1)) for _ in range(3))
             one_wx, one_wxy = np.zeros((nB, T + 1, Kc)), np.zeros((nB, T + 1, Kc))
             one_wxx = np.zeros((nB, T + 1, Kc, Kc))
-            for y, D, X, w in batches():
-                p = Paths(D, T, baselines, T_d, open_)
-                y = p.outcomes(y)
-                X = np.where(p.present[:, :, None], X, np.nan)
+            horizons = np.arange(1, Lm + 1)
+
+            def eligibility(p, y):
+                """Whether each group may be a switcher in each slot: with linear trends,
+                only if it has controls and observed changes at every horizon up to the
+                slot's r (and, for placebos, observed placebo changes up to r)."""
+                E = np.ones((len(y), S), dtype=bool)
+                if not linear_trends:
+                    return E
+                rows = np.flatnonzero(p.up >= 0)
+                Fr, br = p.F[rows], p.base[rows]
+                last = y[rows, Fr - 2]
+                ok = np.zeros((len(rows), Lm), dtype=bool)
+                for q in range(1, Lm + 1):
+                    at = np.minimum(Fr - 1 + q, T)
+                    ok[:, q - 1] = (
+                        (Fr - 1 + q <= T)
+                        & (ctrl_w[0, q - 1, br, at] > 0)
+                        & np.isfinite(y[rows, at - 1] - last)
+                    )
+                still = np.logical_and.accumulate(ok, axis=1) & (
+                    Fr[:, None] - 1 + horizons[None, :] <= p.Td[rows, None]
+                )
+                fill = np.zeros((len(rows), P), dtype=bool)
+                for q in range(1, P + 1):
+                    at = np.maximum(Fr - 1 - q, 1)
+                    fill[:, q - 1] = (
+                        (Fr - 1 - q >= 1)
+                        & (lead_w[q - 1, br, at] > 0)
+                        & np.isfinite(y[rows, at - 1] - last)
+                    )
+                fill = np.logical_and.accumulate(fill, axis=1)
+                for j, (k, _, r) in enumerate(slots):
+                    E[rows, j] = still[:, r - 1] & (fill[:, r - 1] if k == 1 else True)
+                return E
+
+            def add_controls(p, y, X, w):
+                nonlocal groups_used, counted
                 kept = p.base >= 0
                 groups_used += int(kept.sum())
                 counted += int(p.counted.sum())
+                size = nB * (T + 1)
                 if Kc:
                     # one-period changes of not-yet-switched rows, for the coefficients
                     dY1, dX1 = _changes(y, 1, 0), _changes(X, 1, 0)
                     rows1 = kept[:, None] & (tgrid >= 2) & (tgrid < p.F[:, None])
                     rows1 &= np.isfinite(dY1) & np.isfinite(dX1).all(axis=2)
                     idx1 = (p.base[:, None] * (T + 1) + tgrid)[rows1]
-                    w1 = np.broadcast_to(w[:, None], rows1.shape)[rows1]
-                    x1, y1 = dX1[rows1], dY1[rows1]
-                    one_n += np.bincount(idx1, minlength=nB * (T + 1)).reshape(nB, T + 1)
-                    one_w += np.bincount(idx1, w1, nB * (T + 1)).reshape(nB, T + 1)
-                    one_wy += np.bincount(idx1, w1 * y1, nB * (T + 1)).reshape(nB, T + 1)
+                    w1, x1, y1 = w[rows1], dX1[rows1], dY1[rows1]
+                    one_n[:] += np.bincount(idx1, minlength=size).reshape(nB, T + 1)
+                    one_w[:] += _cells(idx1, w1, nB, T)
+                    one_wy[:] += _cells(idx1, w1 * y1, nB, T)
                     for a in range(Kc):
                         one_wx[..., a] += _cells(idx1, w1 * x1[:, a], nB, T)
                         one_wxy[..., a] += _cells(idx1, w1 * x1[:, a] * y1, nB, T)
-                        for b in range(Kc):
-                            one_wxx[..., a, b] += _cells(idx1, w1 * x1[:, a] * x1[:, b], nB, T)
+                        for c in range(Kc):
+                            one_wxx[..., a, c] += _cells(idx1, w1 * x1[:, a] * x1[:, c], nB, T)
                 for s in (0, 1):
                     mine = p.up == s
                     if mine.any():
@@ -409,204 +550,282 @@ def _dcdh(
                         pl_len = np.where(p.F[mine] >= 3, np.minimum(p.L[mine], p.F[mine] - 2), 0)
                         P_max[s] = max(P_max[s], int(pl_len.max()))
                 cell = p.base[:, None] * (T + 1) + tgrid
-                unit_code = np.full(len(D), -1, dtype=np.int64)
-                sw_all = p.up >= 0
-                if sw_all.any():
-                    unit_code[sw_all] = coder(
-                        p.base[sw_all], p.F[sw_all], p.d_fg[sw_all], p.up[sw_all]
-                    )
-                    previous = codes
-                    codes, coh = _grow(codes, coh, unit_code[sw_all])
-                    if Kc:
-                        _, coh_wx = _grow(previous, coh_wx, unit_code[sw_all])
-                    position = np.searchsorted(codes, unit_code)
+                eligible_ctrl = kept[:, None] & (tgrid < p.F[:, None])
+                if only_never_switchers:
+                    eligible_ctrl &= (p.F == T + 1)[:, None]
                 for k in range(K):
                     for li in range(Lm if k == 0 else P):
                         ell = li + 1
                         low = ell + 1 if k == 0 else 2 * ell + 1
-                        rows = (
-                            kept[:, None]
-                            & (tgrid >= low)
-                            & (tgrid < p.F[:, None])
-                            & (tgrid <= p.Td[:, None])
-                        )
-                        if only_never_switchers:
-                            rows &= (p.F == T + 1)[:, None]
+                        rows = eligible_ctrl & (tgrid >= low) & (tgrid <= p.Td[:, None])
                         change = _changes(y, ell, k)
                         rows &= np.isfinite(change)
                         if k == 1:
                             # a placebo's groups are those of the effect: its change too
                             rows &= np.isfinite(_changes(y, ell, 0))
                         idx = cell[rows]
-                        size = nB * (T + 1)
-                        ctrl_w[k, li] += np.bincount(idx, (w[:, None] * rows)[rows], size).reshape(
-                            nB, T + 1
-                        )
-                        ctrl_wy[k, li] += np.bincount(
-                            idx, (w[:, None] * change)[rows], size
-                        ).reshape(nB, T + 1)
+                        ctrl_w[k, li] += _cells(idx, w[rows], nB, T)
+                        ctrl_wy[k, li] += _cells(idx, (w * change)[rows], nB, T)
                         ctrl_n[k, li] += np.bincount(idx, minlength=size).reshape(nB, T + 1)
                         if Kc:
                             changeX = _changes(X, ell, k)
-                            weighted = w[:, None] * rows
                             for a in range(Kc):
                                 ctrl_wx[k, li, ..., a] += _cells(
-                                    idx, (weighted * changeX[:, :, a])[rows], nB, T
+                                    idx, (w * changeX[:, :, a])[rows], nB, T
                                 )
-                        # switchers, at t = F - 1 + l
-                        on = (p.up >= 0) & (p.L >= ell)
-                        if k == 1:
-                            on &= p.F - 1 - ell >= 1
-                        rows_on = np.flatnonzero(on)
-                        at = p.F[on] - 1 + ell
+                if linear_trends:
+                    for q in range(1, P + 1):
+                        lead = np.full(y.shape, np.nan)
+                        lead[:, :-q] = y[:, :-q] - y[:, q:]
+                        rows = eligible_ctrl & np.isfinite(lead)
+                        lead_w[q - 1] += _cells(cell[rows], w[rows], nB, T)
+
+            def add_switchers(p, y, X, w, eligible):
+                unit_code = np.full(len(y), -1, dtype=np.int64)
+                sw_all = p.up >= 0
+                if not sw_all.any():
+                    return
+                unit_code[sw_all] = coder(p.base[sw_all], p.F[sw_all], p.d_fg[sw_all], p.up[sw_all])
+                previous = cohorts["codes"]
+                cohorts["codes"], cohorts["coh"] = _grow(
+                    previous, cohorts["coh"], unit_code[sw_all]
+                )
+                if Kc:
+                    _, cohorts["wx"] = _grow(previous, cohorts["wx"], unit_code[sw_all])
+                codes = cohorts["codes"]
+                position = np.searchsorted(codes, unit_code)
+                size2 = 2 * nB * (T + 1)
+                for j, (k, li, _) in enumerate(slots):
+                    ell = li + 1
+                    on = (p.up >= 0) & (p.L >= ell) & eligible[:, j]
+                    if k == 1:
+                        on &= p.F - 1 - ell >= 1
+                    rows_on = np.flatnonzero(on)
+                    at = p.F[on] - 1 + ell
+                    if k == 0:
+                        delta = y[rows_on, at - 1] - y[rows_on, p.F[on] - 2]
+                    else:
+                        delta = y[rows_on, p.F[on] - 2 - ell] - y[rows_on, p.F[on] - 2]
+                    # a change needs both of its periods observed; a placebo's switchers
+                    # also need the effect's change
+                    good = np.isfinite(delta)
+                    if k == 1:
+                        good &= np.isfinite(y[rows_on, at - 1])
+                    on[rows_on[~good]] = False
+                    rows_on, at, delta = rows_on[good], at[good], delta[good]
+                    if not on.any():
+                        continue
+                    s = p.up[on]
+                    sign = np.where(s == 1, 1.0, -1.0)
+                    horizon = (tgrid >= p.F[on][:, None]) & (tgrid <= at[:, None])
+                    cum = (p.dev[on] * horizon).sum(axis=1) * sign
+                    now = p.dev[rows_on, at - 1] * sign
+                    flat = (s * nB + p.base[on]) * (T + 1) + at
+                    ww = w[rows_on, at - 1]
+                    for target, values in (
+                        (sw_w, ww),
+                        (sw_wy, ww * delta),
+                        (sw_n, np.ones(len(ww))),
+                        (sw_cum, ww * cum),
+                        (sw_now, ww * now),
+                    ):
+                        target[j] += np.bincount(flat, values, size2).reshape(2, nB, T + 1)
+                    where = position[on]
+                    for c, values in enumerate((ww, ww * delta, np.ones(len(ww)))):
+                        cohorts["coh"][:, j, c] += np.bincount(where, values, len(codes))
+                    if Kc:
                         if k == 0:
-                            delta = y[rows_on, at - 1] - y[rows_on, p.F[on] - 2]
+                            deltaX = X[rows_on, at - 1] - X[rows_on, p.F[on] - 2]
                         else:
-                            delta = y[rows_on, p.F[on] - 2 - ell] - y[rows_on, p.F[on] - 2]
-                        # a change needs both of its periods observed; a placebo's
-                        # switchers also need the effect's change
-                        good = np.isfinite(delta)
-                        if k == 1:
-                            good &= np.isfinite(y[rows_on, at - 1])
-                        on[rows_on[~good]] = False
-                        rows_on, at, delta = rows_on[good], at[good], delta[good]
-                        if not on.any():
-                            continue
-                        s = p.up[on]
-                        sign = np.where(s == 1, 1.0, -1.0)
-                        horizon = (tgrid >= p.F[on][:, None]) & (tgrid <= at[:, None])
-                        cum = (p.dev[on] * horizon).sum(axis=1) * sign
-                        now = p.dev[rows_on, at - 1] * sign
-                        flat = (s * nB + p.base[on]) * (T + 1) + at
-                        size2 = 2 * nB * (T + 1)
-                        ww = w[on]
-                        for target, values in (
-                            (sw_w, ww),
-                            (sw_wy, ww * delta),
-                            (sw_n, np.ones(len(ww))),
-                            (sw_cum, ww * cum),
-                            (sw_now, ww * now),
-                        ):
-                            target[k, li] += np.bincount(flat, values, size2).reshape(2, nB, T + 1)
-                        where = position[on]
-                        for j, values in enumerate((ww, ww * delta, np.ones(len(ww)))):
-                            coh[:, k, li, j] += np.bincount(where, values, len(codes))
-                        if Kc:
-                            if k == 0:
-                                deltaX = X[rows_on, at - 1] - X[rows_on, p.F[on] - 2]
-                            else:
-                                deltaX = X[rows_on, p.F[on] - 2 - ell] - X[rows_on, p.F[on] - 2]
-                            for a in range(Kc):
-                                sw_wx[k, li, ..., a] += np.bincount(
-                                    flat, ww * deltaX[:, a], size2
-                                ).reshape(2, nB, T + 1)
-                                coh_wx[:, k, li, a] += np.bincount(
-                                    where, ww * deltaX[:, a], len(codes)
-                                )
+                            deltaX = X[rows_on, p.F[on] - 2 - ell] - X[rows_on, p.F[on] - 2]
+                        for a in range(Kc):
+                            sw_wx[j, ..., a] += np.bincount(flat, ww * deltaX[:, a], size2).reshape(
+                                2, nB, T + 1
+                            )
+                            cohorts["wx"][:, j, a] += np.bincount(
+                                where, ww * deltaX[:, a], len(codes)
+                            )
+
+            def read(D, code):
+                return Paths(D, T, code, cells, T_d, open_, linear_trends)
+
+            for y, D, X, w, code in batches():
+                p = read(D, code)
+                y = p.outcomes(y)
+                X = np.where(p.present[:, :, None], X, np.nan)
+                add_controls(p, y, X, w)
+                if not linear_trends:
+                    add_switchers(p, y, X, w, eligibility(p, y))
+            if linear_trends:
+                for y, D, X, w, code in batches():
+                    p = read(D, code)
+                    y = p.outcomes(y)
+                    X = np.where(p.present[:, :, None], X, np.nan)
+                    add_switchers(p, y, X, w, eligibility(p, y))
+            codes, coh, coh_wx = cohorts["codes"], cohorts["coh"], cohorts["wx"]
             n_eff = min(effects, max(L_max[s] for s in directions))
             if n_eff < 1:
                 raise ValueError(
                     "no effect can be estimated: no switcher has a group not yet switched to compare with"
                 )
-            n_pl = min(placebos, max(P_max[s] for s in directions), n_eff)
-            theta = np.zeros((nB, Kc))
+            n_pl = min(placebos, max(P_max[s] for s in directions) - linear_trends, n_eff)
+            n_pl = max(n_pl, 0)
+            theta = np.zeros((nL, Kc))
             if Kc:
                 # Within each baseline, the outcome's one-period changes on the covariates'
-                # with period effects, among not-yet-switched rows (did_multiplegt_main).
+                # among not-yet-switched rows, with period effects by cell
+                # (did_multiplegt_main); and, for the variance's fitted values, with
+                # period effects by baseline only (its feols call).
                 with np.errstate(invalid="ignore", divide="ignore"):
                     mean_x = np.where(one_w[..., None] > 0, one_wx / one_w[..., None], 0.0)
-                gram_x = one_wxx - np.einsum("btk,btj->btkj", mean_x, one_wx)
-                cross_x = one_wxy - mean_x * one_wy[..., None]
-                inv_denom = np.zeros((nB, Kc, Kc))
-                for b in range(nB):
-                    Mb = gram_x[b].sum(axis=0)
+                gram_x = (one_wxx - np.einsum("btk,btj->btkj", mean_x, one_wx)).sum(axis=1)
+                cross_x = (one_wxy - mean_x * one_wy[..., None]).sum(axis=1)
+                by_level = {}
+                for name, array in (
+                    ("n", one_n),
+                    ("w", one_w),
+                    ("wy", one_wy),
+                    ("wx", one_wx),
+                    ("wxy", one_wxy),
+                    ("wxx", one_wxx),
+                    ("gram", gram_x),
+                    ("cross", cross_x),
+                ):
+                    by_level[name] = np.zeros((nL,) + array.shape[1:])
+                    np.add.at(by_level[name], level, array)
+                inv_denom = np.zeros((nL, Kc, Kc))
+                theta_E = np.zeros((nL, Kc))
+                for lv in range(nL):
+                    Mb = by_level["gram"][lv]
                     if np.linalg.cond(Mb) > 1e12:
                         raise ValueError(
                             f"the covariates are collinear, or do not change, among the groups with "
-                            f"first-period treatment {baselines[b]:g} that have not switched yet"
+                            f"first-period treatment {baselines[lv]:g} that have not switched yet"
                         )
                     invM = np.linalg.inv(Mb)
-                    theta[b] = invM @ cross_x[b].sum(axis=0)
-                    inv_denom[b] = invM * one_w[b].sum() * counted
+                    theta[lv] = invM @ by_level["cross"][lv]
+                    inv_denom[lv] = invM * by_level["w"][lv].sum() * counted
+                if trends_by is None:
+                    theta_E = theta
+                else:
+                    Lw, Lwx = by_level["w"], by_level["wx"]
+                    with np.errstate(invalid="ignore", divide="ignore"):
+                        mean_L = np.where(Lw[..., None] > 0, Lwx / Lw[..., None], 0.0)
+                    gram_L = (by_level["wxx"] - np.einsum("ltk,ltj->ltkj", mean_L, Lwx)).sum(axis=1)
+                    cross_L = (by_level["wxy"] - mean_L * by_level["wy"][..., None]).sum(axis=1)
+                    theta_E = np.stack(
+                        [np.linalg.solve(gram_L[lv], cross_L[lv]) for lv in range(nL)]
+                    )
                 with np.errstate(invalid="ignore", divide="ignore"):
                     fixed = np.where(
-                        one_w > 0, (one_wy - np.einsum("btk,bk->bt", one_wx, theta)) / one_w, 0.0
+                        by_level["w"] > 0,
+                        (by_level["wy"] - np.einsum("ltk,lk->lt", by_level["wx"], theta_E))
+                        / by_level["w"],
+                        0.0,
                     )
-                ctrl_wy -= np.einsum("klbtj,bj->klbt", ctrl_wx, theta)
-                sw_wy -= np.einsum("klsbtj,bj->klsbt", sw_wx, theta)
+                theta_cell = theta[level]
+                ctrl_wy -= np.einsum("klbtj,bj->klbt", ctrl_wx, theta_cell)
+                sw_wy -= np.einsum("jsbtk,bk->jsbt", sw_wx, theta_cell)
                 if len(codes):
                     cb0 = coder.parts(codes)[0]
-                    coh[:, :, :, 1] -= np.einsum("cklj,cj->ckl", coh_wx, theta[cb0])
+                    coh[:, :, 1] -= np.einsum("cjk,ck->cj", coh_wx, theta_cell[cb0])
 
             # Cells with controls; switchers in cells without any are not used.
             valid_cell = ctrl_w > 0
             if K == 2:
                 valid_cell[1] &= ctrl_w[0] > 0
-            sw_wx *= valid_cell[:, :, None, :, :, None]
+            slot_valid = valid_cell[slot_kind, slot_horizon]  # (S, nB, T + 1)
+            sw_wx *= slot_valid[:, None, :, :, None]
             for s in (0, 1):
                 if s not in directions:
-                    sw_wx[:, :, s] = 0
+                    sw_wx[:, s] = 0
             for arr in (sw_w, sw_wy, sw_n, sw_cum, sw_now):
-                arr *= valid_cell[:, :, None]
+                arr *= slot_valid[:, None]
                 for s in (0, 1):
                     if s not in directions:
-                        arr[:, :, s] = 0
+                        arr[:, s] = 0
+            slot_ctrl_w = ctrl_w[slot_kind, slot_horizon]
             with np.errstate(invalid="ignore", divide="ignore"):
                 ctrl_mean = np.where(ctrl_w > 0, ctrl_wy / ctrl_w, 0.0)
-                t_any = sw_w.sum(axis=3) > 0
-                gate = t_any[:, :, :, None, :]
-                un_w = sw_w + ctrl_w[:, :, None] * gate
-                union_n = sw_n + ctrl_n[:, :, None] * gate
-                union_mean = np.where(un_w > 0, (sw_wy + ctrl_wy[:, :, None] * gate) / un_w, 0.0)
+                t_any = sw_w.sum(axis=2) > 0  # (S, 2, T + 1)
+                gate = t_any[:, :, None, :]
+                un_w = sw_w + slot_ctrl_w[:, None] * gate
+                union_n = sw_n + ctrl_n[slot_kind, slot_horizon][:, None] * gate
+                union_mean = np.where(
+                    un_w > 0, (sw_wy + ctrl_wy[slot_kind, slot_horizon][:, None] * gate) / un_w, 0.0
+                )
             # cohort tables, with cohorts in cells without controls removed
             cb, cF, cs = coder.parts(codes)
-            cohort_n = coh[:, :, :, 2].transpose(1, 2, 0).copy()
-            cohort_w = coh[:, :, :, 0].transpose(1, 2, 0)
-            cohort_wy = coh[:, :, :, 1].transpose(1, 2, 0)
-            for k in range(K):
-                for li in range(Lm):
-                    at = np.minimum(cF - 1 + li + 1, T)
-                    ok = (
-                        valid_cell[k, li, cb, at] & (cF - 1 + li + 1 <= T) & np.isin(cs, directions)
-                    )
-                    cohort_n[k, li] *= ok
+            cohort_n = coh[:, :, 2].T.copy()
+            cohort_w = coh[:, :, 0].T
+            cohort_wy = coh[:, :, 1].T
+            for j in range(S):
+                at = cF + slot_horizon[j]
+                ok = slot_valid[j, cb, np.minimum(at, T)] & (at <= T) & np.isin(cs, directions)
+                cohort_n[j] *= ok
             with np.errstate(invalid="ignore", divide="ignore"):
                 cohort_mean = np.where(cohort_w > 0, cohort_wy / cohort_w, 0.0)
 
-            # Pass 3: each group's terms.
-            Nk = sw_w.sum(axis=(3, 4))  # (K, Lm, 2)
-            columns = [(0, li) for li in range(n_eff)] + [(1, li) for li in range(n_pl)]
-            width = len(columns) + 1
-            coef = np.zeros((width, K, Lm, 2))
-            for j, (k, li) in enumerate(columns):
-                total = Nk[k, li].sum()
-                if total > 0:
-                    coef[j, k, li, 1], coef[j, k, li, 0] = 1 / total, -1 / total
-                    if normalized:
-                        delta = sw_cum[k, li].sum() / total
-                        coef[j] /= delta
-            # the average total effect: within each direction, the effects weighted by
-            # their switchers over the average treatment change; then the directions
-            # weighted by their switchers times that change (did_multiplegt_dyn)
-            sums = {s: Nk[0, :n_eff, s].sum() for s in (0, 1)}
-            den = {s: sw_now[0, :n_eff, s].sum() / sums[s] if sums[s] else 0.0 for s in (0, 1)}
-            weight_in = den[1] * sums[1]
-            weight_all = den[1] * sums[1] + den[0] * sums[0]
-            share = {1: weight_in / weight_all if weight_all > 0 else 0.5}
-            share[0] = 1 - share[1]
-            for s, sign in ((1, 1.0), (0, -1.0)):
-                if sums[s] and den[s]:
-                    coef[-1, 0, :n_eff, s] = share[s] * sign / (sums[s] * den[s])
+            # The estimates: each a combination of slots by direction.
+            Nk = sw_w.sum(axis=(2, 3))  # (S, 2)
+            columns = []
+            for kind, count in ((0, n_eff), (1, n_pl)):
+                for i in range(1, count + 1):
+                    if linear_trends:
+                        members = [slot_index[(kind, h - 1, i)] for h in range(1, i + 1)]
+                        target = slot_index[(kind, i - 1, i)]
+                    else:
+                        target = slot_index[(kind, i - 1, 0)]
+                        members = [target]
+                    columns.append((target, members))
+            average = not linear_trends
+            width = len(columns) + average
+            coef = np.zeros((width, S, 2))
+            for c, (target, members) in enumerate(columns):
+                total = Nk[target].sum()
+                if total <= 0:
+                    continue
+                delta = 0.0
+                for s, sign in ((1, 1.0), (0, -1.0)):
+                    share = Nk[target, s] / total
+                    if share <= 0:
+                        continue
+                    # (as DIDmultiplegtDYN: the sum over horizons only if all have switchers)
+                    used = members if all(Nk[m, s] > 0 for m in members) else [target]
+                    for m in used:
+                        coef[c, m, s] = share * sign / Nk[m, s]
+                    delta += share * sw_cum[target, s].sum() / Nk[target, s]
+                if normalized:
+                    coef[c] /= delta
+            weight_all = 0.0
+            if average:
+                # the average total effect: within each direction, the effects weighted by
+                # their switchers over the average treatment change; then the directions
+                # weighted by their switchers times that change (did_multiplegt_dyn)
+                sums = {s: Nk[:n_eff, s].sum() for s in (0, 1)}
+                den = {s: sw_now[:n_eff, s].sum() / sums[s] if sums[s] else 0.0 for s in (0, 1)}
+                weight_in = den[1] * sums[1]
+                weight_all = den[1] * sums[1] + den[0] * sums[0]
+                share = {1: weight_in / weight_all if weight_all > 0 else 0.5}
+                share[0] = 1 - share[1]
+                for s, sign in ((1, 1.0), (0, -1.0)):
+                    if sums[s] and den[s]:
+                        coef[-1, :n_eff, s] = share[s] * sign / (sums[s] * den[s])
             if Kc:
                 # M of did_multiplegt_dyn_core: the switchers' covariate changes less their
-                # controls', per switcher; used where l <= T_d - 2
+                # controls', per switcher; used where l <= T_d - 2; summed per baseline
                 with np.errstate(invalid="ignore", divide="ignore"):
-                    ratio = np.where(ctrl_w[:, :, None] > 0, sw_w / ctrl_w[:, :, None], 0.0)
-                    moved = sw_wx.sum(axis=4) - np.einsum("klsbt,klbtj->klsbj", ratio, ctrl_wx)
+                    ratio = np.where(slot_ctrl_w[:, None] > 0, sw_w / slot_ctrl_w[:, None], 0.0)
+                    moved = sw_wx.sum(axis=3) - np.einsum(
+                        "jsbt,jbtk->jsbk", ratio, ctrl_wx[slot_kind, slot_horizon]
+                    )
                     Mc = np.where(Nk[..., None, None] > 0, moved / Nk[..., None, None], 0.0)
-                horizon = np.arange(1, Lm + 1)[None, :, None, None]
-                Mc *= (horizon <= T_d[None, None, None, :] - 2)[..., None]
-                constant = np.einsum("klsbj,bj->kls", Mc, theta)
+                Mc *= (slot_horizon[:, None, None] + 1 <= T_d[None, None, :] - 2)[..., None]
+                M_level = np.zeros((S, 2, nL, Kc))
+                np.add.at(M_level, (slice(None), slice(None), level), Mc)
+                constant = np.einsum("jslk,lk->js", M_level, theta)
+
+            # Pass 3: each group's terms.
             estimate = np.zeros(width)
             gram = np.zeros((width, width))
             arrays = (
@@ -621,70 +840,99 @@ def _dcdh(
                 cohort_mean,
                 cohort_n,
             )
-            for y, D, X, w in batches():
-                p = Paths(D, T, baselines, T_d, open_)
+            for y, D, X, w, code in batches():
+                p = read(D, code)
                 y = p.outcomes(y)
                 X = np.where(p.present[:, :, None], X, np.nan)
                 kept = p.base >= 0
+                eligible = eligibility(p, y)
                 if Kc:
-                    th = np.where(kept[:, None], theta[np.maximum(p.base, 0)], 0.0)
+                    th = np.where(kept[:, None], theta_cell[np.maximum(p.base, 0)], 0.0)
                     y_raw, y = y, y - np.einsum("btk,bk->bt", X, th)
                 cid = np.full(len(D), -1, dtype=np.int64)
                 sw = p.up >= 0
                 if sw.any() and len(codes):
-                    code = coder(p.base[sw], p.F[sw], p.d_fg[sw], p.up[sw])
-                    pos = np.minimum(np.searchsorted(codes, code), len(codes) - 1)
-                    cid[sw] = np.where(codes[pos] == code, pos, -1)
+                    code_sw = coder(p.base[sw], p.F[sw], p.d_fg[sw], p.up[sw])
+                    pos = np.minimum(np.searchsorted(codes, code_sw), len(codes) - 1)
+                    cid[sw] = np.where(codes[pos] == code_sw, pos, -1)
                 U, V = group_terms(
-                    p.base, p.F, p.up, cid, w, y, T_d, only_never_switchers, T, *arrays
+                    p.base,
+                    p.F,
+                    p.up,
+                    cid,
+                    w,
+                    y,
+                    T_d,
+                    only_never_switchers,
+                    T,
+                    slot_kind,
+                    slot_horizon,
+                    eligible,
+                    *arrays,
                 )
                 if Kc:
                     b0 = np.maximum(p.base, 0)
+                    lv = level[b0]
                     dY1, dX1 = _changes(y_raw, 1, 0), _changes(X, 1, 0)
                     rows1 = kept[:, None] & (tgrid >= 2) & (tgrid < p.F[:, None])
                     rows1 &= np.isfinite(dY1) & np.isfinite(dX1).all(axis=2)
-                    n1 = one_n[b0[:, None], tgrid]
+                    n1 = by_level["n"][lv[:, None], tgrid]
                     factor = np.where(n1 >= 2, np.sqrt(n1 / np.maximum(n1 - 1, 1)), 1.0)
                     E = np.where(
-                        n1 >= 2, np.einsum("btk,bk->bt", dX1, th) + fixed[b0[:, None], tgrid], 0.0
+                        n1 >= 2,
+                        np.einsum("btk,bk->bt", dX1, theta_E[lv]) + fixed[lv[:, None], tgrid],
+                        0.0,
                     )
-                    N_c = one_w[b0].sum(axis=1)[:, None]
-                    term = np.where(rows1, w[:, None] * factor * (dY1 - E) / N_c, 0.0)
+                    N_c = by_level["w"][lv].sum(axis=1)[:, None]
+                    term = np.where(rows1, w * factor * (dY1 - E) / N_c, 0.0)
                     resid = np.nan_to_num(dX1 - mean_x[b0[:, None], tgrid])
                     in_sum = np.einsum("btk,bt->bk", resid, term)
-                    own = np.einsum("bkj,bj->bk", inv_denom[b0], in_sum) * (p.F >= 3)[:, None]
-                    by_group = Mc[:, :, :, b0, :].transpose(3, 0, 1, 2, 4)
-                    part2 = np.einsum("bklsj,bj->bkls", by_group, own)
+                    own = np.einsum("bkj,bj->bk", inv_denom[lv], in_sum) * (p.F >= 3)[:, None]
+                    part2 = np.einsum("jsbk,bk->bjs", M_level[:, :, lv, :], own)
                     part2 = part2 - constant[None]
-                    V -= np.where(kept[:, None, None, None], Nk[None] * part2 / counted, 0.0)
-                estimate += np.einsum("bkls,jkls->j", U, coef)
-                scores = np.einsum("bkls,jkls->bj", V, coef)
+                    V -= np.where(kept[:, None, None], Nk[None] * part2 / counted, 0.0)
+                estimate += np.einsum("bjs,cjs->c", U, coef)
+                scores = np.einsum("bjs,cjs->bc", V, coef)
                 gram += scores.T @ scores
 
             names = (
-                [f"effect::{li + 1}" for li in range(n_eff)]
-                + [f"placebo::{li + 1}" for li in range(n_pl)]
-                + ["average_total_effect"]
+                [f"effect::{i}" for i in range(1, n_eff + 1)]
+                + [f"placebo::{i}" for i in range(1, n_pl + 1)]
+                + (["average_total_effect"] if average else [])
             )
-            defined = np.array([Nk[k, li].sum() > 0 for k, li in columns] + [weight_all > 0])
+            defined = np.array(
+                [Nk[target].sum() > 0 for target, _ in columns]
+                + ([weight_all > 0] if average else [])
+            )
             estimate[~defined] = np.nan
             gram[~defined, :] = np.nan
             gram[:, ~defined] = np.nan
+            targets = [target for target, _ in columns]
+            # the store divides weights by their largest, then rescales them to average one
+            scale = store.weight_normalizer / store.weight_scale
             table = pl.DataFrame(
                 {
-                    "coefficient": names[:-1],
-                    "switchers_in": [int(sw_n[k, li, 1].sum()) for k, li in columns],
-                    "switchers_out": [int(sw_n[k, li, 0].sum()) for k, li in columns],
-                    "weight_in": [float(sw_w[k, li, 1].sum()) for k, li in columns],
-                    "weight_out": [float(sw_w[k, li, 0].sum()) for k, li in columns],
+                    "coefficient": names[: len(columns)],
+                    "switchers_in": [int(sw_n[j, 1].sum()) for j in targets],
+                    "switchers_out": [int(sw_n[j, 0].sum()) for j in targets],
+                    "weight_in": [float(sw_w[j, 1].sum()) / scale for j in targets],
+                    "weight_out": [float(sw_w[j, 0].sum()) / scale for j in targets],
                 }
             )
             labels = store.period_labels
+
+            def cell_label(c):
+                d = f"{c.real:g}"
+                return d if trends_by is None else f"{d} | {trend_labels[int(c.imag)]}"
+
             diagnostics = dict(
                 switchers=switchers,
                 covariates=covariate_names,
                 only_never_switchers=only_never_switchers,
                 normalized=normalized,
+                trends_by=trend_columns,
+                linear_trends=linear_trends,
+                weights=weights,
                 groups_input=store.n_units_input,
                 groups_used=groups_used,
                 periods=T,
@@ -692,8 +940,8 @@ def _dcdh(
                 time_max=labels.label_int(int(store.times[-1])),
                 baselines=baselines.tolist(),
                 last_period_with_controls={
-                    str(d): labels.label_int(int(store.times[t - 1]))
-                    for d, t in zip(baselines.tolist(), T_d.tolist(), strict=True)
+                    cell_label(c): labels.label_int(int(store.times[t - 1])) if t >= 1 else None
+                    for c, t in zip(cells.tolist(), T_d.tolist(), strict=True)
                 },
                 inference="clustered by group; the authors' conservative variance (cohort-demeaned)",
                 batch_units=B,
@@ -774,6 +1022,10 @@ def did_dcdh(
     normalized=False,
     switchers="both",
     only_never_switchers=False,
+    trends_by=None,
+    linear_trends=False,
+    weights=None,
+    allow_time_varying_weights=False,
     incomplete_units="error",
     n_threads=None,
     max_memory_gb=None,
@@ -790,7 +1042,9 @@ def did_dcdh(
     period its treatment differs from that. Effect l compares the outcome change of the
     groups that first switched l - 1 periods earlier, since the period before their
     switch, with that of groups with the same baseline that have not switched yet. As
-    the authors' R and Stata ``did_multiplegt_dyn``.
+    the authors' R and Stata ``did_multiplegt_dyn``. Weights may vary over time (with
+    ``allow_time_varying_weights=True``): a group enters each comparison with its weight
+    in the period the effect is measured at (for a placebo, that of the matching effect).
 
     de Chaisemartin, C. and D'Haultfoeuille, X. (2024). Difference-in-differences
     estimators of intertemporal treatment effects. NBER Working Paper 29873.
@@ -822,6 +1076,17 @@ def did_dcdh(
         Use switchers whose treatment rose ("in"), fell ("out"), or both.
     only_never_switchers : bool, default False
         Compare switchers only with groups whose treatment never changes.
+    trends_by : str or list of str, optional
+        Group-level columns (constant within each group) within which trends may
+        differ: switchers are compared only with groups that have the same values of
+        these columns as well as the same first-period treatment.
+    linear_trends : bool, default False
+        Allow each group its own linear trend. The comparisons use the first
+        differences of the outcome (and of the covariates), and effect l is the sum of
+        the first l such effects, for the switchers that have all l; placebo l
+        likewise. Groups that first switch in the second period are not used, and the
+        average total effect is not estimated.
+    {WEIGHTS}
     incomplete_units : {"error", "drop", "keep"}, default "error"
         What to do with groups missing some periods: refuse the data, drop those
         groups, or keep their observed periods. With "keep", a change is used only where
@@ -833,8 +1098,8 @@ def did_dcdh(
     Returns
     -------
     DCDHResult or Profile
-        ``effect::l``, ``placebo::l`` and ``average_total_effect`` with their joint
-        covariance; ``pretrend_test()``, ``effects_equal_test()``, ``switchers()``.
+        ``effect::l``, ``placebo::l`` and ``average_total_effect`` (not with
+        ``linear_trends``) with their joint covariance; ``pretrend_test()``, ``effects_equal_test()``, ``switchers()``.
     """
     options = dict(locals())
     fml, data = options.pop("fml"), options.pop("data")
