@@ -70,3 +70,16 @@ def cohorts_from_treatment(treatment, t, ids, starts, unit):
     first = np.minimum.reduceat(np.where(treatment == 1, t, never), starts)
     first[first == never] = 0
     return first[unit]
+
+
+def first_changes(treatment, t, starts, unit):
+    """Each row's label: its unit's first period with a treatment other than in the
+    unit's first period, else 0 (the treatment never changes). Rows are sorted by
+    unit and period; the treatment may take any values and need not be absorbing."""
+    if not np.isfinite(treatment).all():
+        raise ValueError("treatment must be finite (no missing values)")
+    never = np.iinfo(np.int64).max
+    changed = treatment != treatment[starts][unit]
+    first = np.minimum.reduceat(np.where(changed, t, never), starts)
+    first[first == never] = 0
+    return first[unit]

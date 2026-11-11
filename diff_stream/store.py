@@ -10,7 +10,7 @@ import pyarrow.parquet as pq
 from ._core import staging_kernels
 from ._core.partition import GroupPartitions, Part
 from ._core.weights import validate_weights
-from .periods import PeriodLabels, cohorts_from_treatment
+from .periods import PeriodLabels, cohorts_from_treatment, first_changes
 
 PREFETCH = True  # read the next batch in a background thread; tests switch it off
 
@@ -47,6 +47,7 @@ def inspect(
     treatment=None,
     fe_solver=None,
     keep_fe_columns=False,
+    switching=False,
 ):
     """Compile the projection and check its schema without scanning rows.
 
@@ -127,7 +128,11 @@ def inspect(
     schema = lf.collect_schema()
     if not schema["t"].is_integer() or not schema["g"].is_integer():
         raise ValueError("time and cohort must be integers; 0 or null denotes never treated")
-    if treatment is not None:
+    if treatment is not None and switching:
+        if not (schema["d"].is_numeric() or schema["d"] == pl.Boolean):
+            raise ValueError("treatment must be numeric")
+        lf = lf.with_columns(pl.col("d").cast(pl.Float64))
+    elif treatment is not None:
         if not (schema["d"].is_integer() or schema["d"] == pl.Boolean):
             raise ValueError("treatment must be a 0/1 integer or Boolean column")
         lf = lf.with_columns(pl.col("d").cast(pl.Int8))
@@ -177,8 +182,12 @@ class PanelStore(GroupPartitions):
         allow_time_varying_weights=False,
         allow_always_treated=False,
         actual_cohort_column=None,
+        switching=False,
     ):
         super().__init__(root, budget, preprocess_mb)
+        # With switching, a treatment column labels each unit by its first change
+        # (de Chaisemartin and D'Haultfoeuille); otherwise it must be absorbing 0/1.
+        self.switching = switching
         self.batch_units = batch_units
         self.panel_mode = panel_mode
         self.anticipation = anticipation
@@ -248,7 +257,7 @@ class PanelStore(GroupPartitions):
             self.unit_weight_anchor = "mean observed weight per retained unit"
         if require_never_treated and (0 not in self.gc or len(self.gc) < 2):
             raise ValueError("at least one never-treated and one treated cohort are required")
-        if not require_never_treated and len(self.gc) < 2:
+        if not require_never_treated and len(self.gc) < 2 and not self.switching:
             raise ValueError(
                 "at least two distinct treatment-timing groups are required; an all-never-treated sample has no treatment effects"
             )
@@ -367,7 +376,9 @@ class PanelStore(GroupPartitions):
                 raise ValueError(
                     "balanced panels with unique unit-time keys are required; duplicate unit-time key"
                 )
-            if "d" in d.columns:
+            if "d" in d.columns and self.switching:
+                g = first_changes(d["d"].to_numpy(), t, starts, unit)
+            elif "d" in d.columns:
                 g = cohorts_from_treatment(d["d"].to_numpy(), t, ids, starts, unit)
             if self.period_labels.step != 1:
                 t = self.period_labels.internal(t)
