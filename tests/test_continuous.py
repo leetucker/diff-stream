@@ -8,6 +8,7 @@ ACRT standard errors use the rescaling of contdid PR #17 (issue #13).
 """
 
 import json
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -16,7 +17,7 @@ import pytest
 from numpy.testing import assert_allclose
 
 from benchmarks._files import digest, read_csv
-from diff_stream import did_callaway_santanna, did_continuous
+from diff_stream import ExperimentalWarning, did_callaway_santanna, did_continuous
 from diff_stream.continuous import DoseBasis
 
 DATA = Path(__file__).parent / "data"
@@ -175,7 +176,7 @@ def test_default_grid_and_knots_follow_contdid(panel, fits):
 
 
 def test_errors(panel):
-    with pytest.raises(ValueError, match="no covariates"):
+    with pytest.raises(ValueError, match="unknown variables"), pytest.warns(ExperimentalWarning):
         did_continuous("y ~ x", panel, **KW)
     zero = panel.with_columns(
         pl.when(pl.col("id") == panel.filter(pl.col("first_treat") > 0)["id"][0])
@@ -236,6 +237,7 @@ def test_constrained_fit_matches_unconstrained_fit(resource_runner, resource_enf
     options = dict(preprocess_mb=4, batch_units=37, n_threads=2)
     code = f"""
 import json
+import warnings
 from benchmarks._files import read_csv
 from diff_stream import did_continuous
 r = did_continuous("y ~ 1", read_csv({str(DATA / "continuous_panel.csv")!r}), panel=("id", "time"),
@@ -512,3 +514,278 @@ def test_discrete_dose_errors(panel, discrete_panel, discrete_fits):
     assert "discrete dose: 4 levels; control group: never_treated" in fit._summary_lines()
     p = did_continuous("y ~ 1", discrete_panel, **DISCRETE_KW, profile=True)
     assert p.notes["dose_levels"] == 4
+
+
+# Covariates and an absorbed fixed effect (experimental): diff-diff's regression
+# adjustment, Callaway-Sant'Anna's, and a dense calculation of the standard errors.
+
+COVARIATES = DATA / "continuous_covariates_reference"
+COVARIATE_FITS = {
+    "continuous": ("y ~ x | region", dict(dose="dose")),
+    "discrete": ("y_level ~ x | region", dict(dose="dose_level", dose_type="discrete")),
+}
+COVARIATE_KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2)
+COVARIATE_GRID = np.linspace(1, 10, 19)
+SMALL = 600
+
+
+def fit_quietly(*args, **options):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ExperimentalWarning)
+        return did_continuous(*args, **options)
+
+
+@pytest.fixture(scope="module")
+def covariate_panel():
+    for name, h in json.loads((COVARIATES / "PROVENANCE.json").read_text())["files"].items():
+        assert digest(Path(__file__).parents[1] / name) == h, name
+    return read_csv(DATA / "continuous_covariates_panel.csv")
+
+
+@pytest.fixture(scope="module")
+def covariate_fits(covariate_panel):
+    return {
+        (kind, cg): fit_quietly(fml, covariate_panel, **COVARIATE_KW, **o, control_group=cg)
+        for kind, (fml, o) in COVARIATE_FITS.items()
+        for cg in CONTROLS
+    }
+
+
+def covariate_oracle(panel, fit, outcome, dose, control_group, *, fixed_shares=False):
+    """The adjusted overall ATT and ACRT from dense regressions, with standard errors
+    from their complex-step gradient in the unit weights.
+
+    Each cell regresses the comparison units' change on an intercept, x at the base
+    period and region dummies, and fits the treated units' adjusted changes on the
+    fit's dose basis. ``fixed_shares=True`` holds the cohort shares and each cohort's
+    average slope of the basis fixed, as diff-diff does.
+    """
+
+    def wide(v):
+        return panel.pivot(on="time", index="id", values=v).sort("id").drop("id").to_numpy()
+
+    Y, X = wide(outcome), wide("x")
+    units = panel.filter(pl.col("time") == 1).sort("id")
+    G, D, R = (units[c].to_numpy() for c in ("first_treat", dose, "region"))
+    dummies = (R[:, None] == np.unique(R)[None, 1:]).astype(float)
+    cohorts, basis = np.unique(G[G > 0]), fit._basis
+    cells = [(g, t) for g in cohorts for t in range(2, Y.shape[1] + 1)]
+    Psi, dPsi = np.zeros((len(G), basis.width)), np.zeros((len(G), basis.width))
+    Psi[G > 0], dPsi[G > 0] = basis.values(D[G > 0]), basis.slopes(D[G > 0])
+    slopes = [dPsi[G == g].mean(axis=0) for g, t in cells] if fixed_shares else None
+
+    def estimate(u, fixed=None):
+        att, acrt = [], []
+        for j, (g, t) in enumerate(cells):
+            b = g - 1 if t >= g else t - 1
+            change = Y[:, t - 1] - Y[:, b - 1]
+            if control_group == "not_yet_treated":
+                control = (G == 0) | ((G > t) & (G != g))
+            else:
+                control = G == 0
+            Z = np.column_stack([np.ones(len(G)), X[:, min(t, b) - 1], dummies])
+            Zc, uc = Z[control], u[control]
+            gamma = np.linalg.solve(Zc.T @ (uc[:, None] * Zc), Zc.T @ (uc * change[control]))
+            mine = G == g
+            a, um, P = change[mine] - Z[mine] @ gamma, u[mine], Psi[mine]
+            beta = np.linalg.solve(P.T @ (um[:, None] * P), P.T @ (um * a))
+            att.append((um * a).sum() / um.sum())
+            if slopes is None:
+                acrt.append((um * (dPsi[mine] @ beta)).sum() / um.sum())
+            else:
+                acrt.append(slopes[j] @ beta)
+        n = {g: u[G == g].sum() for g in cohorts}
+        total = sum(n.values())
+        w = np.zeros(len(cells), dtype=u.dtype)
+        for g in cohorts:
+            post = np.array([c == g and t >= g for c, t in cells])
+            w[post] = n[g] / total / post.sum()
+        cell_weights = w.real if fixed is None else fixed
+        return np.r_[(cell_weights if fixed_shares else w) @ att, cell_weights @ acrt], w.real
+
+    base, w = estimate(np.ones(len(G)))
+    grads = []
+    for i in range(len(G)):
+        u = np.ones(len(G), dtype=complex)
+        u[i] += 1e-30j
+        grads.append(estimate(u, fixed=w)[0].imag / 1e-30)
+    return base, np.sqrt((np.array(grads) ** 2).sum(axis=0))
+
+
+@pytest.mark.parametrize("cg", CONTROLS)
+@pytest.mark.parametrize("kind", COVARIATE_FITS)
+def test_covariates_match_diff_diff(covariate_fits, kind, cg):
+    fit, name = covariate_fits[kind, cg], f"{kind}_{cg}"
+    overall = read_csv(COVARIATES / f"overall_{name}.csv")
+    assert_allclose(fit.beta, overall["estimate"].to_numpy(), rtol=1e-12)
+    curves = read_csv(COVARIATES / f"curves_{name}.csv")
+    dose = COVARIATE_GRID if kind == "continuous" else None
+    level, slope = fit.dose_response(dose=dose), fit.dose_response("slope", dose=dose)
+    assert_allclose(level["dose"].to_numpy(), curves["dose"].to_numpy())
+    for frame, target in ((level, "att"), (slope, "acrt")):
+        assert_allclose(frame["estimate"].to_numpy(), curves[target].to_numpy(), rtol=1e-11)
+        assert_allclose(
+            frame["std_error"].to_numpy(), curves[f"{target}_se"].to_numpy(), rtol=1e-10
+        )
+    cells = read_csv(COVARIATES / f"cells_{name}.csv")
+    assert fit._att.cells == list(zip(cells["g"], cells["t"], strict=True))
+    assert_allclose(fit._att.beta, cells["att"].to_numpy(), rtol=1e-10, atol=1e-13)
+    assert_allclose(fit._acrt.beta, cells["acrt"].to_numpy(), rtol=1e-10, atol=1e-13)
+    event = read_csv(COVARIATES / f"event_{name}.csv")
+    assert_allclose(fit.aggregate().beta, event["estimate"].to_numpy(), rtol=1e-10, atol=1e-13)
+
+
+@pytest.mark.parametrize("cg", CONTROLS)
+@pytest.mark.parametrize("kind", COVARIATE_FITS)
+def test_covariates_match_the_dense_oracle(covariate_panel, kind, cg):
+    """Every overall standard error, on the first 600 units; with the shares fixed,
+    diff-diff's on the same units."""
+    fml, options = COVARIATE_FITS[kind]
+    small = covariate_panel.filter(pl.col("id") < SMALL)
+    fit = fit_quietly(fml, small, **COVARIATE_KW, **options, control_group=cg)
+    outcome = fml.split("~")[0].strip()
+    estimate, se = covariate_oracle(small, fit, outcome, options["dose"], cg)
+    assert_allclose(fit.beta, estimate, rtol=1e-12)
+    assert_allclose(fit.se, se, rtol=1e-10)
+    _, fixed = covariate_oracle(small, fit, outcome, options["dose"], cg, fixed_shares=True)
+    reference = read_csv(COVARIATES / f"overall_small_{kind}_{cg}.csv")
+    assert_allclose(fit.beta, reference["estimate"].to_numpy(), rtol=1e-12)
+    assert_allclose(fixed, reference["se"].to_numpy(), rtol=1e-10)
+
+
+@pytest.mark.parametrize("kind", COVARIATE_FITS)
+def test_an_absorbed_fixed_effect_equals_its_dummies(covariate_panel, covariate_fits, kind):
+    fml, options = COVARIATE_FITS[kind]
+    dense = fit_quietly(
+        fml.replace("| region", "+ C(region)"), covariate_panel, **COVARIATE_KW, **options
+    )
+    absorbed = covariate_fits[kind, "not_yet_treated"]
+    assert_allclose(absorbed.beta, dense.beta, rtol=1e-12)
+    assert_allclose(absorbed.vcov, dense.vcov, rtol=1e-10)
+    assert_allclose(
+        absorbed.dose_response("slope")["std_error"],
+        dense.dose_response("slope")["std_error"],
+        rtol=1e-10,
+    )
+
+
+@pytest.mark.parametrize(
+    "fml,base_period",
+    [("y ~ x | region", "varying"), ("y ~ x | region", "universal"), ("y ~ 1 | region", "varying")],
+)
+@pytest.mark.parametrize("cg", CONTROLS)
+def test_binarized_covariate_cells_are_callaway_santanna(covariate_panel, fml, base_period, cg):
+    """The effect of being treated is Callaway-Sant'Anna's regression adjustment,
+    including base-period covariates and a fixed effect constant over time."""
+    fit = fit_quietly(
+        fml, covariate_panel, **COVARIATE_KW, dose="dose", control_group=cg, base_period=base_period
+    )
+    cs = did_callaway_santanna(
+        fml.replace("| region", "+ C(region)").replace("1 + ", ""),
+        covariate_panel,
+        panel=("id", "time"),
+        cohort="first_treat",
+        control_group=cg,
+        base_period=base_period,
+        adjustment="regression",
+        n_threads=2,
+    )
+    assert fit._att.coefnames == cs.coefnames
+    assert_allclose(fit._att.beta, cs.beta, rtol=1e-10, atol=1e-13)
+    assert_allclose(fit._att.vcov, cs.vcov, rtol=1e-9, atol=1e-16)
+
+
+def test_treated_units_without_comparisons_in_their_level_are_left_out(covariate_panel):
+    """With never-treated comparisons, leaving units out equals dropping them (the
+    default dose grid aside, which comes from every treated unit's dose)."""
+    grid = np.linspace(2, 9, 8)
+    lonely = covariate_panel.filter(pl.col("first_treat") == 3)["id"].unique().sort()[:5]
+    marked = covariate_panel.with_columns(
+        pl.when(pl.col("id").is_in(lonely.implode()))
+        .then(99)
+        .otherwise(pl.col("region"))
+        .alias("region")
+    )
+    options = dict(**COVARIATE_KW, dose="dose", control_group="never_treated")
+    with pytest.warns(ExperimentalWarning):
+        fit = did_continuous("y ~ x | region", marked, **options)
+    assert fit.diagnostics["treated_units_left_out"] == {3: 5, 4: 0, 5: 0}
+    assert any("5 treated units are left out" in w for w in fit.diagnostics["warnings"])
+    dropped = fit_quietly(
+        "y ~ x | region", marked.filter(~pl.col("id").is_in(lonely.implode())), **options
+    )
+    assert_allclose(fit.beta, dropped.beta, rtol=1e-12)
+    assert_allclose(fit._att.vcov, dropped._att.vcov, rtol=1e-10)
+    assert_allclose(
+        fit.dose_response(dose=grid)["std_error"],
+        dropped.dose_response(dose=grid)["std_error"],
+        rtol=1e-10,
+    )
+
+
+def test_covariate_fits_do_not_depend_on_threads_or_batches(covariate_panel, covariate_fits):
+    base = covariate_fits["continuous", "not_yet_treated"]
+    one = fit_quietly(
+        "y ~ x | region",
+        covariate_panel,
+        **{**COVARIATE_KW, "n_threads": 1},
+        dose="dose",
+        batch_units=300,
+    )
+    assert_allclose(one.beta, base.beta, rtol=1e-12)
+    assert_allclose(one.vcov, base.vcov, rtol=1e-10)
+    banded = fit_quietly(
+        "y ~ x | region",
+        covariate_panel,
+        **COVARIATE_KW,
+        dose="dose",
+        multiplier_bootstrap_reps=300,
+        multiplier_bootstrap_seed=2,
+    )
+    pointwise, uniform = banded.dose_response("slope"), banded.dose_response("slope", uniform=True)
+    assert np.all(
+        (uniform["ci_high"] - uniform["ci_low"]).to_numpy()
+        > (pointwise["ci_high"] - pointwise["ci_low"]).to_numpy()
+    )
+
+
+def test_covariates_warn_and_are_reported(covariate_panel):
+    import hdfe_stream
+
+    assert issubclass(ExperimentalWarning, hdfe_stream.ExperimentalWarning)
+    with pytest.warns(ExperimentalWarning, match="authors have not developed") as caught:
+        fit = did_continuous("y ~ x | region", covariate_panel, **COVARIATE_KW, dose="dose")
+    assert caught[0].filename == __file__
+    assert "continuous.html#covariates-experimental" in fit.diagnostics["warnings"][0]
+    assert fit.diagnostics["covariate_names"] == ["x"]
+    assert fit.diagnostics["fixed_effect"] == "region"
+    assert fit.diagnostics["fixed_effect_levels"] == 8
+    assert (
+        fit._summary_lines()[-1]
+        == "covariates: x; fixed effect: region (experimental: see the docs)"
+    )
+
+
+@pytest.mark.parametrize(
+    "fml,message",
+    [
+        ("y ~ x | id", "already differenced out"),
+        ("y ~ x | time", "already differs by period"),
+        ("y ~ x | region + first_treat", "one fixed-effect term"),
+        ("y ~ x | region | x", "at most one"),
+        ("y ~ dose + x", "not as a covariate"),
+        ("y ~ x | nowhere", "unknown fixed-effect columns"),
+        ("y ~ C(region) | region", "collinear with the fixed effect"),
+    ],
+)
+def test_covariate_errors(covariate_panel, fml, message):
+    with pytest.raises(ValueError, match=message):
+        fit_quietly(fml, covariate_panel, **COVARIATE_KW, dose="dose")
+
+
+def test_fixed_effect_with_missing_levels_is_an_error(covariate_panel):
+    gaps = covariate_panel.with_columns(
+        pl.when(pl.col("id") == 7).then(None).otherwise(pl.col("region")).alias("region")
+    )
+    with pytest.raises(ValueError, match="missing values"):
+        fit_quietly("y ~ x | region", gaps, **COVARIATE_KW, dose="dose")

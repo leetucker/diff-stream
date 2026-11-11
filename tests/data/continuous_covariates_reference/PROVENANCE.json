@@ -1,0 +1,29 @@
+{
+  "reference": "diff-diff 4.0.0 (ContinuousDiD, estimation_method='reg', covariates x and region dummies at the base period, varying base period), with never-treated and with not-yet-treated controls, a cubic spline in the continuous dose and the saturated regression of the discrete dose. R's contdid takes no covariates. diff-diff absorbs no fixed effects; region dummies in a regression with an intercept are the same as absorbing region. Point estimates, curve standard errors and event-study estimates are compared directly. diff-diff's overall standard errors hold the estimated shares fixed: the tests reproduce them, on the first 600 units (overall_small_*), with a dense calculation under that convention.",
+  "files": {
+    "benchmarks/external/continuous_covariates_panel.py": "b8c5d2ab7f3fc318d4d2aa25d1c47460ad8bf77afbef0ecd1d0870ebee9b6460",
+    "benchmarks/external/continuous_covariates_reference.py": "dbbd05a8703cf8a3bc5743a16b4acb9ca1ed1c360058dd4c63e2b8b9770210cd",
+    "tests/data/continuous_covariates_panel.csv": "9108011b7ce8c17ccd2f0998b7baf9534839f7b688a097b1b02e1d15370577e9",
+    "tests/data/continuous_covariates_reference/cells_continuous_never_treated.csv": "b5aa07fbe03e4dd530f745859759360b4a85cc509b18080f5fca238795a518a7",
+    "tests/data/continuous_covariates_reference/cells_continuous_not_yet_treated.csv": "923e6c38d94e006c8035ca8aa1fc014e11c107c00eb1c15d104682a81eac369d",
+    "tests/data/continuous_covariates_reference/cells_discrete_never_treated.csv": "7ce43d9301187f890fa9773122ddd0e31ca4069d979528f3eb7f1bddcc621fc2",
+    "tests/data/continuous_covariates_reference/cells_discrete_not_yet_treated.csv": "ee3938b1bd9ac4e9f82d22465f0f767df0c2b522bb3bb8a772ab033a6e673842",
+    "tests/data/continuous_covariates_reference/curves_continuous_never_treated.csv": "30d167444e76f53b8a5278721d034e4c73f6e9410e45f76cb33c7b388005746b",
+    "tests/data/continuous_covariates_reference/curves_continuous_not_yet_treated.csv": "9699fc4d1cfb6208323bd54d8f82edb09f2d821c1729f0f569fc821499e346d3",
+    "tests/data/continuous_covariates_reference/curves_discrete_never_treated.csv": "aeca4141c2717ea2c5cb0aa50c84ddb8fa817ba9745091fbb5cb2176537827d3",
+    "tests/data/continuous_covariates_reference/curves_discrete_not_yet_treated.csv": "76f9a1c1a4d8c2cf91e121a27634763afff9b7c0aa202d02c83d6ff14c29feaf",
+    "tests/data/continuous_covariates_reference/event_continuous_never_treated.csv": "ab429b4a2723942ed014b44905d1b5d1dc38f185a5007916ebd9ee0267afe8ae",
+    "tests/data/continuous_covariates_reference/event_continuous_not_yet_treated.csv": "3de28e2dc450b9bb7eb427db3bfc1b27e6c1e730be177a81f882e21dfa3f0d59",
+    "tests/data/continuous_covariates_reference/event_discrete_never_treated.csv": "2fb0acf5033de52db55cbccf523b105f6ee735de1499cc6301d7cba4e9894161",
+    "tests/data/continuous_covariates_reference/event_discrete_not_yet_treated.csv": "6cf6866e405d2bcfc39c0d456c02d6d63e2f8a7799026a5b90f82a7229677327",
+    "tests/data/continuous_covariates_reference/overall_continuous_never_treated.csv": "114239e948cffbbfd5b6c31325e40430b9b09e12fb1778085c1b422aa36485ec",
+    "tests/data/continuous_covariates_reference/overall_continuous_not_yet_treated.csv": "36e0dcfbc81a44cc4a75448e27bb23687f4d45154bf41ad18a1f939f6cc2d696",
+    "tests/data/continuous_covariates_reference/overall_discrete_never_treated.csv": "0e08d48a6f99aee72650142184694eb946f9dba92dac98d089fc4c43904c892f",
+    "tests/data/continuous_covariates_reference/overall_discrete_not_yet_treated.csv": "9ec22d0b2a7cc45ebd801286eaf7f715f01967f2eaeba61e0d3b816fc0631644",
+    "tests/data/continuous_covariates_reference/overall_small_continuous_never_treated.csv": "79d47d9b4988625adf1f96e1d9d2f6eb7e085ec576b12be7478a76423eca2d94",
+    "tests/data/continuous_covariates_reference/overall_small_continuous_not_yet_treated.csv": "8eaec6962f97c146556a16de42710c469bb316450ab9cd911b05f05927b39650",
+    "tests/data/continuous_covariates_reference/overall_small_discrete_never_treated.csv": "53dc14a159c228691dd1e9e896068aaced8038e52f9596d541effb55f3201ce3",
+    "tests/data/continuous_covariates_reference/overall_small_discrete_not_yet_treated.csv": "d173897619a2b77ca209be245939b45ccf9443a5c8a997d2c95635353672fa06",
+    "tests/data/continuous_covariates_reference/versions.csv": "cb6fcc902c17e5724703e0da4fd9af7104dd3f10de6e3e68f0a150a7e90729a5"
+  }
+}
