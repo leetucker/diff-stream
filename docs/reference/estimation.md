@@ -1,6 +1,6 @@
 # Estimators
 
-Seven functions, one per estimator. They share the data arguments, the
+Eight functions, one per estimator. They share the data arguments, the
 standard-error options, and the memory, thread and profiling options.
 
 ```{eval-rst}
@@ -19,4 +19,6 @@ standard-error options, and the memory, thread and profiling options.
 .. autofunction:: did_stacked
 
 .. autofunction:: did_continuous
+
+.. autofunction:: did_dcdh
 ```

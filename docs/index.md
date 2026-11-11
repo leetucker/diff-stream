@@ -7,7 +7,8 @@ Borusyak, Jaravel and Spiess's imputation estimator, Gardner's two-stage DiD,
 Wooldridge's extended two-way fixed effects, and stacked DiD with Wing,
 Freedman and Hollingsworth's corrective weights. For a treatment that comes in
 doses, `did_continuous` estimates Callaway, Goodman-Bacon and Sant'Anna's
-dose-response effects. Two diagnostics show what a
+dose-response effects, and for a treatment that switches on and off, `did_dcdh`
+estimates de Chaisemartin and D'Haultfoeuille's event study. Two diagnostics show what a
 conventional two-way fixed effects regression averages: the Goodman-Bacon
 decomposition and de Chaisemartin and D'Haultfoeuille's weights. Results are
 tested against the authors' R and Stata packages.
@@ -56,10 +57,10 @@ Use something else when:
   [etwfe](https://grantmcdermott.com/etwfe/), and Stata's `csdid`,
   `did_imputation`, `did2s` and `jwdid`, are just as fast, and their
   ecosystems (plots, sensitivity analysis) are larger.
-- **Treatment switches on and off.** These estimators need absorbing
-  treatment. de Chaisemartin and D'Haultfoeuille's `did_multiplegt_dyn` (R,
-  Stata) covers those designs. A continuous dose, received once and kept, is
-  `did_continuous`. `twfe_weights()` here
+- **Treatment switches on and off, with trends or weights.** `did_dcdh` handles
+  switching treatment but not group-specific trends, a continuous first-period
+  treatment or sampling weights; de Chaisemartin and D'Haultfoeuille's
+  `did_multiplegt_dyn` (R, Stata) does. `twfe_weights()` here
   accepts switching treatment, as a diagnostic.
 - **The outcome needs a nonlinear model** (logit, Poisson ETWFE): use R's
   etwfe or Stata's `jwdid`.

@@ -793,13 +793,15 @@ def did_dcdh(
     the authors' R and Stata ``did_multiplegt_dyn``.
 
     de Chaisemartin, C. and D'Haultfoeuille, X. (2024). Difference-in-differences
-    estimators of intertemporal treatment effects. *Review of Economics and Statistics*,
-    forthcoming.
+    estimators of intertemporal treatment effects. NBER Working Paper 29873.
 
     Parameters
     ----------
     fml : str
-        ``"y ~ 1"``. Covariates are not supported yet.
+        ``"y ~ 1"``, or ``"y ~ x + z"`` with covariates: within each first-period
+        treatment, the outcome's changes among groups not yet switched are regressed on
+        the covariates' changes with period effects, and the comparisons use the
+        outcome changes net of the covariates' fitted part.
     data : polars.DataFrame, polars.LazyFrame, str or Path
         The panel, or a Parquet path or glob, read in streaming batches.
     panel : tuple of str

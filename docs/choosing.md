@@ -52,6 +52,11 @@ So the choice is mostly between two families: comparisons with one base period
 - **A regression with extra fixed effects** (region-by-year, industry-by-year):
   `did_sun_abraham`, `did_bjs` or `did_two_stage`; with many levels
   (county-by-year), `did_sun_abraham` or `did_bjs`.
+- **A treatment that switches on and off, or takes several values**:
+  `did_dcdh`. It compares switchers with groups of the same first-period treatment
+  that have not switched yet, so it needs no assumption that effects are the same
+  across groups or over time, and its placebos test parallel trends before each
+  switch.
 - **A treatment that comes in doses** (the size of a subsidy, the strength of a
   policy), each unit's received once and kept: `did_continuous`, for the effect of
   each dose, ATT(d), and of a little more of it, ACRT(d). Its effect of being
@@ -104,6 +109,8 @@ See [Diagnostics](diagnostics.md).
   Difference-in-differences with a continuous treatment. NBER Working Paper 32117.
 - Callaway, B. and Sant'Anna, P. H. C. (2021). Difference-in-differences with
   multiple time periods. *Journal of Econometrics* 225(2), 200-230.
+- de Chaisemartin, C. and D'Haultfoeuille, X. (2024). Difference-in-differences
+  estimators of intertemporal treatment effects. NBER Working Paper 29873.
 - de Chaisemartin, C. and D'Haultfoeuille, X. (2020). Two-way fixed effects
   estimators with heterogeneous treatment effects. *American Economic Review*
   110(9), 2964-2996.

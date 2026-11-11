@@ -12,6 +12,7 @@ Everything here is importable from `diff_stream`.
 | `did_extended_twfe` | Wooldridge's extended two-way fixed effects (linear) |
 | `did_stacked` | stacked DiD with corrective weights |
 | `did_continuous` | Callaway, Goodman-Bacon and Sant'Anna's DiD with a continuous treatment |
+| `did_dcdh` | de Chaisemartin and D'Haultfoeuille's event study for a treatment that switches on and off |
 | **[Diagnostics and bootstrap](diagnostics.md)** | |
 | `bacon_decomp` | the Goodman-Bacon decomposition of a TWFE estimate |
 | `twfe_weights` | de Chaisemartin and D'Haultfoeuille's weights behind a TWFE estimate |
@@ -21,6 +22,7 @@ Everything here is importable from `diff_stream`.
 | `TwoStageResult` | the two-stage estimator's coefficients |
 | `StackedResult` | the stacked estimator's coefficients |
 | `DoseResponseResult` | dose-response curves and the overall effects of a continuous treatment |
+| `DCDHResult` | the effects, placebos and average total effect of a switching treatment |
 | `BJSPlaceboResult` | the BJS pre-trend leads |
 | `BaconResult`, `TWFEWeightResult`, `RefitBootstrapResult` | the diagnostics' and the bootstrap's results |
 | `LowEffectiveSampleWarning`, `ReferenceWindowWarning`, `UnimputedObservationsWarning`, `BootstrapFailureWarning` | warnings |

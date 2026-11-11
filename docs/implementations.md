@@ -105,6 +105,27 @@ its point estimates, with these differences:
   `ptetools::did_attgt`, which DRDID 1.4.0 rejects; it is Callaway-Sant'Anna on being
   treated, and is checked against R did.
 
+**Switching treatment.** `did_dcdh` matches the authors' R DIDmultiplegtDYN 2.4.0
+(`did_multiplegt_dyn`) in its estimates, standard errors and joint tests, with these
+differences:
+
+- *The covariance matrix.* `did_multiplegt_dyn` returns a covariance matrix
+  (`coef$vcov`) whose off-diagonal entries use the first group's value for every
+  group, so they are not covariances: correlations can exceed one, and the matrix can
+  have negative eigenvalues. Its own joint tests (`p_jointplacebo`,
+  `p_equality_effects`) are computed correctly, and agree with `pretrend_test()` and
+  `effects_equal_test()` here. `fit.vcov` here is the covariance those tests use. Pass
+  it, not `coef$vcov`, to sensitivity analyses such as HonestDiD.
+- *Missing treatments.* `did_multiplegt_dyn` accepts rows with an outcome but no
+  treatment and fills the treatment in by its own rules. Here such rows are an error;
+  missing periods (no row) are supported, with `incomplete_units="keep"`, as
+  `did_multiplegt_dyn` treats them.
+- *Options not implemented:* `trends_nonparam`, `trends_lin`, `continuous`, `weight`,
+  `cluster` (standard errors are clustered by group), `same_switchers`,
+  `same_switchers_pl`, `less_conservative_se`, `more_granular_demeaning`,
+  `dont_drop_larger_lower`, `drop_if_d_miss_before_first_switch`, `date_first_switch`,
+  `by`, `by_path`, `predict_het` and `bootstrap`.
+
 **Aggregation.** `horizons` filters event times for every kind of
 aggregation, including calendar, where R did ignores its event-time limits.
 
@@ -120,8 +141,9 @@ matches the `feTR` type of the authors' TwoWayFEWeights. The other types
 
 ## Not implemented
 
-- Treatment that switches off: de Chaisemartin and D'Haultfoeuille's
-  `did_multiplegt_dyn` covers it.
+- For a switching treatment (`did_dcdh`): group-specific trends, a continuous
+  first-period treatment, sampling weights and clustering above the group;
+  de Chaisemartin and D'Haultfoeuille's `did_multiplegt_dyn` (R, Stata) has them.
 - Nonlinear ETWFE (logit, Poisson): R's etwfe, Stata's `jwdid`.
 - Fixed effects interacted with the unit (unit-specific trends).
 - Sensitivity analysis for parallel trends: pass `fit.aggregate().beta` and

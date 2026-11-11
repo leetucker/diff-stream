@@ -19,6 +19,10 @@
    :members:
    :inherited-members:
 
+.. autoclass:: DCDHResult
+   :members:
+   :inherited-members:
+
 .. autoclass:: BJSPlaceboResult
    :members:
    :inherited-members:

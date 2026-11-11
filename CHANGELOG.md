@@ -11,6 +11,14 @@
   core like the other estimators. It matches R's contdid except where contdid has known
   problems, in its dose-response curves and its standard errors (see Differences from
   other packages).
+- **`did_dcdh`**: de Chaisemartin and D'Haultfoeuille's event-study estimator
+  (`did_multiplegt_dyn`) for a treatment that may take several values and switch on and
+  off. It gives the effects l periods after the first switch, placebos and the average
+  total effect with their joint covariance, with normalized effects, switchers in or
+  out only, comparisons with never-switchers only, covariates and unbalanced panels
+  (`incomplete_units="keep"`), and tests that the placebos are zero and that the
+  effects are equal. It matches the authors' R DIDmultiplegtDYN, except that its
+  covariance matrix is a valid one (see Differences from other packages).
 
 ## 0.1.0
 
