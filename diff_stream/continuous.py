@@ -80,6 +80,82 @@ class DoseBasis:
         b[:, 0] = 0.0
         return b
 
+    def slope_control(self, d):
+        """The weight of the control mean change in ACRT(d): none for a spline."""
+        return np.zeros(len(self._check(d)))
+
+
+class DiscreteDoseBasis:
+    """Indicators of the dose levels: the saturated regression of CGBS, Eq. (4.1).
+
+    Column j is 1{D = d_j}, so a cell's coefficient j is the mean outcome change of
+    its units at dose d_j, and ATT(d_j) is that mean less the control mean change.
+    ACRT(d_j) = (ATT(d_j) - ATT(d_{j-1})) / (d_j - d_{j-1}), with d_0 = 0 and
+    ATT(0) = 0. For j > 1 the control mean cancels; ACRT(d_1) = ATT(d_1) / d_1
+    keeps it, with weight ``slope_control``.
+    """
+
+    def __init__(self, levels):
+        self.levels = np.asarray(levels, dtype=float)
+        self.width = len(self.levels)
+        self.lower, self.upper = float(self.levels[0]), float(self.levels[-1])
+        self._gap = np.diff(np.r_[0.0, self.levels])
+
+    def _index(self, d):
+        d = np.atleast_1d(np.asarray(d, dtype=float))
+        right = np.clip(np.searchsorted(self.levels, d), 0, self.width - 1)
+        left = np.maximum(right - 1, 0)
+        nearer = np.abs(self.levels[left] - d) < np.abs(self.levels[right] - d)
+        j = np.where(nearer, left, right)
+        if not np.all(np.abs(self.levels[j] - d) <= 1e-9 * np.maximum(1.0, np.abs(d))):
+            raise ValueError(
+                "a discrete dose's curves are defined only at its dose levels: "
+                f"{self.levels.tolist()}"
+                if self.width <= 20
+                else "a discrete dose's curves are defined only at its dose levels"
+            )
+        return j
+
+    def values(self, d):
+        j = self._index(d)
+        b = np.zeros((len(j), self.width))
+        b[np.arange(len(j)), j] = 1.0
+        return b
+
+    def slopes(self, d):
+        j = self._index(d)
+        rows = np.arange(len(j))
+        b = np.zeros((len(j), self.width))
+        b[rows, j] = 1.0 / self._gap[j]
+        lower = j > 0
+        b[rows[lower], j[lower] - 1] = -1.0 / self._gap[j[lower]]
+        return b
+
+    def slope_control(self, d):
+        j = self._index(d)
+        return np.where(j == 0, 1.0 / self.levels[0], 0.0)
+
+
+MAX_DOSE_LEVELS = 1000
+
+
+def _dose_levels(store):
+    """The treated units' distinct doses, in one pass over the staged units."""
+    levels = np.empty(0)
+    for g, _, x in store.batches(include_x=True):
+        mine = x[g != 0, 0, 0]
+        if np.any(mine <= 0):
+            raise ValueError("treated units must have a positive dose")
+        levels = np.union1d(levels, mine)
+        if len(levels) > MAX_DOSE_LEVELS:
+            raise ValueError(
+                f"a discrete dose takes at most {MAX_DOSE_LEVELS} values; this one takes "
+                "more: use dose_type='continuous'"
+            )
+    if not len(levels):
+        raise ValueError("no treated units")
+    return levels
+
 
 def _validated(name, value, low, kind=Integral):
     if isinstance(value, (bool, np.bool_)) or not isinstance(value, kind) or value < low:
@@ -153,13 +229,15 @@ class DoseResponseResult(RegressionResult):
     def _curve_map(self, target, dose):
         """The linear map from the cell parameters (coefficients, control means) to the curve."""
         M, K = len(self._cells), self._basis.width
-        basis = self._basis.values(dose) if target == "level" else self._basis.slopes(dose)
+        if target == "level":
+            basis, control = self._basis.values(dose), np.ones(len(dose))
+        else:
+            basis, control = self._basis.slopes(dose), self._basis.slope_control(dose)
         J = np.zeros((len(dose), M * K + M))
         for j, w in enumerate(self._weights):
             if w:
                 J[:, j * K : (j + 1) * K] = w * basis
-                if target == "level":
-                    J[:, M * K + j] = -w
+                J[:, M * K + j] = -w * control
         return J
 
     def dose_response(self, target="level", dose=None, *, alpha=0.05, uniform=False):
@@ -235,11 +313,14 @@ class DoseResponseResult(RegressionResult):
 
     def _summary_lines(self):
         d = self.diagnostics
+        if d["dose_type"] == "discrete":
+            dose = f"discrete dose: {len(d['dose_levels'])} levels"
+        else:
+            dose = f"dose spline: degree {d['degree']}, {d['interior_knots']} interior knots"
         return [
             f"estimator: {PUBLIC}; units: {self.n_units:,}",
             *super()._summary_lines(),
-            f"dose spline: degree {d['degree']}, {d['interior_knots']} interior knots; "
-            f"control group: {d['control_group']}",
+            f"{dose}; control group: {d['control_group']}",
         ]
 
 
@@ -254,7 +335,8 @@ def _continuous(
     control_group="notyettreated",
     base_period="varying",
     anticipation=0,
-    degree=3,
+    dose_type="continuous",
+    degree=None,
     interior_knots=0,
     dose_grid=None,
     vcov="CRV0",
@@ -275,7 +357,12 @@ def _continuous(
         raise ValueError("dose must name a numeric column")
     if panel is None or len(panel) != 2 or dose in panel or dose == yname:
         raise ValueError("give panel=(unit, time); the dose must be a column of its own")
-    degree = _validated("degree", degree, 1)
+    if dose_type not in ("continuous", "discrete"):
+        raise ValueError("dose_type must be 'continuous' or 'discrete'")
+    discrete = dose_type == "discrete"
+    if discrete and (degree is not None or interior_knots != 0):
+        raise ValueError("a discrete dose has no spline: leave degree and interior_knots unset")
+    degree = _validated("degree", 3 if degree is None else degree, 1)
     interior_knots = _validated("interior_knots", interior_knots, 0)
     anticipation = _validated("anticipation", anticipation, 0)
     if control_group not in ("nevertreated", "notyettreated"):
@@ -332,7 +419,9 @@ def _continuous(
                 "cs", times, gc, control_group, base_period, anticipation
             )
             M, T, G = len(cells), len(times), len(groups)
-            K = degree + interior_knots + 1
+            # a discrete dose's levels set the width of its basis, so they come first
+            levels = _dose_levels(store) if discrete else None
+            K = len(levels) if discrete else degree + interior_knots + 1
             W = M * (K + 3)
             treated_units = N - gc.get(0, 0)
 
@@ -381,7 +470,7 @@ def _continuous(
                         "n_units": N,
                         "periods": T,
                         "cells": M,
-                        "spline_columns": K,
+                        ("dose_levels" if discrete else "spline_columns"): K,
                         "batch_units": B,
                         "partitions": store.partition_count,
                         "preprocess_mb": preprocess_mb,
@@ -395,38 +484,46 @@ def _continuous(
                     "estimated numerical buffers exceed job headroom; reduce batch_units or request more memory"
                 )
 
-            # Pass 1: the treated units' doses, for the knots, the grid and the boundary.
-            # One array of treated_units doses, filled in place; its quantiles are
-            # taken in place too (np.quantile otherwise copies it).
-            positive = np.empty(treated_units)
-            filled = 0
-            for g, _, x in store.batches(include_x=True):
-                mine = x[g != 0, 0, 0]
-                if np.any(mine <= 0):
-                    raise ValueError("treated units must have a positive dose")
-                positive[filled : filled + len(mine)] = mine
-                filled += len(mine)
-            lower, upper = positive.min(), positive.max()
-            knot_levels = np.linspace(0, 1, interior_knots + 2)[1:-1]
-            grid_levels = np.arange(10, 100) / 100 if dose_grid is None else np.array([])
-            levels = np.quantile(positive, np.r_[knot_levels, grid_levels], overwrite_input=True)
-            del positive
-            interior = levels[:interior_knots]
-            if np.any(np.diff(np.r_[lower, interior, upper]) <= 0):
-                raise ValueError("the dose quantiles give repeated knots; use fewer interior_knots")
-            basis = DoseBasis(interior, lower, upper, degree)
+            if discrete:
+                basis = DiscreteDoseBasis(levels)
+            else:
+                # Pass 1: the treated units' doses, for the knots, the grid and the
+                # boundary. One array of treated_units doses, filled in place; its
+                # quantiles are taken in place too (np.quantile otherwise copies it).
+                positive = np.empty(treated_units)
+                filled = 0
+                for g, _, x in store.batches(include_x=True):
+                    mine = x[g != 0, 0, 0]
+                    if np.any(mine <= 0):
+                        raise ValueError("treated units must have a positive dose")
+                    positive[filled : filled + len(mine)] = mine
+                    filled += len(mine)
+                lower, upper = positive.min(), positive.max()
+                knot_levels = np.linspace(0, 1, interior_knots + 2)[1:-1]
+                grid_levels = np.arange(10, 100) / 100 if dose_grid is None else np.array([])
+                quantiles = np.quantile(
+                    positive, np.r_[knot_levels, grid_levels], overwrite_input=True
+                )
+                del positive
+                interior = quantiles[:interior_knots]
+                if np.any(np.diff(np.r_[lower, interior, upper]) <= 0):
+                    raise ValueError(
+                        "the dose quantiles give repeated knots; use fewer interior_knots"
+                    )
+                basis = DoseBasis(interior, lower, upper, degree)
             if dose_grid is None:
-                grid = levels[interior_knots:]
+                grid = levels if discrete else quantiles[interior_knots:]
             else:
                 grid = np.atleast_1d(np.asarray(dose_grid, dtype=float))
                 if grid.ndim != 1 or not len(grid) or not np.isfinite(grid).all():
                     raise ValueError("dose_grid must be a one-dimensional array of doses")
-                basis._check(grid)
+                basis.values(grid)  # checks the doses
 
             # Pass 2: each cohort's spline moments.
             A = np.zeros((G, K, K))
             S = np.zeros((G, K, T))
             slope_sums = np.zeros((G, K))
+            control_sums = np.zeros(G)
             for g, y, x in store.batches(include_x=True):
                 treated = g != 0
                 if not treated.any():
@@ -434,15 +531,23 @@ def _continuous(
                 idx = np.searchsorted(groups, g[treated])
                 d = x[treated, 0, 0]
                 P, D, Y = basis.values(d), basis.slopes(d), y[treated]
+                C = basis.slope_control(d)
                 for k in np.unique(idx):
                     rows = idx == k
                     A[k] += P[rows].T @ P[rows]
                     S[k] += P[rows].T @ Y[rows]
                     slope_sums[k] += D[rows].sum(axis=0)
+                    control_sums[k] += C[rows].sum()
             ainv = np.zeros((G, K, K))
             for k, g in enumerate(groups):
                 if g == 0:
                     continue
+                missing = levels[np.diag(A[k]) == 0] if discrete else []
+                if len(missing):
+                    raise ValueError(
+                        f"cohort {g} has no units at dose {missing[0]:g}: with a discrete "
+                        "dose, every cohort needs units at every dose level"
+                    )
                 if np.linalg.cond(A[k]) > 1e12:
                     raise ValueError(
                         f"the dose spline is not identified in cohort {g}: it has too few "
@@ -450,6 +555,9 @@ def _continuous(
                     )
                 ainv[k] = np.linalg.inv(A[k])
             dbar = slope_sums / np.maximum(sizes, 1)[:, None]
+            # each cohort's mean weight of the control mean change in its units' ACRT
+            # (nonzero only for a discrete dose: the share at the lowest dose / d_1)
+            cbar = control_sums / np.maximum(sizes, 1)
 
             att, counts, args = fit_means(
                 "cs", times, groups, cells, bases, controls, sizes, means, anticipation
@@ -458,13 +566,14 @@ def _continuous(
             beta = np.array(
                 [ainv[gi[j]] @ (S[gi[j]][:, ti[j]] - S[gi[j]][:, bases[j]]) for j in range(M)]
             ).reshape(M, K)
-            acrt = np.einsum("jk,jk->j", dbar[gi], beta)
+            acrt = np.einsum("jk,jk->j", dbar[gi], beta) - cbar[gi] * control_mean
 
             # Pass 3: the units' influence scores.
             labels = np.r_[gi, gi, np.repeat(gi, K), gi]
             covariance = CohortScoreCovariance(labels)
             # A unit's scores are nonzero only in its cohort's cells (all four kinds)
-            # and in the cells it is a control in (the ATT and the control mean).
+            # and in the cells it is a control in (the ATT and the control mean, and
+            # with a discrete dose the ACRT).
             columns = {}
             for k in range(G):
                 own, control = np.flatnonzero(gi == k), np.flatnonzero(controls[:, k])
@@ -472,7 +581,7 @@ def _continuous(
                     np.r_[
                         own,
                         control,
-                        M + own,
+                        M + (np.union1d(own, control) if discrete else own),
                         (2 * M + K * own[:, None] + np.arange(K)).ravel(),
                         2 * M + M * K + control,
                     ]
@@ -497,18 +606,19 @@ def _continuous(
                 order = np.argsort(idx, kind="stable")
                 idx, y, g, d = idx[order], y[order], g[order], x[order, 0, 0]
                 treated = g != 0
-                P, D = np.zeros((len(g), K)), np.zeros((len(g), K))
+                P, D, C = np.zeros((len(g), K)), np.zeros((len(g), K)), np.zeros(len(g))
                 if treated.any():
                     P[treated], D[treated] = basis.values(d[treated]), basis.slopes(d[treated])
+                    C[treated] = basis.slope_control(d[treated])
                 common = (gi, ti, bases, controls, nc, means, control_mean, sizes, beta, acrt)
-                scores = dose_scores(idx, y, P, D, *common, ainv, dbar, local, compact)
+                scores = dose_scores(idx, y, P, D, C, *common, ainv, dbar, cbar, local, compact)
                 starts = np.r_[0, np.flatnonzero(idx[1:] != idx[:-1]) + 1, len(idx)]
                 for a, b in zip(starts[:-1], starts[1:], strict=True):
                     k = int(idx[a])
                     used = columns[k]
                     covariance.add_block(k, scores[a:b, : len(used)], used, count=True)
                 if multiplier is not None:
-                    full = dose_scores(idx, y, P, D, *common, ainv, dbar, identity, W)
+                    full = dose_scores(idx, y, P, D, C, *common, ainv, dbar, cbar, identity, W)
                     # in the staged unit order, so draws do not depend on the batches
                     multiplier.update(full[np.argsort(order), 2 * M :])
             V, cross, shares = covariance.blocks()
@@ -520,10 +630,17 @@ def _continuous(
                 control_group=control_group,
                 base_period=base_period,
                 anticipation=anticipation,
-                degree=degree,
-                interior_knots=interior_knots,
-                knots=interior.tolist(),
-                boundary_knots=[float(lower), float(upper)],
+                dose_type=dose_type,
+                **(
+                    dict(dose_levels=levels.tolist())
+                    if discrete
+                    else dict(
+                        degree=degree,
+                        interior_knots=interior_knots,
+                        knots=interior.tolist(),
+                        boundary_knots=[float(lower), float(upper)],
+                    )
+                ),
                 cohort_sizes={str(g): int(n) for g, n in gc.items()},
                 time_min=int(times[0]),
                 time_max=int(times[-1]),
@@ -625,7 +742,8 @@ def did_continuous(
     control_group="not_yet_treated",
     base_period="varying",
     anticipation=0,
-    degree=3,
+    dose_type="continuous",
+    degree=None,
     interior_knots=0,
     dose_grid=None,
     incomplete_units="error",
@@ -651,6 +769,12 @@ def did_continuous(
     response ACRT(d). The coefficients are their overall averages, as R's contdid
     reports them.
 
+    With ``dose_type="discrete"`` the dose takes a few values, and the spline is
+    replaced by an indicator for each value (the paper's saturated regression,
+    Eq. 4.1): ATT(d) is the mean outcome change of the units at dose d less the
+    control group's, and ACRT(d) is the change in ATT from the next lower dose (or
+    from 0), divided by the difference in doses.
+
     Callaway, B., Goodman-Bacon, A. and Sant'Anna, P. H. C. (2024).
     Difference-in-differences with a continuous treatment. NBER Working Paper 32117.
 
@@ -668,14 +792,21 @@ def did_continuous(
     base_period : {"varying", "universal"}, default "varying"
         The pre-treatment comparison period, as in ``did_callaway_santanna``.
     {ANTICIPATION}
-    degree : int, default 3
-        The degree of the dose spline (3: cubic).
+    dose_type : {"continuous", "discrete"}, default "continuous"
+        How the outcome change depends on the dose within each cohort and period:
+        a B-spline (``"continuous"``) or a separate mean for each dose value
+        (``"discrete"``). A discrete dose takes at most 1,000 values, and every
+        cohort must have units at each of them.
+    degree : int, optional
+        The degree of the dose spline (default 3: cubic). Not used with a discrete
+        dose.
     interior_knots : int, default 0
         Interior knots of the spline, at quantiles of the treated doses. With 0 the
-        curve is a polynomial of the given degree.
+        curve is a polynomial of the given degree. Not used with a discrete dose.
     dose_grid : array, optional
         The doses at which ``dose_response()`` evaluates the curves. Default: the
-        10th to 99th percentiles of the treated doses, in steps of 1, as in contdid.
+        10th to 99th percentiles of the treated doses, in steps of 1, as in contdid;
+        with a discrete dose, its values (and only they can be given).
     incomplete_units : {"error", "drop"}, default "error"
         What to do with units missing some periods: refuse the data or drop
         those units.

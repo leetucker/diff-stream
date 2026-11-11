@@ -10,6 +10,7 @@ def dose_scores(
     y,
     psi,
     dpsi,
+    ctl,
     gi,
     ti,
     bases,
@@ -22,6 +23,7 @@ def dose_scores(
     acrt,
     ainv,
     dbar,
+    cbar,
     local,
     width,
 ):
@@ -33,7 +35,10 @@ def dose_scores(
     score c for a unit of cohort k: either c itself (one layout for all units, with
     ``width`` the number of scores) or the column in a layout of the scores that can
     be nonzero for that cohort (``width`` the largest such number). ``psi`` and
-    ``dpsi`` are the units' basis values and derivatives (zero if never treated).
+    ``dpsi`` are the units' basis values and derivatives (zero if never treated);
+    a unit's ACRT is ``dpsi @ beta - ctl * control_mean``, and ``cbar[k]`` is the
+    mean of ``ctl`` over cohort k (both zero for a spline; with a discrete dose,
+    1 / d_1 at the lowest dose level d_1).
     """
     B = y.shape[0]
     M = len(gi)
@@ -48,7 +53,7 @@ def dose_scores(
             if k == gi[j]:
                 out[i, local[k, j]] = (change - means[k, ti[j]] + means[k, bases[j]]) / sizes[k]
                 fit = 0.0
-                slope = 0.0
+                slope = -ctl[i] * control_mean[j]
                 for a in range(K):
                     fit += psi[i, a] * beta[j, a]
                     slope += dpsi[i, a] * beta[j, a]
@@ -67,4 +72,6 @@ def dose_scores(
                 s = (change - control_mean[j]) / nc[j]
                 out[i, local[k, j]] = -s
                 out[i, local[k, first_mean + j]] = s
+                if cbar[gi[j]] != 0.0:
+                    out[i, local[k, M + j]] = -cbar[gi[j]] * s
     return out
