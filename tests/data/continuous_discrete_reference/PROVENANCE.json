@@ -1,0 +1,17 @@
+{
+  "reference": "diff-diff 4.0.0 (ContinuousDiD, treatment_type='discrete', estimation_method='reg', varying base period) with never-treated and with not-yet-treated controls. R's contdid has no discrete dose. Point estimates, curve standard errors and the event study's are compared directly. diff-diff's overall standard errors hold the cohort shares and each cohort's dose shares fixed; the tests reproduce them with the dense oracle under that convention.",
+  "files": {
+    "benchmarks/external/continuous_discrete_panel.py": "cb7d95518280a722529ed4823362adac21d038f9fdf1f9ebbcbbd2beb0930a4f",
+    "benchmarks/external/continuous_discrete_reference.py": "728bd41542c6dcf2ca72c97e81c2ce8fef35bc74dbebb7fe6325c669f9fb19af",
+    "tests/data/continuous_discrete_panel.csv": "ee009b3a2be6cdc40fdc8fbd5cf7e34937102480b973a7d0933d8567fbd8888e",
+    "tests/data/continuous_discrete_reference/cells_never_treated.csv": "c491f7d1bd641f3fb2e33754eacb47b5ceb5a0264a87ea5ed2d3d75ffbc05f11",
+    "tests/data/continuous_discrete_reference/cells_not_yet_treated.csv": "7e6c6a7fe12f2593333161cb8927639c2e65afa82b0845cfeceb051a3a465cab",
+    "tests/data/continuous_discrete_reference/curves_never_treated.csv": "2df171e8ba150d6db325b1e09bc056526b3c3ce78a3d8d447cd502550a619249",
+    "tests/data/continuous_discrete_reference/curves_not_yet_treated.csv": "49c78a53079b81ccbd4e76772f2ba4439a9ab9b8639abeaefbf5e082b422c44a",
+    "tests/data/continuous_discrete_reference/event_never_treated.csv": "80387a395df44db2ef5f0407e464049398b617f64b36dcd7cf842df39d839ea1",
+    "tests/data/continuous_discrete_reference/event_not_yet_treated.csv": "8f41990de9bb36544bb5aad09f0c40015e51721c24ec0005b1c094921802eb8e",
+    "tests/data/continuous_discrete_reference/overall_never_treated.csv": "aae9768597e8375feb169c581fdb57fcea76f90bc3a25b29f8e7b3edf7d5e294",
+    "tests/data/continuous_discrete_reference/overall_not_yet_treated.csv": "40d2023bd45769332b627fe85aa6f1af37bc9d1e4f76e474ba1d3c2f0b8bb7fa",
+    "tests/data/continuous_discrete_reference/versions.csv": "cb6fcc902c17e5724703e0da4fd9af7104dd3f10de6e3e68f0a150a7e90729a5"
+  }
+}

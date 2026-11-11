@@ -266,3 +266,249 @@ print(json.dumps(dict(beta=r.beta.tolist(), vcov=r.vcov.tolist(),
     assert_allclose(fitted["vcov"], baseline.vcov, atol=1e-12, rtol=0)
     assert_allclose(fitted["curve"], baseline.dose_response()["std_error"], rtol=1e-9)
     assert_allclose(fitted["event"], baseline.aggregate(target="slope").se, rtol=1e-9)
+
+
+# A discrete dose: diff-diff's saturated regression (R's contdid has none) and a
+# dense oracle.
+
+DISCRETE = DATA / "continuous_discrete_reference"
+DISCRETE_KW = dict(KW, dose_type="discrete")
+CONTROLS = {"never_treated": "never_treated", "not_yet_treated": "not_yet_treated"}
+
+
+@pytest.fixture(scope="module")
+def discrete_panel():
+    for name, h in json.loads((DISCRETE / "PROVENANCE.json").read_text())["files"].items():
+        assert digest(Path(__file__).parents[1] / name) == h, name
+    return read_csv(DATA / "continuous_discrete_panel.csv")
+
+
+@pytest.fixture(scope="module")
+def discrete_fits(discrete_panel):
+    return {
+        cg: did_continuous("y ~ 1", discrete_panel, **DISCRETE_KW, control_group=cg)
+        for cg in CONTROLS
+    }
+
+
+class Dual:
+    """A value and its gradient with respect to each unit's weight, at weights of 1."""
+
+    def __init__(self, value, grad):
+        self.v, self.g = value, grad
+
+    def __add__(self, other):
+        o = _dual(other, self.g)
+        return Dual(self.v + o.v, self.g + o.g)
+
+    __radd__ = __add__
+
+    def __sub__(self, other):
+        o = _dual(other, self.g)
+        return Dual(self.v - o.v, self.g - o.g)
+
+    def __mul__(self, other):
+        o = _dual(other, self.g)
+        return Dual(self.v * o.v, self.g * o.v + o.g * self.v)
+
+    __rmul__ = __mul__
+
+    def __truediv__(self, other):
+        o = _dual(other, self.g)
+        return Dual(self.v / o.v, (self.g - self.v / o.v * o.g) / o.v)
+
+
+def _dual(x, like):
+    return x if isinstance(x, Dual) else Dual(x, np.zeros_like(like))
+
+
+def _mean(x, mask):
+    grad = np.zeros(len(x))
+    grad[mask] = (x[mask] - x[mask].mean()) / mask.sum()
+    return Dual(x[mask].mean(), grad)
+
+
+def _count(mask):
+    return Dual(mask.sum(), mask.astype(float))
+
+
+def discrete_oracle(panel, control_group, *, fixed_shares=False):
+    """The discrete-dose estimates from dense means, with gradient-based standard errors.
+
+    Every estimate is a smooth function of unit-weighted means, so its influence
+    function is its gradient with respect to the unit weights, and its standard
+    error the root sum of squares of that gradient. The overall ACRT and the
+    curves average the cells with fixed weights (contdid's), the overall ATT with
+    the estimated cohort shares (R did's). ``fixed_shares=True`` also holds the
+    cohort shares and each cohort's dose shares fixed.
+    """
+    wide = panel.pivot(on="time", index=["id", "first_treat", "dose"], values="y").sort("id")
+    times = sorted(int(c) for c in wide.columns[3:])
+    Y = wide.select([str(t) for t in times]).to_numpy()
+    G, D = wide["first_treat"].to_numpy(), wide["dose"].to_numpy()
+    cohorts, levels = np.unique(G[G > 0]), np.unique(D[G > 0])
+    gap = np.diff(np.r_[0.0, levels])
+    cells = [(g, t) for g in cohorts for t in times[1:]]
+    att, acrt, curve_att, curve_acrt = [], [], [], []
+    for g, t in cells:
+        base = g - 1 if t >= g else t - 1
+        change = Y[:, times.index(t)] - Y[:, times.index(base)]
+        control = (G == 0) | ((G > t) & (G != g)) if control_group == "not_yet_treated" else G == 0
+        mean_control = _mean(change, control)
+        mine = G == g
+        at = [_mean(change, mine & (D == d)) - mean_control for d in levels]
+        slopes = [(at[j] - (at[j - 1] if j else 0.0)) / gap[j] for j in range(len(levels))]
+        shares = [_count(mine & (D == d)) / _count(mine) for d in levels]
+        if fixed_shares:
+            shares = [s.v for s in shares]
+        att.append(_mean(change, mine) - mean_control)
+        acrt.append(sum(s * a for s, a in zip(shares, slopes, strict=True)))
+        curve_att.append(at)
+        curve_acrt.append(slopes)
+    sizes = {g: _count(G == g) for g in cohorts}
+    total = sum(sizes.values())
+    weights = []
+    for g, t in cells:
+        n_post = sum(c == g and s >= c for c, s in cells)
+        weights.append(sizes[g] / total * (1.0 / n_post) if t >= g else 0.0)
+    fixed = [w.v if isinstance(w, Dual) else w for w in weights]
+    overall_weights = fixed if fixed_shares else weights
+
+    def average(values, w):
+        return sum(wi * v for wi, v in zip(w, values, strict=True) if not np.all(wi == 0))
+
+    out = [average(att, overall_weights), average(acrt, fixed)]
+    out += [average([c[j] for c in curve_att], fixed) for j in range(len(levels))]
+    out += [average([c[j] for c in curve_acrt], fixed) for j in range(len(levels))]
+    estimate = np.array([o.v for o in out])
+    se = np.array([np.sqrt((o.g**2).sum()) for o in out])
+    return levels, estimate, se
+
+
+@pytest.mark.parametrize("cg", CONTROLS)
+def test_discrete_dose_matches_the_dense_oracle(discrete_panel, discrete_fits, cg):
+    fit = discrete_fits[cg]
+    levels, estimate, se = discrete_oracle(discrete_panel, cg)
+    J = len(levels)
+    level, slope = fit.dose_response(), fit.dose_response("slope")
+    assert_allclose(level["dose"].to_numpy(), levels)
+    assert_allclose(fit.beta, estimate[:2], rtol=1e-12)
+    assert_allclose(fit.se, se[:2], rtol=1e-10)
+    assert_allclose(level["estimate"].to_numpy(), estimate[2 : 2 + J], rtol=1e-12)
+    assert_allclose(level["std_error"].to_numpy(), se[2 : 2 + J], rtol=1e-10)
+    assert_allclose(slope["estimate"].to_numpy(), estimate[2 + J :], rtol=1e-12)
+    assert_allclose(slope["std_error"].to_numpy(), se[2 + J :], rtol=1e-10)
+
+
+@pytest.mark.parametrize("cg", CONTROLS)
+def test_discrete_dose_matches_diff_diff(discrete_panel, discrete_fits, cg):
+    fit = discrete_fits[cg]
+    overall = read_csv(DISCRETE / f"overall_{cg}.csv")
+    assert_allclose(fit.beta, overall["estimate"].to_numpy(), rtol=1e-12)
+    # diff-diff holds the cohort shares and each cohort's dose shares fixed in the
+    # overall standard errors; with those fixed, the oracle gives its numbers.
+    _, _, fixed_se = discrete_oracle(discrete_panel, cg, fixed_shares=True)
+    assert_allclose(fixed_se[:2], overall["se"].to_numpy(), rtol=1e-10)
+    curves = read_csv(DISCRETE / f"curves_{cg}.csv")
+    level, slope = fit.dose_response(), fit.dose_response("slope")
+    assert_allclose(level["dose"].to_numpy(), curves["dose"].to_numpy())
+    for frame, name in ((level, "att"), (slope, "acrt")):
+        assert_allclose(frame["estimate"].to_numpy(), curves[name].to_numpy(), rtol=1e-12)
+        assert_allclose(frame["std_error"].to_numpy(), curves[f"{name}_se"].to_numpy(), rtol=1e-10)
+    cells = read_csv(DISCRETE / f"cells_{cg}.csv")
+    assert fit._att.cells == list(zip(cells["g"], cells["t"], strict=True))
+    assert_allclose(fit._att.beta, cells["att"].to_numpy(), rtol=1e-10, atol=1e-13)
+    assert_allclose(fit._acrt.beta, cells["acrt"].to_numpy(), rtol=1e-10, atol=1e-13)
+    M, K = len(fit._cells), fit._basis.width
+    beta, control = fit._theta[: M * K].reshape(M, K), fit._theta[M * K :]
+    doses = level["dose"].to_numpy()
+    values, slopes = fit._basis.values(doses), fit._basis.slopes(doses)
+    for j in range(M):
+        att_d = values @ beta[j] - control[j]
+        acrt_d = slopes @ beta[j] - fit._basis.slope_control(doses) * control[j]
+        reference = cells[j]
+        assert_allclose(att_d, [reference[f"att_{d:g}"][0] for d in doses], atol=1e-12)
+        assert_allclose(acrt_d, [reference[f"acrt_{d:g}"][0] for d in doses], atol=1e-12)
+    event = read_csv(DISCRETE / f"event_{cg}.csv")
+    es = fit.aggregate()
+    assert es.coefnames == [f"event::{e}" for e in event["event"]]
+    assert_allclose(es.beta, event["estimate"].to_numpy(), rtol=1e-10, atol=1e-13)
+    # diff-diff's event-study standard errors also hold the cohort shares fixed
+    # (ours add R did's estimated-share term, as test_level_event_study_matches_did)
+    sizes = {int(g): n for g, n in fit.diagnostics["cohort_sizes"].items()}
+    fixed = []
+    for e in event["event"]:
+        w = np.array([sizes[g] * (t - g == e) for g, t in fit._att.cells], dtype=float)
+        w /= w.sum()
+        fixed.append(np.sqrt(w @ fit._att.vcov @ w))
+    assert_allclose(fixed, event["se"].to_numpy(), rtol=1e-10)
+
+
+def test_a_single_dose_level_is_the_binary_effect(discrete_panel):
+    """With every treated unit at dose 1, ACRT = ATT(1) = the binarized ATT."""
+    binary = discrete_panel.with_columns(
+        pl.when(pl.col("first_treat") > 0).then(1.0).otherwise(0.0).alias("dose")
+    )
+    fit = did_continuous("y ~ 1", binary, **DISCRETE_KW)
+    assert_allclose(fit.beta[1], fit.beta[0], rtol=1e-12)
+    assert_allclose(fit._acrt.beta, fit._att.beta, rtol=1e-12, atol=1e-14)
+    assert_allclose(fit._acrt.vcov, fit._att.vcov, rtol=1e-10, atol=1e-16)
+    assert_allclose(fit.dose_response()["estimate"], [fit.beta[0]], rtol=1e-12)
+    cs = did_callaway_santanna(
+        "y ~ 1",
+        binary,
+        panel=("id", "time"),
+        cohort="first_treat",
+        control_group="not_yet_treated",
+        n_threads=2,
+    )
+    assert_allclose(fit._att.beta, cs.beta, rtol=1e-12)
+
+
+def test_discrete_dose_does_not_depend_on_threads_or_batches(discrete_panel, discrete_fits):
+    base = discrete_fits["not_yet_treated"]
+    one = did_continuous(
+        "y ~ 1", discrete_panel, **{**DISCRETE_KW, "n_threads": 1}, batch_units=250
+    )
+    assert_allclose(one.beta, base.beta, rtol=1e-12)
+    assert_allclose(one.vcov, base.vcov, rtol=1e-10)
+    assert_allclose(
+        one.dose_response("slope")["std_error"],
+        base.dose_response("slope")["std_error"],
+        rtol=1e-10,
+    )
+    banded = did_continuous(
+        "y ~ 1",
+        discrete_panel,
+        **DISCRETE_KW,
+        multiplier_bootstrap_reps=300,
+        multiplier_bootstrap_seed=1,
+    )
+    pointwise, uniform = banded.dose_response("slope"), banded.dose_response("slope", uniform=True)
+    assert np.all(
+        (uniform["ci_high"] - uniform["ci_low"]).to_numpy()
+        > (pointwise["ci_high"] - pointwise["ci_low"]).to_numpy()
+    )
+
+
+def test_discrete_dose_errors(panel, discrete_panel, discrete_fits):
+    with pytest.raises(ValueError, match="no spline"):
+        did_continuous("y ~ 1", discrete_panel, **DISCRETE_KW, degree=2)
+    with pytest.raises(ValueError, match="no spline"):
+        did_continuous("y ~ 1", discrete_panel, **DISCRETE_KW, interior_knots=1)
+    with pytest.raises(ValueError, match="dose_type"):
+        did_continuous("y ~ 1", discrete_panel, **{**KW, "dose_type": "binary"})
+    with pytest.raises(ValueError, match="only at its dose levels"):
+        discrete_fits["never_treated"].dose_response(dose=[3.0])
+    with pytest.raises(ValueError, match="only at its dose levels"):
+        did_continuous("y ~ 1", discrete_panel, **DISCRETE_KW, dose_grid=[1.5])
+    missing = discrete_panel.filter(~((pl.col("first_treat") == 4) & (pl.col("dose") == 7)))
+    with pytest.raises(ValueError, match="cohort 4 has no units at dose 7"):
+        did_continuous("y ~ 1", missing, **DISCRETE_KW)
+    with pytest.raises(ValueError, match="at most 1000 values"):
+        did_continuous("y ~ 1", panel, **DISCRETE_KW)
+    fit = discrete_fits["never_treated"]
+    assert fit.diagnostics["dose_levels"] == [1.0, 2.0, 4.0, 7.0]
+    assert "discrete dose: 4 levels; control group: never_treated" in fit._summary_lines()
+    p = did_continuous("y ~ 1", discrete_panel, **DISCRETE_KW, profile=True)
+    assert p.notes["dose_levels"] == 4
