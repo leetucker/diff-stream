@@ -14,6 +14,7 @@ kept as a column), then read three times: the baselines and their switch periods
 sums by baseline and period and by switching cohort; and each group's scores.
 """
 
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -29,14 +30,24 @@ from . import _docs, _options
 from ._core.dcdh_kernels import group_terms
 from ._core.partition import preprocess_budget_mb, staging_bytes
 from ._present import public_profile
+from .continuous_covariates import join_levels
 from .store import PanelStore, inspect, source
 
 PUBLIC = "did_dcdh"
+
+
+class ContinuousBaselineWarning(UserWarning):
+    """did_dcdh's standard errors with a continuous first-period treatment may be too
+    small, as the authors note for their continuous option."""
+
+
 # Distinct first-period treatment values (within trend groups): each needs a row of
 # every cell table.
 MAX_BASELINES = 10_000
 # The column that carries each row's trend group (trends_by) through staging.
 TREND = "__dcdh_trend"
+# The column that carries each row's cluster (cluster=) through staging.
+CLUSTER = "__dcdh_cluster"
 
 
 @dataclass(kw_only=True)
@@ -140,7 +151,17 @@ class Paths:
     the periods whose outcomes are used.
     """
 
-    def __init__(self, D, T, code=None, cells=None, T_d=None, open_=None, linear_trends=False):
+    def __init__(
+        self,
+        D,
+        T,
+        code=None,
+        cells=None,
+        T_d=None,
+        open_=None,
+        linear_trends=False,
+        continuous=False,
+    ):
         n = len(D)
         rows = np.arange(n)
         t = np.arange(1, T + 1)[None, :]
@@ -150,7 +171,9 @@ class Paths:
         last_obs = T - obs[:, ::-1].argmax(axis=1)  # 1..T
         self.d_sq = D[rows, first_obs]
         self.code = np.zeros(n) if code is None else code
-        self.key = self.d_sq + 1j * self.code
+        # with a continuous first-period treatment, all groups share one cell (within
+        # trend groups), as DIDmultiplegtDYN's continuous option
+        self.key = (0.0 if continuous else self.d_sq) + 1j * self.code
         dev = np.where(obs, D - self.d_sq[:, None], 0.0)
         self.dev = dev
         self.mixed = ((dev > 0).any(axis=1) & (dev < 0).any(axis=1)) | ~self.observed
@@ -191,6 +214,10 @@ class Paths:
         self.L = self.Td - self.F + 1
         switcher = (self.base >= 0) & (self.F <= T) & (self.L >= 1)
         self.up = np.where(switcher, (avg > self.d_sq).astype(np.int64), -1)
+        # the treatment at the switch that, with the cell and the switch period, makes
+        # a switching cohort of the authors' variance; with a continuous first-period
+        # treatment, the switch's direction (DIDmultiplegtDYN's binarized treatment)
+        self.switch_value = np.where(self.up == 1, 1.0, -1.0) if continuous else self.d_fg
 
     def outcomes(self, y):
         """The outcomes used: NaN outside ``present``."""
@@ -270,6 +297,8 @@ def _dcdh(
     weights=None,
     allow_time_varying_weights=False,
     panel_mode="balanced",
+    cluster=None,
+    continuous_baseline=None,
     threads=None,
     memory_gb=None,
     memory_reserve=None,
@@ -302,6 +331,16 @@ def _dcdh(
     if threads is not None:
         _count("n_threads", threads, 1)
     directions = {"both": (1, 0), "in": (1,), "out": (0,)}[switchers]
+    if cluster is not None and (not isinstance(cluster, str) or not cluster):
+        raise ValueError("cluster must name a column")
+    if cluster == panel[0]:
+        cluster = None  # the group is the default cluster, as in DIDmultiplegtDYN
+    degree = (
+        None
+        if continuous_baseline is None
+        else _count("continuous_baseline", continuous_baseline, 1)
+    )
+    continuous = degree is not None
     if covariates is not None:
         import formulaic
 
@@ -318,8 +357,19 @@ def _dcdh(
             reserved = [yname, *panel, treatment] + ([weights] if isinstance(weights, str) else [])
             trend_columns, trend_labels, src = _trend_groups(trends_by, src, reserved)
         n_trend = 1 if trends_by is not None else 0
+        n_clusters = 0
+        if cluster is not None:
+            if cluster in (yname, panel[1], treatment):
+                raise ValueError("cluster must be a column above the group")
+            src, n_clusters = join_levels(src, [cluster], CLUSTER, "cluster")
+            if n_clusters < 2:
+                raise ValueError("cluster needs at least two clusters")
+        n_cl = 1 if cluster is not None else 0
         rhs = " + ".join(
-            [treatment] + ([TREND] if n_trend else []) + ([covariates] if covariates else [])
+            [treatment]
+            + ([TREND] if n_trend else [])
+            + ([CLUSTER] if n_cl else [])
+            + ([covariates] if covariates else [])
         )
         lf, _, design = inspect(
             f"{yname} ~ 0 + {rhs}",
@@ -353,10 +403,13 @@ def _dcdh(
             T, N = store.periods, store.n_units
             if design.names[0] != treatment:
                 raise ValueError("the treatment cannot also be a covariate")
-            covariate_names = design.names[1 + n_trend :]
+            covariate_names = design.names[1 + n_trend + n_cl :]
             if any(name in trend_columns for name in covariate_names):
                 raise ValueError("a trends_by column cannot also be a covariate")
-            Kc = len(covariate_names)
+            # with a continuous first-period treatment, its powers interacted with
+            # being at or after each period (from the second) are added as covariates,
+            # so that untreated trends are a polynomial in it, period by period
+            Kc = len(covariate_names) + (T - 1) * (degree or 0)
             Lm = min(effects, T - 1)
             P = min(placebos, Lm)
             K = 2 if P else 1
@@ -367,7 +420,13 @@ def _dcdh(
             slot_index = {slot: j for j, slot in enumerate(slots)}
 
             def buffers(B):
-                return 8 * B * (8 * T + 4 * S + 2 * S * Kc) + B * S + 1024 * T * T
+                numeric = 8 * B * (8 * T + 4 * S + 2 * S * Kc) + B * S + 1024 * T * T
+                if n_cl:
+                    # the clusters' score sums, and the (cell-period or cohort, cluster)
+                    # pairs kept for the demeaning's cluster counts
+                    numeric += 8 * n_clusters * (2 * S + 2)
+                    numeric += 32 * S * T * min(N, 64 * n_clusters)
+                return numeric
 
             B = min(batch_units or 16384, N)
             if batch_units is None:
@@ -415,21 +474,27 @@ def _dcdh(
                     include_x=True, include_weights=True, row_weights=True
                 ):
                     code = _group_codes(x[:, :, 1]) if n_trend else None
-                    X = x[:, :, 1 + n_trend :]
+                    cl = _group_cluster(x[:, :, 1 + n_trend]) if n_cl else None
+                    X = x[:, :, 1 + n_trend + n_cl :]
+                    if continuous:
+                        X = np.concatenate([X, _baseline_polynomial(x[:, :, 0], degree)], axis=2)
                     if linear_trends:
                         y, X = _first_difference(y), _first_difference(X)
-                    yield y, x[:, :, 0], X, w, code
+                    yield y, x[:, :, 0], X, w, code, cl
 
             # Pass 1: the switch periods of each cell.
             pairs = set()
             switch_values = np.zeros(0)
             reach, opened = {}, {}
-            for _, D, _, _, code in batches():
-                p = Paths(D, T, code, linear_trends=linear_trends)
+            for _, D, _, _, code, _ in batches():
+                p = Paths(D, T, code, linear_trends=linear_trends, continuous=continuous)
                 keep = ~p.mixed
                 for f in np.unique(p.F_first[keep]).tolist():
                     pairs.update((c, f) for c in np.unique(p.key[keep & (p.F_first == f)]).tolist())
-                switch_values = np.union1d(switch_values, np.unique(p.d_fg[keep & (p.F <= T)]))
+                if continuous:
+                    switch_values = np.array([-1.0, 1.0])
+                else:
+                    switch_values = np.union1d(switch_values, np.unique(p.d_fg[keep & (p.F <= T)]))
                 for c in np.unique(p.key[keep]).tolist():
                     mine = keep & (p.key == c)
                     used = mine & ~p.second
@@ -522,7 +587,17 @@ def _dcdh(
                     E[rows, j] = still[:, r - 1] & (fill[:, r - 1] if k == 1 else True)
                 return E
 
-            def add_controls(p, y, X, w):
+            # With clusters, the authors' cohort demeaning counts distinct clusters, not
+            # groups, in each set of controls, switching cohort, and their union: the
+            # (cell-period or cohort, cluster) pairs seen are kept for those counts.
+            ctrl_pairs, sw_pairs, coh_pairs = {}, {}, {}
+
+            def remember(store_, key, values):
+                if len(values):
+                    old = store_.get(key)
+                    store_[key] = np.unique(values if old is None else np.r_[old, values], axis=0)
+
+            def add_controls(p, y, X, w, cl=None):
                 nonlocal groups_used, counted
                 kept = p.base >= 0
                 groups_used += int(kept.sum())
@@ -564,6 +639,9 @@ def _dcdh(
                             # a placebo's groups are those of the effect: its change too
                             rows &= np.isfinite(_changes(y, ell, 0))
                         idx = cell[rows]
+                        if cl is not None:
+                            cl_rows = np.broadcast_to(cl[:, None], rows.shape)[rows]
+                            remember(ctrl_pairs, (k, li), idx * n_clusters + cl_rows)
                         ctrl_w[k, li] += _cells(idx, w[rows], nB, T)
                         ctrl_wy[k, li] += _cells(idx, (w * change)[rows], nB, T)
                         ctrl_n[k, li] += np.bincount(idx, minlength=size).reshape(nB, T + 1)
@@ -580,12 +658,14 @@ def _dcdh(
                         rows = eligible_ctrl & np.isfinite(lead)
                         lead_w[q - 1] += _cells(cell[rows], w[rows], nB, T)
 
-            def add_switchers(p, y, X, w, eligible):
+            def add_switchers(p, y, X, w, eligible, cl=None):
                 unit_code = np.full(len(y), -1, dtype=np.int64)
                 sw_all = p.up >= 0
                 if not sw_all.any():
                     return
-                unit_code[sw_all] = coder(p.base[sw_all], p.F[sw_all], p.d_fg[sw_all], p.up[sw_all])
+                unit_code[sw_all] = coder(
+                    p.base[sw_all], p.F[sw_all], p.switch_value[sw_all], p.up[sw_all]
+                )
                 previous = cohorts["codes"]
                 cohorts["codes"], cohorts["coh"] = _grow(
                     previous, cohorts["coh"], unit_code[sw_all]
@@ -622,6 +702,9 @@ def _dcdh(
                     now = p.dev[rows_on, at - 1] * sign
                     flat = (s * nB + p.base[on]) * (T + 1) + at
                     ww = w[rows_on, at - 1]
+                    if cl is not None:
+                        remember(sw_pairs, j, flat * n_clusters + cl[rows_on])
+                        remember(coh_pairs, j, np.column_stack([unit_code[rows_on], cl[rows_on]]))
                     for target, values in (
                         (sw_w, ww),
                         (sw_wy, ww * delta),
@@ -647,21 +730,21 @@ def _dcdh(
                             )
 
             def read(D, code):
-                return Paths(D, T, code, cells, T_d, open_, linear_trends)
+                return Paths(D, T, code, cells, T_d, open_, linear_trends, continuous)
 
-            for y, D, X, w, code in batches():
+            for y, D, X, w, code, cl in batches():
                 p = read(D, code)
                 y = p.outcomes(y)
                 X = np.where(p.present[:, :, None], X, np.nan)
-                add_controls(p, y, X, w)
+                add_controls(p, y, X, w, cl)
                 if not linear_trends:
-                    add_switchers(p, y, X, w, eligibility(p, y))
+                    add_switchers(p, y, X, w, eligibility(p, y), cl)
             if linear_trends:
-                for y, D, X, w, code in batches():
+                for y, D, X, w, code, cl in batches():
                     p = read(D, code)
                     y = p.outcomes(y)
                     X = np.where(p.present[:, :, None], X, np.nan)
-                    add_switchers(p, y, X, w, eligibility(p, y))
+                    add_switchers(p, y, X, w, eligibility(p, y), cl)
             codes, coh, coh_wx = cohorts["codes"], cohorts["coh"], cohorts["wx"]
             n_eff = min(effects, max(L_max[s] for s in directions))
             if n_eff < 1:
@@ -754,9 +837,26 @@ def _dcdh(
                 union_mean = np.where(
                     un_w > 0, (sw_wy + ctrl_wy[slot_kind, slot_horizon][:, None] * gate) / un_w, 0.0
                 )
+            if n_cl:
+                ctrl_n, union_n = _cluster_counts(
+                    ctrl_pairs,
+                    sw_pairs,
+                    ctrl_n.shape,
+                    union_n.shape,
+                    n_clusters,
+                    slots,
+                    slot_valid,
+                    directions,
+                    gate,
+                )
             # cohort tables, with cohorts in cells without controls removed
             cb, cF, cs = coder.parts(codes)
             cohort_n = coh[:, :, 2].T.copy()
+            if n_cl:
+                cohort_n[:] = 0
+                for j, pairs_j in coh_pairs.items():
+                    where_c = np.searchsorted(codes, pairs_j[:, 0])
+                    cohort_n[j] = np.bincount(where_c, minlength=len(codes))
             cohort_w = coh[:, :, 0].T
             cohort_wy = coh[:, :, 1].T
             for j in range(S):
@@ -840,7 +940,8 @@ def _dcdh(
                 cohort_mean,
                 cohort_n,
             )
-            for y, D, X, w, code in batches():
+            cluster_sums = np.zeros((n_clusters, width)) if n_cl else None
+            for y, D, X, w, code, cl in batches():
                 p = read(D, code)
                 y = p.outcomes(y)
                 X = np.where(p.present[:, :, None], X, np.nan)
@@ -852,7 +953,7 @@ def _dcdh(
                 cid = np.full(len(D), -1, dtype=np.int64)
                 sw = p.up >= 0
                 if sw.any() and len(codes):
-                    code_sw = coder(p.base[sw], p.F[sw], p.d_fg[sw], p.up[sw])
+                    code_sw = coder(p.base[sw], p.F[sw], p.switch_value[sw], p.up[sw])
                     pos = np.minimum(np.searchsorted(codes, code_sw), len(codes) - 1)
                     cid[sw] = np.where(codes[pos] == code_sw, pos, -1)
                 U, V = group_terms(
@@ -893,7 +994,13 @@ def _dcdh(
                     V -= np.where(kept[:, None, None], Nk[None] * part2 / counted, 0.0)
                 estimate += np.einsum("bjs,cjs->c", U, coef)
                 scores = np.einsum("bjs,cjs->bc", V, coef)
-                gram += scores.T @ scores
+                if n_cl:
+                    # the groups' terms are summed by cluster, as in DIDmultiplegtDYN
+                    np.add.at(cluster_sums, cl, scores)
+                else:
+                    gram += scores.T @ scores
+            if n_cl:
+                gram = cluster_sums.T @ cluster_sums
 
             names = (
                 [f"effect::{i}" for i in range(1, n_eff + 1)]
@@ -943,10 +1050,23 @@ def _dcdh(
                     cell_label(c): labels.label_int(int(store.times[t - 1])) if t >= 1 else None
                     for c, t in zip(cells.tolist(), T_d.tolist(), strict=True)
                 },
-                inference="clustered by group; the authors' conservative variance (cohort-demeaned)",
+                cluster=cluster,
+                continuous_baseline=degree,
+                inference=f"clustered by {cluster or 'group'}; the authors' conservative "
+                "variance (cohort-demeaned)",
                 batch_units=B,
                 partitions=store.partition_count,
             )
+            if continuous:
+                message = (
+                    "With a continuous first-period treatment, the authors note that the "
+                    "analytic standard errors are not backed by a proven asymptotic result: "
+                    "conservative with a correctly specified polynomial in simulations, they "
+                    "can be too small if it is misspecified (DIDmultiplegtDYN's continuous "
+                    "option). Check the results' sensitivity to continuous_baseline."
+                )
+                diagnostics["warnings"] = [message]
+                warnings.warn(message, ContinuousBaselineWarning, 3)
             return DCDHResult(
                 fml=fml,
                 depvar=yname,
@@ -954,15 +1074,68 @@ def _dcdh(
                 beta=estimate,
                 vcov=gram,
                 vcov_type="CRV0",
-                df_t=N - 1,
-                all_vcovs={"CRV0": (gram, N - 1)},
+                df_t=(n_clusters or N) - 1,
+                all_vcovs={"CRV0": (gram, (n_clusters or N) - 1)},
                 n_obs=store.n_rows_used,
-                n_clusters={panel[0]: N},
+                n_clusters={cluster: n_clusters} if n_cl else {panel[0]: N},
                 n_units=N,
                 diagnostics=diagnostics,
                 _switchers=table,
                 _internal=dict(diagnostics),
             )
+
+
+def _baseline_polynomial(D, degree):
+    """1{t >= j} d^k for periods j = 2..T and k = 1..degree, with d the group's
+    treatment in its first observed period (DIDmultiplegtDYN's time_fe_XX_j_btk_XX)."""
+    n, T = D.shape
+    observed = np.isfinite(D)
+    d = D[np.arange(n), observed.argmax(axis=1)]
+    t = np.arange(1, T + 1)
+    columns = [
+        np.where(observed, (t[None, :] >= j) * d[:, None] ** k, np.nan)
+        for j in range(2, T + 1)
+        for k in range(1, degree + 1)
+    ]
+    return np.stack(columns, axis=2) if columns else np.zeros((n, T, 0))
+
+
+def _group_cluster(values):
+    """Each group's cluster index, which must not change over its observed periods."""
+    high, low = np.fmax.reduce(values, axis=1), np.fmin.reduce(values, axis=1)
+    if np.any(high != low):
+        raise ValueError(
+            "each group must be in one cluster: cluster must be constant within groups"
+        )
+    return high.astype(np.int64)
+
+
+def _cluster_counts(
+    ctrl_pairs, sw_pairs, ctrl_shape, union_shape, C, slots, valid, directions, gate
+):
+    """Distinct clusters among each cell-period's controls, and among the union of a
+    slot's controls and switchers in each direction (DIDmultiplegtDYN's cluster counts).
+    """
+    K, Lm, nB, T1 = ctrl_shape
+    ctrl = np.zeros(ctrl_shape)
+    for (k, li), keys in ctrl_pairs.items():
+        ctrl[k, li] = np.bincount(keys // C, minlength=nB * T1).reshape(nB, T1)
+    union = np.zeros(union_shape)
+    for j, (k, li, _) in enumerate(slots):
+        controls = ctrl_pairs.get((k, li), np.zeros(0, dtype=np.int64))
+        c_cell, c_cluster = controls // C, controls % C
+        switch = sw_pairs.get(j, np.zeros(0, dtype=np.int64))
+        s_flat, s_cluster = switch // C, switch % C
+        s_dir, s_cell = s_flat // (nB * T1), s_flat % (nB * T1)
+        for s in directions:
+            mine = (s_dir == s) & valid[j].ravel()[s_cell]
+            open_t = gate[j, s, 0].ravel() if gate.ndim == 4 else gate[j, s]
+            ctrl_on = open_t[c_cell % T1]
+            keys = np.unique(
+                np.r_[s_cell[mine] * C + s_cluster[mine], c_cell[ctrl_on] * C + c_cluster[ctrl_on]]
+            )
+            union[j, s] = np.bincount(keys // C, minlength=nB * T1).reshape(nB, T1)
+    return ctrl, union
 
 
 def _cells(index, values, nB, T):
@@ -1027,6 +1200,8 @@ def did_dcdh(
     weights=None,
     allow_time_varying_weights=False,
     incomplete_units="error",
+    cluster=None,
+    continuous_baseline=None,
     n_threads=None,
     max_memory_gb=None,
     memory_reserve=None,
@@ -1093,6 +1268,19 @@ def did_dcdh(
         both of its periods are observed, and a group not observed just before its
         switch is used only as a control until its last observed period before it, as
         in DIDmultiplegtDYN.
+    cluster : str, optional
+        A column to cluster the standard errors by, above the group (each group in
+        one cluster), as ``cluster`` in DIDmultiplegtDYN: the groups' terms are summed
+        by cluster, and the authors' cohort demeaning counts clusters rather than
+        groups. Default: the group.
+    continuous_baseline : int, optional
+        For a first-period treatment that is continuous, so that no two groups share
+        one (DIDmultiplegtDYN's ``continuous``): the degree of a polynomial in it.
+        All groups are then compared together, with untreated trends that may differ
+        by a polynomial of this degree in the first-period treatment, period by
+        period (entered as covariates), and the switching cohorts of the variance
+        are defined by the direction of the switch. The standard errors are not
+        backed by a proven asymptotic result (see the documentation); fits warn.
     {RESOURCES}
 
     Returns
