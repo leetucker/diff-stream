@@ -849,6 +849,7 @@ def general_oracle(
     weights=None,
     cluster=None,
     fixed_slopes=False,
+    gradients=False,
 ):
     """The overall ATT and ACRT from dense regressions, with standard errors from their
     complex-step gradient in each unit's weight (summed by ``cluster`` if given).
@@ -860,7 +861,8 @@ def general_oracle(
     dose basis. ``reference(d)`` marks the lowest-dose comparison's reference units.
     Treated units whose region has no comparison units in a cell they are observed
     in are left out of their cohort. ``fixed_slopes`` holds each cell's average slope
-    of the basis fixed, as diff-diff does for the overall ACRT.
+    of the basis fixed, as diff-diff does for the overall ACRT. ``gradients=True``
+    returns the units' (or clusters') gradients in place of the standard errors.
     """
     ids = panel["id"].unique().sort()
 
@@ -942,6 +944,8 @@ def general_oracle(
     if cluster is not None:
         labels = units[cluster].to_numpy()
         grads = np.array([grads[labels == c].sum(axis=0) for c in np.unique(labels)])
+    if gradients:
+        return base, grads
     return base, np.sqrt((grads**2).sum(axis=0))
 
 
@@ -1257,3 +1261,159 @@ def test_unbalanced_fit_does_not_depend_on_threads_or_batches(covariate_panel):
     many = fit_quietly("y ~ x | region", data, **(options | dict(n_threads=4, batch_units=101)))
     assert_allclose(many.beta, one.beta, rtol=1e-12)
     assert_allclose(many.vcov, one.vcov, rtol=1e-10)
+
+
+# Sampling weights, against diff-diff's survey weights. diff-diff's weighted standard
+# errors apply each unit's weight twice (upstream-issues, issue 6): the estimates are
+# compared directly, the standard errors with the dense calculation, and diff-diff's
+# are reproduced from the same per-unit scores with the weight applied again.
+
+WEIGHTED = DATA / "continuous_weights_reference"
+WEIGHTED_FITS = {
+    "lowest_continuous": ("lowest", "y ~ 1", dict(dose="dose", control_group="lowest_dose")),
+    "lowest_discrete": (
+        "lowest",
+        "y_level ~ 1",
+        dict(dose="dose_level", dose_type="discrete", control_group="lowest_dose"),
+    ),
+    "staggered_never_treated": (
+        "staggered",
+        "y ~ 1",
+        dict(dose="dose", control_group="never_treated"),
+    ),
+    "staggered_not_yet_treated": (
+        "staggered",
+        "y ~ 1",
+        dict(dose="dose", control_group="not_yet_treated"),
+    ),
+}
+
+
+@pytest.fixture(scope="module")
+def weighted_panels(lowest_panel, covariate_panel):
+    for name, h in json.loads((WEIGHTED / "PROVENANCE.json").read_text())["files"].items():
+        assert digest(Path(__file__).parents[1] / name) == h, name
+    return {
+        "lowest": lowest_panel,
+        "staggered": covariate_panel.with_columns(weight=1 + (pl.col("id") % 7) / 2),
+    }
+
+
+def _twice(weights, grads):
+    """diff-diff's standard error: the scores times the (mean-one) weight again, centered."""
+    s = (weights / weights.mean())[:, None] * grads
+    n = len(weights)
+    return np.sqrt(((s - s.mean(axis=0)) ** 2).sum(axis=0) * n / (n - 1))
+
+
+@pytest.mark.parametrize("name", WEIGHTED_FITS)
+def test_weights_match_diff_diff(weighted_panels, name):
+    which, fml, options = WEIGHTED_FITS[name]
+    data = weighted_panels[which]
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", ExperimentalWarning)  # constant weights are not experimental
+        fit = did_continuous(
+            fml, data, panel=("id", "time"), cohort="first_treat", weights="weight", **options
+        )
+    assert fit.diagnostics["weights_column"] == "weight"
+    overall = read_csv(WEIGHTED / f"overall_{name}.csv")
+    assert_allclose(fit.beta, overall["estimate"].to_numpy(), rtol=1e-12)
+    grid = LOWEST_GRID if options.get("dose_type") != "discrete" else None
+    curves = read_csv(WEIGHTED / f"curves_{name}.csv")
+    for target, column in (("level", "att"), ("slope", "acrt")):
+        frame = fit.dose_response(target, dose=grid)
+        assert_allclose(frame["estimate"].to_numpy(), curves[column].to_numpy(), rtol=1e-11)
+    cells = read_csv(WEIGHTED / f"cells_{name}.csv")
+    assert fit._att.cells == list(zip(cells["g"], cells["t"], strict=True))
+    assert_allclose(fit._att.beta, cells["att"].to_numpy(), rtol=1e-10, atol=1e-13)
+    assert_allclose(fit._acrt.beta, cells["acrt"].to_numpy(), rtol=1e-10, atol=1e-13)
+    event = read_csv(WEIGHTED / f"event_{name}.csv")
+    assert_allclose(fit.aggregate().beta, event["estimate"].to_numpy(), rtol=1e-10, atol=1e-13)
+    outcome, dose = fml.split("~")[0].strip(), options["dose"]
+    cg = options["control_group"]
+    reference = (lambda d: d == d.min()) if cg == "lowest_dose" else None
+    oracle = dict(reference=reference, weights="weight")
+    estimate, se = general_oracle(data, fit, outcome, dose, cg, **oracle)
+    assert_allclose(fit.beta, estimate, rtol=1e-12)
+    assert_allclose(fit.se, se, rtol=1e-10)
+    # diff-diff's: the weight twice, the average slope held fixed (and, with several
+    # cohorts, the cohort shares: only its ACRT is reproduced there)
+    _, grads = general_oracle(
+        data, fit, outcome, dose, cg, **oracle, fixed_slopes=True, gradients=True
+    )
+    weights = data.group_by("id").first().sort("id")["weight"].to_numpy()
+    twice = _twice(weights, grads)
+    reproduced = slice(0, 2) if which == "lowest" else slice(1, 2)
+    assert_allclose(twice[reproduced], overall["se"].to_numpy()[reproduced], rtol=1e-10)
+
+
+@pytest.mark.parametrize("cg", CONTROLS)
+def test_weighted_binarized_cells_are_callaway_santanna(weighted_panels, cg):
+    """The effect of being treated equals weighted Callaway-Sant'Anna (validated against
+    R did), standard errors included."""
+    data = weighted_panels["staggered"]
+    options = dict(panel=("id", "time"), cohort="first_treat", control_group=cg, weights="weight")
+    fit = did_continuous("y ~ 1", data, dose="dose", **options)
+    cs = did_callaway_santanna("y ~ 1", data, **options)
+    assert fit._att.cells == list(cs.cells)
+    assert_allclose(fit._att.beta, cs.beta, rtol=1e-12, atol=1e-14)
+    assert_allclose(fit._att.se, cs.se, rtol=1e-10)
+    assert_allclose(fit.aggregate().se, cs.aggregate().se, rtol=1e-10)
+
+
+def test_integer_weights_are_replicated_units(lowest_panel):
+    """A weight of 2 counts a unit twice in every estimate."""
+    weights = (1 + pl.col("id") % 3).cast(pl.Float64)
+    data = lowest_panel.with_columns(w=weights)
+    copies = pl.concat(
+        [
+            data.filter(pl.col("w") >= k + 1).with_columns(pl.col("id") + k * 100_000)
+            for k in range(3)
+        ]
+    )
+    options = dict(LOWEST_KW, dose="dose", reference_dose=3.0)
+    weighted = fit_quietly("y ~ x | region", data, **options, weights="w")
+    replicated = fit_quietly("y ~ x | region", copies, **options)
+    assert_allclose(weighted.beta, replicated.beta, rtol=1e-12)
+    grid = LOWEST_GRID[LOWEST_GRID > 3]  # the default grid is unweighted quantiles
+    for target in ("level", "slope"):
+        assert_allclose(
+            weighted.dose_response(target, dose=grid)["estimate"].to_numpy(),
+            replicated.dose_response(target, dose=grid)["estimate"].to_numpy(),
+            rtol=1e-10,
+        )
+
+
+@pytest.mark.parametrize("unbalanced", [False, True])
+def test_time_varying_weights_match_the_dense_oracle(lowest_panel, unbalanced):
+    """Each cohort-period weights its units by their weights in the period compared."""
+    data = _unbalanced(lowest_panel, 8) if unbalanced else lowest_panel
+    with pytest.warns(ExperimentalWarning, match="time-varying weights"):
+        fit = did_continuous(
+            "y ~ 1 | region",
+            data,
+            **LOWEST_KW,
+            dose="dose",
+            reference_dose=3.0,
+            weights="weight_t",
+            allow_time_varying_weights=True,
+            incomplete_units="keep",
+        )
+    assert fit.diagnostics["weights_time_invariant"] is False
+    estimate, se = general_oracle(
+        data,
+        fit,
+        "y",
+        "dose",
+        "lowest_dose",
+        reference=lambda d: d <= 3.0,
+        fixed_effect=True,
+        weights="weight_t",
+    )
+    assert_allclose(fit.beta, estimate, rtol=1e-12)
+    assert_allclose(fit.se, se, rtol=1e-10)
+
+
+def test_time_varying_weights_need_permission(lowest_panel):
+    with pytest.raises(ValueError, match="constant within unit"):
+        did_continuous("y ~ 1", lowest_panel, **LOWEST_KW, dose="dose", weights="weight_t")

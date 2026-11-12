@@ -1,0 +1,27 @@
+{
+  "reference": "diff-diff 4.0.0 (ContinuousDiD with survey_design=SurveyDesign(weights=...), no covariates): the lowest-dose comparison with a continuous and a discrete dose on the lowest-dose panel weighted by cell size, and three cohorts with never-treated and not-yet-treated comparisons on the covariate panel with weights 1 + (id mod 7) / 2. Estimates, curves, cells and the event study are compared directly. diff-diff's weighted standard errors apply each unit's weight twice (upstream-issues, issue 6); the tests check the standard errors against the dense oracle, and reproduce diff-diff's from the oracle's per-unit scores with the weight applied again.",
+  "files": {
+    "benchmarks/external/continuous_weights_reference.py": "5d7e76ebea67ad1b848cfbc500bb30c95b100fcf4e601071e63f14ec65fa2f33",
+    "benchmarks/external/continuous_lowest_panel.py": "ed435154a403cfc8d27a9fc909969216b0eeb9bbbe0505ace3b4e404989acf5d",
+    "tests/data/continuous_lowest_panel.csv": "78ff3d7afe1c931c1b378fbf698386b6e2e80d8b5f0dd6d5dd7994fd3faf0fd6",
+    "benchmarks/external/continuous_covariates_panel.py": "b8c5d2ab7f3fc318d4d2aa25d1c47460ad8bf77afbef0ecd1d0870ebee9b6460",
+    "tests/data/continuous_covariates_panel.csv": "9108011b7ce8c17ccd2f0998b7baf9534839f7b688a097b1b02e1d15370577e9",
+    "tests/data/continuous_weights_reference/cells_lowest_continuous.csv": "809b51c52be35e18da3ab6372ad2fbdeeaaa0cec7c4db0f1771dd56e5d0f718e",
+    "tests/data/continuous_weights_reference/cells_lowest_discrete.csv": "5172ecdbd74fbe160c56faa138bb0cb504761e491f1d467f07ac92def4dd819b",
+    "tests/data/continuous_weights_reference/cells_staggered_never_treated.csv": "0a6738b1e49ff25bb6fd8942051de7b3fab568fbd587b32c1b24dcb1cbcdfe59",
+    "tests/data/continuous_weights_reference/cells_staggered_not_yet_treated.csv": "aa8ed5bbbcab68afaa1d08421f78a8fa462e027c7ef3324f9bf11ff69d6be870",
+    "tests/data/continuous_weights_reference/curves_lowest_continuous.csv": "23e7655a1e6e041f61b858187c6086839f54f0d290b0b32bb339049a2f73c7c2",
+    "tests/data/continuous_weights_reference/curves_lowest_discrete.csv": "68cf288768e6c4d5f8b83522660314b6df4b85a6b4f51b7ccfab533af52f0196",
+    "tests/data/continuous_weights_reference/curves_staggered_never_treated.csv": "c772e7632f9f4b3aae5ca0078afddd47b91f7cc370a6fe74d51f906e5ed0a3bf",
+    "tests/data/continuous_weights_reference/curves_staggered_not_yet_treated.csv": "5494932906a4829d33a8732e7c2cfd9d57e6a7af82ead0510faee5464c3e7565",
+    "tests/data/continuous_weights_reference/event_lowest_continuous.csv": "23f888dd4d808883afa64d7e07904509ec44db3a78a79dfdd34f3126a251fd7c",
+    "tests/data/continuous_weights_reference/event_lowest_discrete.csv": "37dab2790ff2b5ae48c1b5c5c778b3fbe4cfbd99d0b4428b8e5aeb2d54306b0f",
+    "tests/data/continuous_weights_reference/event_staggered_never_treated.csv": "32da2024945b76a523e913326e572cc7bdd86500c34dc55922fbe3261e8bb279",
+    "tests/data/continuous_weights_reference/event_staggered_not_yet_treated.csv": "64d7479175ede76e2431e50d2262ce3094032176dfc6eb37f0eed4e3b1090508",
+    "tests/data/continuous_weights_reference/overall_lowest_continuous.csv": "9970884e89d535021c3e65adb6cfe62f978152b80309e7e68d17e1d976016bbc",
+    "tests/data/continuous_weights_reference/overall_lowest_discrete.csv": "444cb033ff4eae23c3b01c7789970c4927a9ae1971411471f5857d8f75c165a6",
+    "tests/data/continuous_weights_reference/overall_staggered_never_treated.csv": "de2f62991a79aac7ddfb72f120a8ffadc7d6742c09998bdd40aec56a387d70d0",
+    "tests/data/continuous_weights_reference/overall_staggered_not_yet_treated.csv": "efeec2a2e72b89df570004d97e78c2ff6ab218a150d3b5b93e35a30410df3f6e",
+    "tests/data/continuous_weights_reference/versions.csv": "84e7fa6472acdbdf543c3d38e76fbf5f55a3d1226235b9b75319cc597d655a34"
+  }
+}
