@@ -366,6 +366,8 @@ def _continuous(
     degree=None,
     interior_knots=0,
     dose_grid=None,
+    weights=None,
+    allow_time_varying_weights=False,
     vcov="CRV0",
     bootstrap_reps=0,
     bootstrap_seed=None,
@@ -427,6 +429,9 @@ def _continuous(
         raise ValueError("vcov must be 'CRV0' or 'CRV1'")
     if panel_mode not in ("balanced", "complete", "unbalanced"):
         raise ValueError("unknown incomplete_units")
+    weights_column = weights
+    if not isinstance(allow_time_varying_weights, bool):
+        raise ValueError("allow_time_varying_weights must be True or False")
     if batch_units is not None:
         _validated("batch_units", batch_units, 1)
     if threads is not None:
@@ -437,7 +442,7 @@ def _continuous(
     budget = MemoryBudget(memory_gb, memory_reserve)
     preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline = current_rss_gb() or 0
-    general = adjusted or lowest or force_general
+    general = adjusted or lowest or force_general or weights is not None
     with thread_scope(threads):
         n_levels = 1
         if adjusted:
@@ -462,6 +467,7 @@ def _continuous(
             cohort,
             treatment=treatment,
             allow_covariates=True,
+            weights=weights,
         )
         if not budget.fits((preprocess_mb * 1e6 + 96e6) / 1e9):
             raise MemoryError(
@@ -481,11 +487,14 @@ def _continuous(
                 anticipation,
                 require_never_treated=not lowest,
                 single_group=lowest,
+                allow_time_varying_weights=allow_time_varying_weights,
             )
             if not store.is_balanced:
                 # each comparison then uses the units observed in both its periods
                 general = True
                 experimental.append("an unbalanced panel")
+            if not store.weights_time_invariant:
+                experimental.append("time-varying weights")
             if experimental and not profile:
                 # stacklevel 3: the caller of did_continuous
                 warnings.warn(
@@ -820,6 +829,8 @@ def _continuous(
                 dropped_units=store.n_units_input - N,
                 periods=T,
                 balanced=store.is_balanced,
+                weights_column=weights_column,
+                weights_time_invariant=store.weights_time_invariant,
                 batch_units=B,
                 partitions=store.partition_count,
                 preprocess_mb=preprocess_mb,
@@ -950,6 +961,8 @@ def did_continuous(
     degree=None,
     interior_knots=0,
     dose_grid=None,
+    weights=None,
+    allow_time_varying_weights=False,
     incomplete_units="error",
     vcov="CRV0",
     multiplier_bootstrap_reps=0,
@@ -1025,6 +1038,14 @@ def did_continuous(
         The doses at which ``dose_response()`` evaluates the curves. Default: the
         10th to 99th percentiles of the treated doses, in steps of 1, as in contdid;
         with a discrete dose, its values (and only they can be given).
+    weights : str, optional
+        A column of sampling weights: positive, finite, and constant within each
+        unit unless ``allow_time_varying_weights=True``. They weight the units in
+        every regression and average, and in the cohort shares. Weights that change
+        over time are experimental: each cohort-period then uses the units' weights
+        in the period compared.
+    allow_time_varying_weights : bool, default False
+        Accept weights that change over time within a unit.
     incomplete_units : {"error", "drop", "keep"}, default "error"
         What to do with units missing some periods: refuse the data, drop those
         units, or keep them (experimental: each comparison then uses the units
