@@ -176,7 +176,8 @@ def test_default_grid_and_knots_follow_contdid(panel, fits):
 
 
 def test_errors(panel):
-    with pytest.raises(ValueError, match="unknown variables"), pytest.warns(ExperimentalWarning):
+    # the formula is checked before the fit warns that covariates are experimental
+    with pytest.raises(ValueError, match="unknown variables"):
         did_continuous("y ~ x", panel, **KW)
     zero = panel.with_columns(
         pl.when(pl.col("id") == panel.filter(pl.col("first_treat") > 0)["id"][0])
@@ -199,7 +200,7 @@ def test_errors(panel):
             "y ~ 1", panel.with_columns(pl.col("dose").round(0)), **KW, interior_knots=30
         )
     with pytest.raises(ValueError, match="incomplete_units"):
-        did_continuous("y ~ 1", panel, **KW, incomplete_units="keep")
+        did_continuous("y ~ 1", panel, **KW, incomplete_units="partly")
 
 
 def test_treatment_column_and_spaced_periods(panel, fits):
@@ -1171,3 +1172,88 @@ def test_lowest_dose_does_not_depend_on_threads_or_batches(lowest_panel):
     assert_allclose(many.vcov, one.vcov, rtol=1e-10)
     a, b = one.dose_response(uniform=True), many.dose_response(uniform=True)
     assert_allclose(b["ci_low"].to_numpy(), a["ci_low"].to_numpy(), rtol=1e-10)
+
+
+# Unbalanced panels (experimental): each comparison uses the units observed in both
+# of its periods. No package implements this, so the dense calculation is the check.
+
+
+def _unbalanced(panel, seed):
+    """The panel with 8% of unit-periods missing, and the first two periods of 5% of units."""
+    rng = np.random.default_rng(seed)
+    late = rng.random(panel["id"].max() + 1) < 0.05
+    keep = (rng.random(panel.height) > 0.08) & ~(
+        late[panel["id"].to_numpy()] & (panel["time"].to_numpy() <= 2)
+    )
+    return panel.filter(pl.Series(keep))
+
+
+@pytest.mark.parametrize(
+    "fml,covariates,fixed_effect",
+    [("y ~ 1", False, False), ("y ~ x | region", True, True)],
+)
+@pytest.mark.parametrize("cg", CONTROLS)
+def test_unbalanced_panel_matches_the_dense_oracle(
+    covariate_panel, fml, covariates, fixed_effect, cg
+):
+    small = _unbalanced(covariate_panel.filter(pl.col("id") < SMALL), 5)
+    with pytest.warns(ExperimentalWarning, match="an unbalanced panel goes beyond"):
+        fit = did_continuous(
+            fml, small, **COVARIATE_KW, dose="dose", control_group=cg, incomplete_units="keep"
+        )
+    assert fit.diagnostics["balanced"] is False
+    estimate, se = general_oracle(
+        small, fit, "y", "dose", cg, covariates=covariates, fixed_effect=fixed_effect
+    )
+    assert_allclose(fit.beta, estimate, rtol=1e-12)
+    assert_allclose(fit.se, se, rtol=1e-10)
+
+
+def test_unbalanced_lowest_dose_with_a_fixed_effect_matches_the_dense_oracle(lowest_panel):
+    data = _unbalanced(lowest_panel, 6)
+    with pytest.warns(ExperimentalWarning, match="a fixed effect and an unbalanced panel"):
+        fit = did_continuous(
+            "y_level ~ 1 | region",
+            data,
+            **LOWEST_KW,
+            dose="dose_level",
+            dose_type="discrete",
+            incomplete_units="keep",
+        )
+    estimate, se = general_oracle(
+        data,
+        fit,
+        "y_level",
+        "dose_level",
+        "lowest_dose",
+        reference=lambda d: d == 1.0,
+        fixed_effect=True,
+    )
+    assert_allclose(fit.beta, estimate, rtol=1e-12)
+    assert_allclose(fit.se, se, rtol=1e-10)
+    # each cell's treated units are those observed in both its periods
+    cells = fit._att
+    assert cells.observed_counts.max() <= fit.diagnostics["cohort_sizes"]["4"]
+    assert cells.observed_counts.min() < cells.observed_counts.max()
+
+
+def test_a_balanced_panel_kept_is_the_balanced_fit(covariate_panel, covariate_fits):
+    """incomplete_units="keep" on a balanced panel is neither different nor experimental."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", ExperimentalWarning)
+        kept = did_continuous(
+            "y ~ 1", covariate_panel, **COVARIATE_KW, dose="dose", incomplete_units="keep"
+        )
+    plain = did_continuous("y ~ 1", covariate_panel, **COVARIATE_KW, dose="dose")
+    assert kept.diagnostics["balanced"] is True
+    assert_allclose(kept.beta, plain.beta, rtol=1e-14)
+    assert_allclose(kept.vcov, plain.vcov, rtol=1e-14)
+
+
+def test_unbalanced_fit_does_not_depend_on_threads_or_batches(covariate_panel):
+    data = _unbalanced(covariate_panel, 7)
+    options = dict(COVARIATE_KW, dose="dose", incomplete_units="keep")
+    one = fit_quietly("y ~ x | region", data, **(options | dict(n_threads=1)))
+    many = fit_quietly("y ~ x | region", data, **(options | dict(n_threads=4, batch_units=101)))
+    assert_allclose(many.beta, one.beta, rtol=1e-12)
+    assert_allclose(many.vcov, one.vcov, rtol=1e-10)
