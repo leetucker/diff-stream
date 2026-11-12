@@ -54,7 +54,15 @@ class DIDResult(RegressionResult):
     # The public function to name in summaries, when not the estimator's own
     # (did_continuous keeps its binarized and slope cells as CS results).
     _display: str | None = field(default=None, repr=False)
+    # Clusters above the unit (did_continuous's cluster=): their number sets CRV1's
+    # factor in place of the units'.
+    _cluster_count: int | None = field(default=None, repr=False)
     _normal_inference = True
+
+    def _crv1(self):
+        """CRV1's variance factor, G/(G-1), with G the clusters (by default the units)."""
+        G = self._cluster_count or self.n_units
+        return G / (G - 1)
 
     def covariate_balance(self, *, cohort=None, time=None):
         """Copy saved CS before/after propensity-weight balance diagnostics.
@@ -227,7 +235,7 @@ class DIDResult(RegressionResult):
                 "fit with multiplier_bootstrap_reps >= 2 to keep multiplier bootstrap draws"
             )
         ix = _select_coefs(self.coefnames, keep, drop, exact_match)
-        factor = np.sqrt(self.n_units / (self.n_units - 1)) if self.vcov_type == "CRV1" else 1.0
+        factor = np.sqrt(self._crv1()) if self.vcov_type == "CRV1" else 1.0
         return self._multiplier_draws[:, ix] * factor
 
     def multiplier_confint(
@@ -284,10 +292,10 @@ class DIDResult(RegressionResult):
             self._bjs_inference.cleanup()
 
     def with_vcov(self, vcov):
-        """Copy using CRV0 or CRV1 (the latter applies N/(N-1) only)."""
+        """Copy using CRV0 or CRV1 (the latter applies G/(G-1) only, G the clusters)."""
         if vcov not in ("CRV0", "CRV1"):
             raise ValueError("vcov must be 'CRV0' or 'CRV1'")
-        factor = self.n_units / (self.n_units - 1)
+        factor = self._crv1()
         ratio = (factor if vcov == "CRV1" else 1) / (factor if self.vcov_type == "CRV1" else 1)
         out = copy(self)
         out.vcov = self.vcov * ratio
@@ -429,7 +437,7 @@ class DIDResult(RegressionResult):
         if self._bjs_inference is not None:
             V = self._bjs_inference.covariance(A)
             if self.vcov_type == "CRV1":
-                V *= self.n_units / (self.n_units - 1)
+                V *= self._crv1()
         else:
             V = A @ self.vcov @ A.T
         if self._share_cross is not None:
@@ -456,6 +464,7 @@ class DIDResult(RegressionResult):
             cells=[],
             counts=np.array([]),
             n_units=self.n_units,
+            _cluster_count=self._cluster_count,
             _balance_table=(
                 self._balance_table.join(
                     pl.DataFrame(

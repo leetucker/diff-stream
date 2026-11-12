@@ -41,7 +41,7 @@ from .cohort_scores import CohortScoreCovariance
 def table_bytes(M, L, P, K, C, W):
     """Memory of the per-cell tables and the cluster sums of the general fit."""
     cells = M * L * (P + 3 + 2 * K) + M * (K * (P + 2 * K + 4) + P * (P + 3))
-    return 8 * (cells + C * (W + 1))
+    return 8 * (cells + C * (W + 1)) + 2 * M * C
 
 
 class ClusterScores:
@@ -94,8 +94,9 @@ def fit_general(
     above the unit, with ``n_clusters`` levels. Returns a dict with the binarized ATT
     and the ACRT per cell, the cells' dose coefficients, the covariance blocks (V,
     cross and the centered share covariance), the cohorts' weighted sizes, each cell's
-    weight of treated units, the units left out, the total anchor weight and the
-    multiplier draws.
+    weight of treated units and (when clustered) the clusters of its comparison and
+    treated units, the units left out, the total anchor weight and the multiplier
+    draws.
     """
     times = store.times
     M, G, T = len(cells), len(groups), len(times)
@@ -180,6 +181,8 @@ def fit_general(
     basis_x, treated_x = np.zeros((M, K, P)), np.zeros((M, P))
     left_out, cohort_weight = np.zeros(G, dtype=np.int64), np.zeros(G)
     total_weight = 0.0
+    # which clusters each cell's comparison and treated units are in
+    seen = np.zeros((2, M, n_clusters), dtype=bool) if cluster_column is not None else None
 
     def treated_rows(k, y, lv, d):
         treated = groups_array[k] != 0
@@ -190,8 +193,13 @@ def fit_general(
             Pm[use], Dm[use] = basis.values(d[use]), basis.slopes(d[use])
         return treated, kept, Pm, Dm
 
-    for k, y, X, lv, d, w, _, anchor in batches():
+    for k, y, X, lv, d, w, cl, anchor in batches():
         treated, kept, Pm, Dm = treated_rows(k, y, lv, d)
+        if seen is not None:
+            for j in range(M):
+                observed = np.isfinite(y[:, ti[j]]) & np.isfinite(y[:, bases[j]])
+                seen[0, j, cl[observed & controls[j, k]]] = True
+                seen[1, j, cl[observed & (k == gi[j]) & kept]] = True
         np.add.at(left_out, k[treated & ~kept], 1)
         np.add.at(cohort_weight, k[kept], anchor[kept])
         total_weight += float(anchor[kept].sum())
@@ -350,6 +358,7 @@ def fit_general(
         share_cov=share_cov,
         sizes={g: float(cohort_weight[c]) for c, g in enumerate(groups)},
         cell_sizes=size,
+        cell_clusters=seen.sum(axis=2) if seen is not None else None,
         left_out={g: int(left_out[c]) for c, g in enumerate(groups) if g != 0},
         total_weight=total_weight,
         draws=multiplier.draws if multiplier is not None else None,

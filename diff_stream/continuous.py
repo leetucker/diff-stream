@@ -228,6 +228,7 @@ class DoseResponseResult(RegressionResult):
     _theta_draws: np.ndarray | None = field(default=None, repr=False)
     _internal: dict | None = field(default=None, repr=False)
     _periods: object = field(default=None, repr=False)
+    _cluster_count: int | None = field(default=None, repr=False)
     estimator = "continuous"
     cells = ()
     _normal_inference = True
@@ -237,8 +238,12 @@ class DoseResponseResult(RegressionResult):
             raise ValueError("target must be 'level' (ATT) or 'slope' (ACRT)")
         return self._att if target == "level" else self._acrt
 
+    def _crv1(self):
+        G = self._cluster_count or self.n_units
+        return G / (G - 1)
+
     def _factor(self):
-        return self.n_units / (self.n_units - 1) if self.vcov_type == "CRV1" else 1.0
+        return self._crv1() if self.vcov_type == "CRV1" else 1.0
 
     def _curve_map(self, target, dose):
         """The linear map from the cell parameters (coefficients, control means) to the curve."""
@@ -308,7 +313,7 @@ class DoseResponseResult(RegressionResult):
 
         if vcov not in ("CRV0", "CRV1"):
             raise ValueError("vcov must be 'CRV0' or 'CRV1'")
-        factor = self.n_units / (self.n_units - 1)
+        factor = self._crv1()
         ratio = (factor if vcov == "CRV1" else 1) / (factor if self.vcov_type == "CRV1" else 1)
         out = copy(self)
         out.vcov = self.vcov * ratio
@@ -369,6 +374,7 @@ def _continuous(
     weights=None,
     allow_time_varying_weights=False,
     vcov="CRV0",
+    cluster=None,
     bootstrap_reps=0,
     bootstrap_seed=None,
     bootstrap_weights="rademacher",
@@ -430,6 +436,12 @@ def _continuous(
     if panel_mode not in ("balanced", "complete", "unbalanced"):
         raise ValueError("unknown incomplete_units")
     weights_column = weights
+    if cluster is not None and (not isinstance(cluster, str) or not cluster):
+        raise ValueError("cluster must name a column")
+    if cluster is not None and cluster in (panel[0] if panel else None, dose):
+        raise ValueError(
+            "cluster must be a column above the unit (the unit is the default), not the dose"
+        )
     if not isinstance(allow_time_varying_weights, bool):
         raise ValueError("allow_time_varying_weights must be True or False")
     if batch_units is not None:
@@ -442,24 +454,33 @@ def _continuous(
     budget = MemoryBudget(memory_gb, memory_reserve)
     preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline = current_rss_gb() or 0
-    general = adjusted or lowest or force_general or weights is not None
+    general = adjusted or lowest or force_general or weights is not None or cluster is not None
     with thread_scope(threads):
-        n_levels = 1
+        n_levels, n_clusters = 1, 0
+        staged_data = source(data) if adjusted or cluster is not None else data
+        if fixed_effect is not None:
+            staged_data, n_levels = continuous_covariates.join_levels(staged_data, fixed_effect)
+        if cluster is not None:
+            # the clusters are numbered and staged as a design column, like the levels
+            staged_data, n_clusters = continuous_covariates.join_levels(
+                staged_data, [cluster], continuous_covariates.CLUSTER, "cluster"
+            )
+            if n_clusters < 2:
+                raise ValueError("cluster needs at least two clusters")
+        clustered = [continuous_covariates.CLUSTER] if cluster is not None else []
         if adjusted:
             # The design keeps its intercept, so that categorical covariates are coded
             # against a reference level; the intercept and the dose are not covariates.
-            staged_data = source(data)
-            if fixed_effect is not None:
-                staged_data, n_levels = continuous_covariates.join_levels(staged_data, fixed_effect)
             rhs = " + ".join(
                 [dose]
                 + ([covariates] if covariates is not None else [])
                 + ([continuous_covariates.FE] if fixed_effect is not None else [])
+                + clustered
             )
             staged_formula = f"{yname} ~ {rhs}"
         else:
-            staged_data = data
-            staged_formula = f"{yname} ~ 0 + {dose}"  # the dose alone: no column of ones
+            # the dose alone (and the cluster): no column of ones
+            staged_formula = f"{yname} ~ 0 + " + " + ".join([dose] + clustered)
         lf, _, design = inspect(
             staged_formula,
             staged_data,
@@ -516,7 +537,9 @@ def _continuous(
                         f"panel has {len(treated_cohorts)} cohorts), as in the paper's "
                         "Remark 3.1"
                     )
-            covariate_columns, fe_column = [], None
+            covariate_columns, fe_column, cluster_column = [], None, None
+            if cluster is not None:
+                cluster_column = list(store.design.names).index(continuous_covariates.CLUSTER)
             if adjusted:
                 names = list(store.design.names)
                 if dose not in names or "Intercept" not in names:
@@ -528,12 +551,18 @@ def _continuous(
                 covariate_columns = [
                     j
                     for j, c in enumerate(names)
-                    if c not in ("Intercept", dose, continuous_covariates.FE)
+                    if c
+                    not in (
+                        "Intercept",
+                        dose,
+                        continuous_covariates.FE,
+                        continuous_covariates.CLUSTER,
+                    )
                 ]
                 covariate_names = [names[j] for j in covariate_columns]
             else:
                 dose_column = 0
-            if not adjusted and not store.x_time_invariant:
+            if not general and not store.x_time_invariant:
                 raise ValueError("the dose must be constant within each unit")
             pa.default_memory_pool().release_unused()
             times, gc, N, means = store.times, store.gc, store.n_units, store.means
@@ -591,7 +620,7 @@ def _continuous(
                     )
                 if general:
                     numeric += continuous_general.table_bytes(
-                        M, n_levels, len(covariate_columns), K, 0, W
+                        M, n_levels, len(covariate_columns), K, n_clusters, W
                     ) + 8 * B * T * (len(covariate_columns) + 4)
                 return numeric + 8 * treated_units
 
@@ -683,6 +712,8 @@ def _continuous(
                     n_levels=n_levels,
                     covariate_columns=covariate_columns,
                     relabel=relabel,
+                    cluster_column=cluster_column,
+                    n_clusters=n_clusters,
                     bootstrap_reps=bootstrap_reps,
                     bootstrap_seed=bootstrap_seed,
                     bootstrap_weights=bootstrap_weights,
@@ -804,7 +835,10 @@ def _continuous(
                 used_sizes = gc
                 draws = multiplier.draws if multiplier is not None else None
 
-            factor = N / (N - 1) if vcov == "CRV1" else 1.0
+            # standard errors are clustered by unit, or by the clusters above it
+            groups_of_scores = n_clusters if cluster is not None else N
+            factor = groups_of_scores / (groups_of_scores - 1) if vcov == "CRV1" else 1.0
+            clusters_label = {cluster if cluster is not None else panel[0]: groups_of_scores}
             names = [f"g::{g}:t::{t}" for g, t in cells]
             weights = overall_weights(cells, used_sizes)
             diagnostics = dict(
@@ -834,7 +868,10 @@ def _continuous(
                 batch_units=B,
                 partitions=store.partition_count,
                 preprocess_mb=preprocess_mb,
-                inference="unit clustered; analytic influence functions",
+                inference=(f"clustered by {cluster}" if cluster is not None else "unit clustered")
+                + "; analytic influence functions",
+                cluster=cluster,
+                clusters=groups_of_scores,
                 warnings=[],
             )
             if lowest:
@@ -847,6 +884,27 @@ def _continuous(
                 diagnostics["warnings"].append(
                     continuous_covariates.experimental_message(experimental)
                 )
+            if cluster is not None:
+                comparison_clusters, treated_clusters = fit["cell_clusters"]
+                diagnostics.update(
+                    fewest_comparison_clusters=int(comparison_clusters.min()),
+                    fewest_treated_clusters=int(treated_clusters.min()),
+                )
+                if min(comparison_clusters.min(), treated_clusters.min()) < 2:
+                    which = "comparison" if comparison_clusters.min() < 2 else "treated"
+                    message = (
+                        f"In some cohort-periods all the {which} units are in one cluster of "
+                        f"{cluster}, so the clustered standard errors leave out the "
+                        "uncertainty of their mean change and are too small"
+                        + (
+                            ": give reference_dose so that the reference units span several "
+                            "clusters, or cluster more finely"
+                            if lowest and which == "comparison"
+                            else ": cluster more finely"
+                        )
+                    )
+                    diagnostics["warnings"].append(message)
+                    warnings.warn(message, UserWarning, 3)
             if adjusted:
                 diagnostics.update(
                     covariate_names=covariate_names,
@@ -873,10 +931,11 @@ def _continuous(
                         beta=values,
                         vcov=V[s, s] * factor,
                         vcov_type=vcov,
-                        df_t=N - 1,
-                        all_vcovs={vcov: (V[s, s] * factor, N - 1)},
+                        df_t=groups_of_scores - 1,
+                        all_vcovs={vcov: (V[s, s] * factor, groups_of_scores - 1)},
                         n_obs=store.n_rows_used,
-                        n_clusters={panel[0]: N},
+                        n_clusters=clusters_label,
+                        _cluster_count=n_clusters or None,
                         estimator="cs",
                         cells=cells,
                         counts=counts,
@@ -922,11 +981,12 @@ def _continuous(
                 beta=np.array([weights @ att, weights @ acrt]),
                 vcov=overall_vcov,
                 vcov_type=vcov,
-                df_t=N - 1,
-                all_vcovs={vcov: (overall_vcov, N - 1)},
+                df_t=groups_of_scores - 1,
+                all_vcovs={vcov: (overall_vcov, groups_of_scores - 1)},
                 n_obs=store.n_rows_used,
-                n_clusters={panel[0]: N},
+                n_clusters=clusters_label,
                 n_units=N,
+                _cluster_count=n_clusters or None,
                 diagnostics=diagnostics,
                 _att=att_result,
                 _acrt=acrt_result,
@@ -965,6 +1025,7 @@ def did_continuous(
     allow_time_varying_weights=False,
     incomplete_units="error",
     vcov="CRV0",
+    cluster=None,
     multiplier_bootstrap_reps=0,
     multiplier_bootstrap_seed=None,
     multiplier_bootstrap_weights="rademacher",
@@ -1050,7 +1111,13 @@ def did_continuous(
         What to do with units missing some periods: refuse the data, drop those
         units, or keep them (experimental: each comparison then uses the units
         observed in both of its periods).
-    {VCOV}
+    vcov : {"CRV0", "CRV1"}, default "CRV0"
+        Standard errors clustered by unit, or by ``cluster``. CRV1 multiplies the
+        variance by G/(G-1), with G the units or clusters.
+    cluster : str, optional
+        A column to cluster the standard errors by, above the unit (such as the
+        group that shares the dose, or a region): constant within each unit.
+        Default: the unit.
     multiplier_bootstrap_reps : int, default 0
         Draws of the multiplier bootstrap, for simultaneous confidence bands over
         doses (``dose_response(uniform=True)``). 0 skips it.
