@@ -113,8 +113,9 @@ fit = did_dcdh("y ~ 1", data, panel=("county", "year"), treatment="tax_rate",
   authors note: in their simulations they are conservative with a correctly
   specified polynomial and can be too small with a misspecified one. Every fit issues
   a `ContinuousBaselineWarning` saying so. Checking how the estimates change with k
-  is a useful guard. The authors also suggest a bootstrap, which `did_dcdh` does not
-  provide.
+  is a useful guard, as is the bootstrap the authors recommend:
+  `refit_bootstrap(..., estimator=did_dcdh, continuous_baseline=k)` (see
+  [Inference](#inference)).
 
 ## Inference
 
@@ -130,6 +131,11 @@ the groups' terms are summed by cluster, and the demeaning's degrees-of-freedom
 correction counts distinct clusters rather than groups. The variance has no
 small-sample factor, and the degrees of freedom are the clusters less one. Each
 group must be in one cluster.
+
+**Bootstrap.** `refit_bootstrap(..., estimator=did_dcdh, treatment="policy")`
+resamples groups with replacement, or whole clusters with `cluster=`, and refits
+on each draw, as `did_multiplegt_dyn`'s `bootstrap` option does (see
+[the refit bootstrap](../inference.md#refit-bootstrap-every-estimator)).
 
 The fit stages the panel once and reads it three times: for the baselines and switch
 periods, for sums by baseline and period, and for each group's scores. With

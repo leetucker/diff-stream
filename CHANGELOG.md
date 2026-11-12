@@ -23,6 +23,9 @@
   except where contdid has known problems, in its dose-response curves and its
   standard errors, and its discrete dose matches Python's diff-diff except in standard
   errors that treat estimated shares as known (see Differences from other packages).
+- **`refit_bootstrap`'s machinery moved to hdfe-stream** (`hdfe_stream.core.refit`, with
+  its resampling, partitions and worker processes), where other packages built on
+  hdfe-stream can use it. Seeded draws are unchanged.
 - **`did_dcdh`**: de Chaisemartin and D'Haultfoeuille's event-study estimator
   (`did_multiplegt_dyn`) for a treatment that may take several values and switch on and
   off. It gives the effects l periods after the first switch, placebos and the average
@@ -37,7 +40,8 @@
   above the group (`cluster`), and a continuous first-period treatment is compared
   through a polynomial in it (`continuous_baseline`, the authors' `continuous`
   option), whose standard errors the authors caution may be too small; fits with it
-  issue a `ContinuousBaselineWarning`.
+  issue a `ContinuousBaselineWarning`. `refit_bootstrap` takes `did_dcdh`, resampling
+  groups or, with `cluster`, whole clusters, as the authors' bootstrap does.
 
 ## 0.1.0
 

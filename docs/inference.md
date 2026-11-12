@@ -45,8 +45,8 @@ draws (repetitions by coefficients) are all that is kept.
 
 ## Refit bootstrap (every estimator)
 
-`refit_bootstrap` resamples whole units with replacement and refits the
-estimator on each sample, re-estimating its propensity scores, trimming, first
+`refit_bootstrap` resamples whole units (or, for `did_dcdh` with `cluster=`,
+whole clusters) with replacement and refits the estimator on each sample, re-estimating its propensity scores, trimming, first
 stage and aggregation weights. It costs about `reps` fits, so use it when the
 analytic standard errors are in doubt: few clusters, heavy trimming, or a
 check on a final specification.
@@ -66,10 +66,16 @@ boot.confint(method="basic")        # or "normal"
 boot.failures()                     # draws that could not be fitted
 ```
 
-- **`estimator`**: any of the five estimator functions; its options follow as
+- **`estimator`**: `did_callaway_santanna`, `did_sun_abraham`, `did_bjs`,
+  `did_two_stage`, `did_extended_twfe` or `did_dcdh`; its options follow as
   keywords. **`aggregate`** bootstraps an aggregate instead of the fitted
-  coefficients (not for `did_two_stage`, whose coefficients are reported
-  directly); **`coefficients`** selects names.
+  coefficients (not for `did_two_stage` and `did_dcdh`, whose coefficients are
+  reported directly); **`coefficients`** selects names.
+- **`did_dcdh`** takes `treatment=` in place of `cohort=`. With `cluster=`, the
+  draws are of whole clusters, as in `did_multiplegt_dyn`'s bootstrap, and each
+  copy's groups get IDs of their own. The authors recommend the bootstrap with a
+  continuous first-period treatment (`continuous_baseline`), whose analytic
+  standard errors may be too small.
 - The original fit fixes the sample: dropped incomplete units and a
   last-treated cutoff stay as they were. A draw that cannot be fitted (it lost
   a cohort, say) is recorded in `failures()` and never redrawn; standard errors

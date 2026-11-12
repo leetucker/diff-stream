@@ -191,7 +191,12 @@ differences:
 - *Options not implemented:* `same_switchers`,
   `same_switchers_pl`, `less_conservative_se`, `more_granular_demeaning`,
   `dont_drop_larger_lower`, `drop_if_d_miss_before_first_switch`, `date_first_switch`,
-  `by`, `by_path`, `predict_het` and `bootstrap`.
+  `by`, `by_path` and `predict_het`.
+- *Bootstrap.* `did_multiplegt_dyn`'s `bootstrap` resamples groups, or clusters with
+  `cluster`, and refits; `refit_bootstrap(estimator=did_dcdh)` does the same. The
+  draws use different random numbers, so the standard errors agree only up to
+  simulation error: with 500 draws each, on the validation panel, within 4%
+  (within about one simulation standard deviation), with and without clusters.
 
 **Aggregation.** `horizons` filters event times for every kind of
 aggregation, including calendar, where R did ignores its event-time limits.
