@@ -125,6 +125,12 @@ its point estimates, with these differences:
   and a fixed effect are allowed (experimental), as is a group of reference doses
   (`reference_dose`), which equals diff-diff's estimates with those doses set to one
   value.
+- *Unbalanced panels (experimental here).* contdid and diff-diff require a balanced
+  panel. With `incomplete_units="keep"`, each comparison here uses the units observed
+  in both of its periods, unlike R did's unbalanced panels (and
+  `did_callaway_santanna`'s), which compare each period's observed rows as repeated
+  cross sections. So with missing periods the effect of being treated differs from
+  `did_callaway_santanna(..., incomplete_units="keep")`.
 - *The overall ATT* is a cohort-weighted average of post-treatment cells, R did's
   `aggte(type = "group")`. `aggregate("overall")` weights cells by their units
   instead, as for Callaway-Sant'Anna.

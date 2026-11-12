@@ -10,7 +10,9 @@
   B-spline) or take a few values (`dose_type="discrete"`, a mean for each). When
   every unit is treated at one date, `control_group="lowest_dose"` compares each dose
   with the units at the lowest dose (the paper's Remark 3.1), or with those up to
-  `reference_dose`, for effects relative to theirs.
+  `reference_dose`, for effects relative to theirs. Unbalanced panels
+  (`incomplete_units="keep"`) are experimental: each comparison uses the units
+  observed in both of its periods.
   Covariates and one absorbed fixed effect (`"y ~ x | region"`) are experimental: the
   authors have not developed them, and fits with them issue an `ExperimentalWarning`
   (a subclass of hdfe-stream's) that links to their assumptions. It takes

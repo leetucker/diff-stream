@@ -32,9 +32,11 @@ fit.aggregate(target="slope").summary()  # event study of the ACRT
   [Your data](../data.md)). Units may be treated at different times; the panel needs
   never-treated units, unless every unit is treated at the same date (see
   [No untreated units](#no-untreated-units-the-lowest-dose-comparison)).
-- The panel must be balanced: `incomplete_units="drop"` drops units with missing
-  periods. Sampling weights are not supported. Covariates and a fixed effect are
-  experimental (see [Experimental extensions](#experimental-extensions)).
+- The panel should be balanced: `incomplete_units="drop"` drops units with missing
+  periods, and `"keep"` keeps them (experimental, see
+  [An unbalanced panel](#an-unbalanced-panel)). Sampling weights are not supported.
+  Covariates and a fixed effect are experimental (see
+  [Experimental extensions](#experimental-extensions)).
 
 ## What comes from the paper, and what goes further
 
@@ -45,6 +47,7 @@ fit.aggregate(target="slope").summary()  # event study of the ACRT
 | No untreated units: the units at the lowest dose as the comparison (`control_group="lowest_dose"`) | The paper's Remark 3.1 | diff-diff | no |
 | The units up to a dose as the comparison (`reference_dose`) | Remark 3.1 with a group of doses in place of one (derived [below](#a-group-of-reference-doses)) | diff-diff, with the reference units' doses set to one value | no |
 | Covariates and a fixed effect (`"y ~ x \| region"`) | An extension; the paper shows what is identified given covariates (Supplementary Appendix SE.3) but develops no estimator | diff-diff's regression adjustment; Callaway-Sant'Anna; a direct calculation | yes |
+| An unbalanced panel (`incomplete_units="keep"`) | An extension; the paper assumes a balanced panel | A direct calculation | yes |
 
 Features from the paper need the paper's assumptions, described with each. The
 experimental ones need further assumptions, set out in
@@ -218,8 +221,33 @@ doses that are spread the same way in every level. Otherwise the curve's level a
 its slope also reflect how the reference effect differs between the levels that
 units at each dose come from.
 
-The standard errors include the estimation of the comparison regressions. Once you
-have weighed these conditions, you can silence the warning with
+The standard errors include the estimation of the comparison regressions.
+
+### An unbalanced panel
+
+With `incomplete_units="keep"`, units missing some periods are kept. Each cohort and
+period then compares the units observed in both that period and its base period:
+the dose regression, the comparison units' change and the effect of being treated
+use those units only, so the units can differ from one period to the next. A unit
+counts toward its cohort's share of the treated units whatever periods it has. The
+number of treated units in each cohort-period is the `observed_units` column of
+`cohort_time()`.
+
+This is not R did's treatment of an unbalanced panel, which `did_callaway_santanna`
+follows: there, each period's observed rows are compared as repeated cross
+sections. Here the comparisons stay within units, as in a balanced panel, which keeps
+the unit's own baseline in each comparison.
+
+The estimates for each period are those of the units observed in it. They are the
+effects for all units only if whether a unit is observed in two periods is unrelated
+to its untreated outcome change and its effects, given its cohort and dose (and its
+covariates and fixed-effect level, if any). Event studies and the overall effects
+average periods whose units can differ, so a change across event times can reflect
+a change in which units are observed; `incomplete_units="drop"` keeps one set of
+units throughout. A fit on a panel that turns out to be balanced is the usual fit and
+does not warn.
+
+Once you have weighed these conditions, you can silence the warning with
 `warnings.filterwarnings("ignore", category=diff_stream.ExperimentalWarning)`;
 `hdfe_stream.ExperimentalWarning` silences it for every package built on hdfe-stream.
 
@@ -265,6 +293,10 @@ diff-diff's overall ACRT standard error treats the treated units' average slope 
 known, as above, and is checked the same way. With a fixed effect and covariates,
 every standard error equals a direct calculation, and an absorbed fixed effect equals
 its dummies.
+
+An unbalanced panel, with and without covariates and a fixed effect, with both
+comparison groups and with the lowest-dose comparison, is checked against a direct
+calculation of each estimate and its standard error; no package implements it.
 
 Covariates are checked against diff-diff's regression adjustment
 (`estimation_method="reg"`), with a covariate that changes over time and the region
