@@ -86,9 +86,10 @@ OpenMP libraries in it wait the same way. On Windows, numba's OpenMP runtime doe
 read the variable, so it changes nothing there.
 
 `refit_bootstrap(n_workers=k)` divides `n_threads` and the memory left among
-its k worker processes. Each parallel refit starts a fresh process, which takes
-one to two seconds before it fits, so workers pay off when a single fit takes
-longer than that; for small panels, one worker is faster.
+its k worker processes. The workers start once (one to two seconds each) and
+fit one draw after another, so parallel refits pay off even on small panels;
+each is restarted after 200 draws, so that memory a process keeps cannot
+build up. Only one resampled panel per worker is on disk at a time.
 
 ## Profiling: `profile=True`
 
