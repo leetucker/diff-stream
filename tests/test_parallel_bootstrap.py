@@ -49,7 +49,10 @@ def test_parallel_draws_match_serial_and_use_divided_threads(estimator, last, tm
     assert [v["draw"] for v in resources] == [0, 1, 2]
     assert all(v["polars_threads"] == 1 for v in resources)
     assert all(v["pid"] != os.getpid() for v in resources)
-    assert [v["refits"] for v in parallel.diagnostics["parallel_batches"]] == [2, 1]
+    # two persistent workers, started once, served the three draws
+    assert parallel.diagnostics["persistent_workers"] is True
+    assert parallel.diagnostics["parallel_batches"][0]["worker_processes"] == 2
+    assert len({v["pid"] for v in resources}) == 2
     assert not list(tmp_path.iterdir())
 
 
@@ -115,17 +118,21 @@ def test_parallel_validates_resources_before_starting_workers(tmp_path):
 def test_remote_errors_propagate_and_clean_scratch(failure, monkeypatch, tmp_path):
     import hdfe_stream.core.refit as module
 
-    original = module._parallel_refits
+    original = module._persistent_refits
 
-    def invalid_task(tasks, *args, **kwargs):
+    def invalid_task(prepare, record, reps, workers, threads, memory_gb, **kwargs):
         if failure == "programming":
-            # A genuine subprocess KeyError must abort, not become a failed draw.
-            del tasks[0]["fml"]
-        else:
-            args = (*args[:-1], 0.1)  # Force the child estimator's MemoryBudget guard.
-        return original(tasks, *args, **kwargs)
+            # A genuine KeyError in a worker must abort, not become a failed draw.
+            def broken(b):
+                task = prepare(b)
+                del task["fml"]
+                return task
 
-    monkeypatch.setattr(module, "_parallel_refits", invalid_task)
+            return original(broken, record, reps, workers, threads, memory_gb, **kwargs)
+        # Force the child estimator's MemoryBudget guard.
+        return original(prepare, record, reps, workers, threads, 0.1, **kwargs)
+
+    monkeypatch.setattr(module, "_persistent_refits", invalid_task)
     with pytest.raises(KeyError if failure == "programming" else MemoryError):
         refit_bootstrap(
             "y~1",
