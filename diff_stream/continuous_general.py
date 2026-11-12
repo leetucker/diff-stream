@@ -93,8 +93,9 @@ def fit_general(
     lowest-dose comparison); ``cluster_column`` the design column of a cluster index
     above the unit, with ``n_clusters`` levels. Returns a dict with the binarized ATT
     and the ACRT per cell, the cells' dose coefficients, the covariance blocks (V,
-    cross and the centered share covariance), the cohorts' weighted sizes and units
-    left out, the total anchor weight and the multiplier draws.
+    cross and the centered share covariance), the cohorts' weighted sizes, each cell's
+    weight of treated units, the units left out, the total anchor weight and the
+    multiplier draws.
     """
     times = store.times
     M, G, T = len(cells), len(groups), len(times)
@@ -348,6 +349,7 @@ def fit_general(
         cross=cross,
         share_cov=share_cov,
         sizes={g: float(cohort_weight[c]) for c, g in enumerate(groups)},
+        cell_sizes=size,
         left_out={g: int(left_out[c]) for c, g in enumerate(groups) if g != 0},
         total_weight=total_weight,
         draws=multiplier.draws if multiplier is not None else None,

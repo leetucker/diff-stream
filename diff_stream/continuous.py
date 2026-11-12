@@ -392,13 +392,6 @@ def _continuous(
         )
         if used
     ]
-    if experimental and not profile:
-        # stacklevel 3: the caller of did_continuous
-        warnings.warn(
-            continuous_covariates.experimental_message(experimental),
-            continuous_covariates.ExperimentalWarning,
-            3,
-        )
     if not isinstance(dose, str) or not dose.isidentifier():
         raise ValueError("dose must name a numeric column")
     if panel is None or len(panel) != 2 or dose in panel or dose == yname:
@@ -432,10 +425,8 @@ def _continuous(
         raise ValueError("unknown base_period")
     if vcov not in ("CRV0", "CRV1"):
         raise ValueError("vcov must be 'CRV0' or 'CRV1'")
-    if panel_mode not in ("balanced", "complete"):
-        raise ValueError(
-            "did_continuous needs a balanced panel: incomplete_units must be 'error' or 'drop'"
-        )
+    if panel_mode not in ("balanced", "complete", "unbalanced"):
+        raise ValueError("unknown incomplete_units")
     if batch_units is not None:
         _validated("batch_units", batch_units, 1)
     if threads is not None:
@@ -491,6 +482,17 @@ def _continuous(
                 require_never_treated=not lowest,
                 single_group=lowest,
             )
+            if not store.is_balanced:
+                # each comparison then uses the units observed in both its periods
+                general = True
+                experimental.append("an unbalanced panel")
+            if experimental and not profile:
+                # stacklevel 3: the caller of did_continuous
+                warnings.warn(
+                    continuous_covariates.experimental_message(experimental),
+                    continuous_covariates.ExperimentalWarning,
+                    3,
+                )
             if lowest:
                 treated_cohorts = [g for g in store.gc if g != 0]
                 if 0 in store.gc:
@@ -817,6 +819,7 @@ def _continuous(
                 input_units=store.n_units_input,
                 dropped_units=store.n_units_input - N,
                 periods=T,
+                balanced=store.is_balanced,
                 batch_units=B,
                 partitions=store.partition_count,
                 preprocess_mb=preprocess_mb,
@@ -867,7 +870,7 @@ def _continuous(
                         cells=cells,
                         counts=counts,
                         observed_counts=(
-                            counts
+                            fit["cell_sizes"]
                             if general
                             else np.array(
                                 [store.cell_counts[g][t - times[0]] for g, t in cells],
@@ -1022,9 +1025,10 @@ def did_continuous(
         The doses at which ``dose_response()`` evaluates the curves. Default: the
         10th to 99th percentiles of the treated doses, in steps of 1, as in contdid;
         with a discrete dose, its values (and only they can be given).
-    incomplete_units : {"error", "drop"}, default "error"
-        What to do with units missing some periods: refuse the data or drop
-        those units.
+    incomplete_units : {"error", "drop", "keep"}, default "error"
+        What to do with units missing some periods: refuse the data, drop those
+        units, or keep them (experimental: each comparison then uses the units
+        observed in both of its periods).
     {VCOV}
     multiplier_bootstrap_reps : int, default 0
         Draws of the multiplier bootstrap, for simultaneous confidence bands over
