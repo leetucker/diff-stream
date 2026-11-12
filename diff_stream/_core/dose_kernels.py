@@ -77,42 +77,137 @@ def dose_scores(
     return out
 
 
-@njit(cache=True)
-def comparison_sums(gidx, y, X, levels, periods, n, sx, sy, xx, xy):
-    """Sums of the comparison regressions, by cohort, covariate period and level.
+@njit(cache=True, parallel=True)
+def cell_comparison_sums(gidx, y, X, levels, w, gi, ti, bases, period, controls, n, sx, sy, xx, xy):
+    """Weighted sums of each cell's comparison regression, by fixed-effect level.
 
-    For each unit (cohort ``gidx``) and each covariate period ``periods[q]``, with
-    covariates ``X[:, p]`` and fixed-effect level ``levels[:, p]`` at that period:
-    ``n[k, q, l]`` counts the units, ``sx[k, q, l]`` sums their covariates and
-    ``sy[k, q, l, s]`` their outcome in each period s; ``xx[k, q]`` sums the
-    covariates' outer products and ``xy[k, q, :, s]`` their products with the outcome.
+    A unit enters cell j if its group is one of the cell's comparisons and its outcome
+    is observed in the period compared and the base period, with weight
+    ``w[i, ti[j]]`` (its weight in the period compared) and its covariates and level
+    at the cell's covariate period ``period[j]``. ``n[j, l]`` sums the weights,
+    ``sx[j, l]`` the weighted covariates and ``sy[j, l]`` the weighted outcome
+    changes; ``xx[j]`` and ``xy[j]`` the weighted products. Cells are summed in
+    parallel, so no two threads write the same entries.
     """
-    B, T = y.shape
+    B = y.shape[0]
+    M = len(gi)
     P = X.shape[2]
-    for i in range(B):
-        k = gidx[i]
-        for q in range(len(periods)):
-            p = periods[q]
+    for j in prange(M):
+        t, b, p = ti[j], bases[j], period[j]
+        for i in range(B):
+            if not controls[j, gidx[i]]:
+                continue
+            yt, yb = y[i, t], y[i, b]
+            if not (np.isfinite(yt) and np.isfinite(yb)):
+                continue
+            om = w[i, t]
             lv = levels[i, p]
-            n[k, q, lv] += 1.0
-            for s in range(T):
-                sy[k, q, lv, s] += y[i, s]
+            dy = yt - yb
+            n[j, lv] += om
+            sy[j, lv] += om * dy
             for a in range(P):
                 xa = X[i, p, a]
-                sx[k, q, lv, a] += xa
-                for b in range(P):
-                    xx[k, q, a, b] += xa * X[i, p, b]
-                for s in range(T):
-                    xy[k, q, a, s] += xa * y[i, s]
+                sx[j, lv, a] += om * xa
+                xy[j, a] += om * xa * dy
+                for c in range(P):
+                    xx[j, a, c] += om * xa * X[i, p, c]
 
 
 @njit(cache=True, parallel=True)
-def adjusted_scores(
+def kept_units(gidx, treated, y, levels, gi, ti, bases, period, count):
+    """Whether each treated unit's level has comparison units in every cell of its
+    cohort in which the unit is observed (other units are always kept)."""
+    B = y.shape[0]
+    out = np.ones(B, dtype=np.bool_)
+    for i in prange(B):
+        if not treated[i]:
+            continue
+        for j in range(len(gi)):
+            if gi[j] != gidx[i]:
+                continue
+            if not (np.isfinite(y[i, ti[j]]) and np.isfinite(y[i, bases[j]])):
+                continue
+            if count[j, levels[i, period[j]]] <= 0.0:
+                out[i] = False
+                break
+    return out
+
+
+@njit(cache=True, parallel=True)
+def cell_treated_sums(
     gidx,
     kept,
     y,
     X,
     levels,
+    w,
+    psi,
+    dpsi,
+    gi,
+    ti,
+    bases,
+    period,
+    gamma,
+    alpha,
+    A,
+    S,
+    total,
+    size,
+    slope,
+    level_basis,
+    level_count,
+    basis_x,
+    treated_x,
+):
+    """Weighted moments of each cell's treated units, on their adjusted changes.
+
+    A kept unit of the cell's cohort that is observed in both of its periods has
+    adjusted change ``a = dY - X'gamma - alpha[level]`` and weight ``w[i, ti[j]]``.
+    The sums are those of the dose regression (``A``, ``S``), the binarized ATT
+    (``total``, ``size``), the average slope of the basis (``slope``), and what the
+    comparison units' influence needs (by level, and with the covariates).
+    """
+    B = y.shape[0]
+    M = len(gi)
+    K = psi.shape[1]
+    P = X.shape[2]
+    for j in prange(M):
+        g, t, b, p = gi[j], ti[j], bases[j], period[j]
+        for i in range(B):
+            if gidx[i] != g or not kept[i]:
+                continue
+            yt, yb = y[i, t], y[i, b]
+            if not (np.isfinite(yt) and np.isfinite(yb)):
+                continue
+            om = w[i, t]
+            lv = levels[i, p]
+            a = yt - yb - alpha[j, lv]
+            for c in range(P):
+                a -= X[i, p, c] * gamma[j, c]
+            total[j] += om * a
+            size[j] += om
+            level_count[j, lv] += om
+            for c in range(P):
+                treated_x[j, c] += om * X[i, p, c]
+            for r in range(K):
+                pr = om * psi[i, r]
+                S[j, r] += pr * a
+                slope[j, r] += om * dpsi[i, r]
+                level_basis[j, lv, r] += pr
+                for c in range(K):
+                    A[j, r, c] += pr * psi[i, c]
+                for c in range(P):
+                    basis_x[j, r, c] += pr * X[i, p, c]
+
+
+@njit(cache=True, parallel=True)
+def general_scores(
+    gidx,
+    kept,
+    y,
+    X,
+    levels,
+    w,
     psi,
     dpsi,
     gi,
@@ -135,16 +230,17 @@ def adjusted_scores(
     local,
     width,
 ):
-    """Each unit's scores for the covariate-adjusted dose fit, in sum scale.
+    """Each unit's scores for the general (weighted, adjusted) dose fit, in sum scale.
 
     The layout is that of ``dose_scores`` (binarized ATT, ACRT, the cells' dose
-    coefficients, and a block for the control mean change, here always zero). A
-    treated unit's change is adjusted by its cell's comparison regression,
-    ``a = dY - X'gamma - alpha[level]``; a kept treated unit scores as in the
-    unadjusted fit, on ``a``. A comparison unit with residual ``e`` moves the cell's
-    dose coefficients by ``-e (level_weight[level] + slope_weight X)``, which carries
-    the estimation of the regression into them (``att_*`` the same for the binarized
-    ATT). Treated units that are not ``kept`` have no scores in their cohort's cells.
+    coefficients, and a block for the control mean change, here always zero). Every
+    quantity is per cell: ``sizes[j]`` is the cell's treated weight, ``ainv[j]`` its
+    inverse dose moments, ``dbar[j]`` its treated units' average basis slope. A kept
+    treated unit observed in the cell scores on its adjusted change ``a`` with weight
+    ``w[i, ti[j]]``; a comparison unit with residual ``a`` moves the cell's
+    coefficients by ``-w a (level_weight[level] + slope_weight X)`` (``att_*`` the
+    same for the binarized ATT). Units not observed in both of a cell's periods have
+    no scores in it, and treated units that are not ``kept`` none in their cohort's.
     """
     B = y.shape[0]
     M = len(gi)
@@ -160,41 +256,45 @@ def adjusted_scores(
                 continue
             if not own and not controls[j, k]:
                 continue
-            p = period[j]
+            t, b, p = ti[j], bases[j], period[j]
+            yt, yb = y[i, t], y[i, b]
+            if not (np.isfinite(yt) and np.isfinite(yb)):
+                continue
+            om = w[i, t]
             lv = levels[i, p]
-            a = y[i, ti[j]] - y[i, bases[j]] - alpha[j, lv]
+            a = yt - yb - alpha[j, lv]
             for c in range(P):
                 a -= X[i, p, c] * gamma[j, c]
             column = first_beta + j * K
             if own:
-                out[i, local[k, j]] = (a - att[j]) / sizes[k]
+                out[i, local[k, j]] = om * (a - att[j]) / sizes[j]
                 fit = 0.0
                 slope = 0.0
                 for c in range(K):
                     fit += psi[i, c] * beta[j, c]
                     slope += dpsi[i, c] * beta[j, c]
-                e = a - fit
+                e = om * (a - fit)
                 projected = 0.0
                 for c in range(K):
                     u = 0.0
                     for d in range(K):
-                        u += ainv[k, c, d] * psi[i, d]
+                        u += ainv[j, c, d] * psi[i, d]
                     u *= e
                     out[i, local[k, column + c]] = u
-                    projected += dbar[k, c] * u
-                out[i, local[k, M + j]] = (slope - acrt[j]) / sizes[k] + projected
+                    projected += dbar[j, c] * u
+                out[i, local[k, M + j]] = om * (slope - acrt[j]) / sizes[j] + projected
             else:
-                g = gi[j]
-                w = att_level_weight[j, lv]
+                r = om * a
+                v0 = att_level_weight[j, lv]
                 for c in range(P):
-                    w += att_slope_weight[j, c] * X[i, p, c]
-                out[i, local[k, j]] = -a * w
+                    v0 += att_slope_weight[j, c] * X[i, p, c]
+                out[i, local[k, j]] = -r * v0
                 projected = 0.0
                 for c in range(K):
                     v = level_weight[j, lv, c]
                     for d in range(P):
                         v += slope_weight[j, c, d] * X[i, p, d]
-                    out[i, local[k, column + c]] = -a * v
-                    projected += dbar[g, c] * v
-                out[i, local[k, M + j]] = -a * projected
+                    out[i, local[k, column + c]] = -r * v
+                    projected += dbar[j, c] * v
+                out[i, local[k, M + j]] = -r * projected
     return out

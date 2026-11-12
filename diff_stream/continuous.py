@@ -28,7 +28,7 @@ from scipy.interpolate import BSpline
 from scipy.special import ndtri
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
-from . import _docs, _options, continuous_covariates
+from . import _docs, _options, continuous_covariates, continuous_general
 from ._core.dose_kernels import dose_scores
 from ._core.multiplier import (
     MAX_DRAW_ENTRIES,
@@ -92,16 +92,18 @@ class DiscreteDoseBasis:
 
     Column j is 1{D = d_j}, so a cell's coefficient j is the mean outcome change of
     its units at dose d_j, and ATT(d_j) is that mean less the control mean change.
-    ACRT(d_j) = (ATT(d_j) - ATT(d_{j-1})) / (d_j - d_{j-1}), with d_0 = 0 and
-    ATT(0) = 0. For j > 1 the control mean cancels; ACRT(d_1) = ATT(d_1) / d_1
-    keeps it, with weight ``slope_control``.
+    ACRT(d_j) = (ATT(d_j) - ATT(d_{j-1})) / (d_j - d_{j-1}), with d_0 = ``base``
+    (0, or the reference dose d_L of the lowest-dose comparison) and ATT(d_0) = 0.
+    For j > 1 the control mean cancels; ACRT(d_1) = ATT(d_1) / (d_1 - d_0) keeps it,
+    with weight ``slope_control``.
     """
 
-    def __init__(self, levels):
+    def __init__(self, levels, base=0.0):
         self.levels = np.asarray(levels, dtype=float)
         self.width = len(self.levels)
         self.lower, self.upper = float(self.levels[0]), float(self.levels[-1])
-        self._gap = np.diff(np.r_[0.0, self.levels])
+        self.base = float(base)
+        self._gap = np.diff(np.r_[self.base, self.levels])
 
     def _index(self, d):
         d = np.atleast_1d(np.asarray(d, dtype=float))
@@ -135,28 +137,50 @@ class DiscreteDoseBasis:
 
     def slope_control(self, d):
         j = self._index(d)
-        return np.where(j == 0, 1.0 / self.levels[0], 0.0)
+        return np.where(j == 0, 1.0 / self._gap[0], 0.0)
 
 
 MAX_DOSE_LEVELS = 1000
 
 
-def _dose_levels(store, column=0):
-    """The treated units' distinct doses, in one pass over the staged units."""
-    levels = np.empty(0)
+def _treated_doses(store, column, count):
+    """The treated units' doses, in one pass over the staged units, in an array of
+    ``count`` filled in place."""
+    doses = np.empty(count)
+    filled = 0
     for g, _, x in store.batches(include_x=True):
-        mine = x[g != 0, 0, column]
+        v = x[g != 0, :, column]
+        mine = np.nanmax(v, axis=1) if v.shape[0] else np.empty(0)
+        if np.any(np.nanmin(v, axis=1) != mine):
+            raise ValueError("the dose must be constant within each unit")
         if np.any(mine <= 0):
             raise ValueError("treated units must have a positive dose")
-        levels = np.union1d(levels, mine)
-        if len(levels) > MAX_DOSE_LEVELS:
-            raise ValueError(
-                f"a discrete dose takes at most {MAX_DOSE_LEVELS} values; this one takes "
-                "more: use dose_type='continuous'"
-            )
-    if not len(levels):
+        doses[filled : filled + len(mine)] = mine
+        filled += len(mine)
+    if not filled:
         raise ValueError("no treated units")
+    return doses[:filled]
+
+
+def _discrete_levels(doses):
+    levels = np.unique(doses)
+    if len(levels) > MAX_DOSE_LEVELS:
+        raise ValueError(
+            f"a discrete dose takes at most {MAX_DOSE_LEVELS} values; this one takes "
+            "more: use dose_type='continuous'"
+        )
     return levels
+
+
+def _reference(doses, reference_dose):
+    """The lowest-dose comparison's reference: a test of each dose, and its value."""
+    if reference_dose is None:
+        value = float(doses.min())
+        tolerance = 1e-9 * max(1.0, abs(value))
+        return (lambda d: np.abs(d - value) <= tolerance), value
+    value = float(reference_dose)
+    tolerance = 1e-9 * max(1.0, abs(value))
+    return (lambda d: d <= value + tolerance), value
 
 
 def _validated(name, value, low, kind=Integral):
@@ -307,10 +331,17 @@ class DoseResponseResult(RegressionResult):
             dose = f"discrete dose: {len(d['dose_levels'])} levels"
         else:
             dose = f"dose spline: degree {d['degree']}, {d['interior_knots']} interior knots"
+        control = d["control_group"]
+        if control == "lowest_dose":
+            control = (
+                f"units at the lowest dose, {d['reference_dose']:g}"
+                if d["reference"] == "lowest dose"
+                else f"units with doses up to {d['reference_dose']:g}"
+            ) + " (estimates are relative to theirs)"
         lines = [
             f"estimator: {PUBLIC}; units: {self.n_units:,}",
             *super()._summary_lines(),
-            f"{dose}; control group: {d['control_group']}",
+            f"{dose}; control group: {control}",
         ]
         if d.get("covariate_names") is not None:
             fe = f"; fixed effect: {d['fixed_effect']}" if d.get("fixed_effect") else ""
@@ -330,6 +361,7 @@ def _continuous(
     control_group="notyettreated",
     base_period="varying",
     anticipation=0,
+    reference_dose=None,
     dose_type="continuous",
     degree=None,
     interior_knots=0,
@@ -346,13 +378,26 @@ def _continuous(
     profile=False,
     batch_units=None,
     preprocess_mb=None,
+    force_general=False,
 ):
+    # force_general (tests only): the general fit even when the unadjusted one applies
     yname, covariates, fixed_effect = continuous_covariates.parse(fml, dose, panel)
     adjusted = covariates is not None or fixed_effect is not None
-    if adjusted and not profile:
+    lowest = control_group == "lowestdose"
+    experimental = [
+        phrase
+        for phrase, used in (
+            ("covariates", covariates is not None),
+            ("a fixed effect", fixed_effect is not None),
+        )
+        if used
+    ]
+    if experimental and not profile:
         # stacklevel 3: the caller of did_continuous
         warnings.warn(
-            continuous_covariates.EXPERIMENTAL, continuous_covariates.ExperimentalWarning, 3
+            continuous_covariates.experimental_message(experimental),
+            continuous_covariates.ExperimentalWarning,
+            3,
         )
     if not isinstance(dose, str) or not dose.isidentifier():
         raise ValueError("dose must name a numeric column")
@@ -366,8 +411,23 @@ def _continuous(
     degree = _validated("degree", 3 if degree is None else degree, 1)
     interior_knots = _validated("interior_knots", interior_knots, 0)
     anticipation = _validated("anticipation", anticipation, 0)
-    if control_group not in ("nevertreated", "notyettreated"):
+    if control_group not in ("nevertreated", "notyettreated", "lowestdose"):
         raise ValueError("unknown control_group")
+    if reference_dose is not None:
+        if not lowest:
+            raise ValueError("reference_dose applies only to control_group='lowest_dose'")
+        if discrete:
+            raise ValueError(
+                "with a discrete dose the reference is its lowest level: leave reference_dose "
+                "unset (recode the dose to merge levels into one reference level)"
+            )
+        if (
+            isinstance(reference_dose, bool)
+            or not isinstance(reference_dose, Real)
+            or not np.isfinite(reference_dose)
+            or reference_dose <= 0
+        ):
+            raise ValueError("reference_dose must be a positive dose")
     if base_period not in ("varying", "universal"):
         raise ValueError("unknown base_period")
     if vcov not in ("CRV0", "CRV1"):
@@ -386,6 +446,7 @@ def _continuous(
     budget = MemoryBudget(memory_gb, memory_reserve)
     preprocess_mb = preprocess_budget_mb(preprocess_mb, budget)
     baseline = current_rss_gb() or 0
+    general = adjusted or lowest or force_general
     with thread_scope(threads):
         n_levels = 1
         if adjusted:
@@ -427,7 +488,24 @@ def _continuous(
                 design,
                 panel_mode,
                 anticipation,
+                require_never_treated=not lowest,
+                single_group=lowest,
             )
+            if lowest:
+                treated_cohorts = [g for g in store.gc if g != 0]
+                if 0 in store.gc:
+                    raise ValueError(
+                        "control_group='lowest_dose' is for samples without untreated units "
+                        f"({store.gc[0]:,} units are never treated): use 'never_treated' or "
+                        "'not_yet_treated', or drop them"
+                    )
+                if len(treated_cohorts) != 1:
+                    raise ValueError(
+                        "control_group='lowest_dose' needs a single treatment date (the "
+                        f"panel has {len(treated_cohorts)} cohorts), as in the paper's "
+                        "Remark 3.1"
+                    )
+            covariate_columns, fe_column = [], None
             if adjusted:
                 names = list(store.design.names)
                 if dose not in names or "Intercept" not in names:
@@ -448,15 +526,50 @@ def _continuous(
                 raise ValueError("the dose must be constant within each unit")
             pa.default_memory_pool().release_unused()
             times, gc, N, means = store.times, store.gc, store.n_units, store.means
+            treated_units = N - gc.get(0, 0)
+            # The treated units' doses: for a discrete dose's levels (which set the
+            # basis's width), a spline's knots, grid and boundary, and the reference
+            # of the lowest-dose comparison. One array of treated_units doses.
+            doses = _treated_doses(store, dose_column, treated_units)
+            relabel, reference_value, reference_units = None, None, 0
+            if lowest:
+                (cohort_label,) = treated_cohorts
+                is_reference, reference_value = _reference(doses, reference_dose)
+                reference = is_reference(doses)
+                reference_units = int(reference.sum())
+                if reference_units < 2:
+                    raise ValueError(
+                        f"the lowest-dose comparison needs at least 2 units at the reference "
+                        f"dose {reference_value:g}; {reference_units} found"
+                        + (
+                            ": with a continuous dose that has no mass at its lowest value, "
+                            "give reference_dose (the units at or below it are the reference)"
+                            if reference_dose is None and not discrete
+                            else ""
+                        )
+                    )
+                doses = doses[~reference]
+                if not len(doses):
+                    raise ValueError(
+                        f"no units have a dose above the reference dose {reference_value:g}"
+                    )
+                gc = {0: reference_units, cohort_label: len(doses)}
+
+                def relabel(g, d):
+                    return np.where(is_reference(d), 0, g)
+
             groups, cells, bases, controls, sizes = setup(
-                "cs", times, gc, control_group, base_period, anticipation
+                "cs",
+                times,
+                gc,
+                "nevertreated" if lowest else control_group,
+                base_period,
+                anticipation,
             )
             M, T, G = len(cells), len(times), len(groups)
-            # a discrete dose's levels set the width of its basis, so they come first
-            levels = _dose_levels(store, dose_column) if discrete else None
+            levels = _discrete_levels(doses) if discrete else None
             K = len(levels) if discrete else degree + interior_knots + 1
             W = M * (K + 3)
-            treated_units = N - gc.get(0, 0)
 
             def buffers(B):
                 numeric = 8 * (3 * W * W + 2 * B * W + 4 * B * (T + K) + G * K * (K + T))
@@ -465,11 +578,10 @@ def _continuous(
                         2 * bootstrap_reps * W
                         + 2 * max(bootstrap_reps, min(B * bootstrap_reps, MAX_DRAW_ENTRIES))
                     )
-                if adjusted:
-                    Q = 1 if store.x_time_invariant else T
-                    numeric += continuous_covariates.table_bytes(
-                        G, Q, n_levels, len(covariate_columns), T, M, K
-                    ) + 8 * B * T * (len(covariate_columns) + 1)
+                if general:
+                    numeric += continuous_general.table_bytes(
+                        M, n_levels, len(covariate_columns), K, 0, W
+                    ) + 8 * B * T * (len(covariate_columns) + 4)
                 return numeric + 8 * treated_units
 
             B = min(batch_units or 16384, N)
@@ -523,32 +635,22 @@ def _continuous(
                 )
 
             if discrete:
-                basis = DiscreteDoseBasis(levels)
+                basis = DiscreteDoseBasis(levels, reference_value if lowest else 0.0)
             else:
-                # Pass 1: the treated units' doses, for the knots, the grid and the
-                # boundary. One array of treated_units doses, filled in place; its
-                # quantiles are taken in place too (np.quantile otherwise copies it).
-                positive = np.empty(treated_units)
-                filled = 0
-                for g, _, x in store.batches(include_x=True):
-                    mine = x[g != 0, 0, dose_column]
-                    if np.any(mine <= 0):
-                        raise ValueError("treated units must have a positive dose")
-                    positive[filled : filled + len(mine)] = mine
-                    filled += len(mine)
-                lower, upper = positive.min(), positive.max()
+                # The quantiles are taken in place (np.quantile otherwise copies).
+                lower, upper = doses.min(), doses.max()
                 knot_levels = np.linspace(0, 1, interior_knots + 2)[1:-1]
                 grid_levels = np.arange(10, 100) / 100 if dose_grid is None else np.array([])
                 quantiles = np.quantile(
-                    positive, np.r_[knot_levels, grid_levels], overwrite_input=True
+                    doses, np.r_[knot_levels, grid_levels], overwrite_input=True
                 )
-                del positive
                 interior = quantiles[:interior_knots]
                 if np.any(np.diff(np.r_[lower, interior, upper]) <= 0):
                     raise ValueError(
                         "the dose quantiles give repeated knots; use fewer interior_knots"
                     )
                 basis = DoseBasis(interior, lower, upper, degree)
+            del doses
             if dose_grid is None:
                 grid = levels if discrete else quantiles[interior_knots:]
             else:
@@ -557,8 +659,8 @@ def _continuous(
                     raise ValueError("dose_grid must be a one-dimensional array of doses")
                 basis.values(grid)  # checks the doses
 
-            if adjusted:
-                fit = continuous_covariates.fit_adjusted(
+            if general:
+                fit = continuous_general.fit_general(
                     store,
                     basis,
                     groups,
@@ -569,12 +671,13 @@ def _continuous(
                     fe_column=fe_column,
                     n_levels=n_levels,
                     covariate_columns=covariate_columns,
+                    relabel=relabel,
                     bootstrap_reps=bootstrap_reps,
                     bootstrap_seed=bootstrap_seed,
                     bootstrap_weights=bootstrap_weights,
                 )
                 att, acrt, beta = fit["att"], fit["acrt"], fit["beta"]
-                V, cross, shares = fit["V"], fit["cross"], fit["shares"]
+                V, cross, share_cov = fit["V"], fit["cross"], fit["share_cov"]
                 control_mean = np.zeros(M)
                 used_sizes = fit["sizes"]
                 counts = np.array([used_sizes[g] for g, t in cells], dtype=float)
@@ -685,6 +788,8 @@ def _continuous(
                         # in the staged unit order, so draws do not depend on the batches
                         multiplier.update(full[np.argsort(order), 2 * M :])
                 V, cross, shares = covariance.blocks()
+                layout = np.r_[counts, counts, np.repeat(counts, K), counts]
+                share_cov = shares - np.outer(layout, layout) / N
                 used_sizes = gc
                 draws = multiplier.draws if multiplier is not None else None
 
@@ -692,7 +797,7 @@ def _continuous(
             names = [f"g::{g}:t::{t}" for g, t in cells]
             weights = overall_weights(cells, used_sizes)
             diagnostics = dict(
-                control_group=control_group,
+                control_group={"lowestdose": "lowest_dose"}.get(control_group, control_group),
                 base_period=base_period,
                 anticipation=anticipation,
                 dose_type=dose_type,
@@ -706,7 +811,7 @@ def _continuous(
                         boundary_knots=[float(lower), float(upper)],
                     )
                 ),
-                cohort_sizes={str(g): int(n) for g, n in used_sizes.items()},
+                cohort_sizes={str(g): int(round(n)) for g, n in used_sizes.items()},
                 time_min=int(times[0]),
                 time_max=int(times[-1]),
                 input_units=store.n_units_input,
@@ -718,6 +823,16 @@ def _continuous(
                 inference="unit clustered; analytic influence functions",
                 warnings=[],
             )
+            if lowest:
+                diagnostics.update(
+                    reference_dose=reference_value,
+                    reference="lowest dose" if reference_dose is None else "doses up to",
+                    reference_units=reference_units,
+                )
+            if experimental:
+                diagnostics["warnings"].append(
+                    continuous_covariates.experimental_message(experimental)
+                )
             if adjusted:
                 diagnostics.update(
                     covariate_names=covariate_names,
@@ -726,7 +841,6 @@ def _continuous(
                     covariates_time_invariant=store.x_time_invariant,
                     treated_units_left_out=fit["left_out"],
                 )
-                diagnostics["warnings"].append(continuous_covariates.EXPERIMENTAL)
                 if any(fit["left_out"].values()):
                     left = sum(fit["left_out"].values())
                     diagnostics["warnings"].append(
@@ -754,7 +868,7 @@ def _continuous(
                         counts=counts,
                         observed_counts=(
                             counts
-                            if adjusted
+                            if general
                             else np.array(
                                 [store.cell_counts[g][t - times[0]] for g, t in cells],
                                 dtype=float,
@@ -764,7 +878,7 @@ def _continuous(
                         n_units=N,
                         diagnostics=dict(diagnostics),
                         _share_cross=cross[s, s] * factor,
-                        _share_cov=(shares[s, s] - np.outer(counts, counts) / N) * factor,
+                        _share_cov=share_cov[s, s] * factor,
                         _display=PUBLIC,
                     ),
                     store.period_labels,
@@ -781,7 +895,7 @@ def _continuous(
             overall_vcov = joint @ V[: 2 * M, : 2 * M] @ joint.T
             n_cell = np.array([used_sizes[g] for g, t in cells], dtype=float)
             share = weights * (att - weights @ att) / n_cell
-            centered = shares[:M, :M] - np.outer(counts, counts) / N
+            centered = share_cov[:M, :M]
             overall_vcov[0, 0] += 2 * weights @ cross[:M, :M] @ share + share @ centered @ share
             overall_vcov[0, 1] += share @ cross[M : 2 * M, M : 2 * M].T @ weights
             overall_vcov[1, 0] = overall_vcov[0, 1]
@@ -826,6 +940,7 @@ def did_continuous(
     cohort=None,
     treatment=None,
     control_group="not_yet_treated",
+    reference_dose=None,
     base_period="varying",
     anticipation=0,
     dose_type="continuous",
@@ -878,9 +993,17 @@ def did_continuous(
     dose : str
         Each unit's dose: positive and constant within a treated unit. The doses
         of never-treated units are not used.
-    control_group : {"not_yet_treated", "never_treated"}, default "not_yet_treated"
+    control_group : {"not_yet_treated", "never_treated", "lowest_dose"}, default "not_yet_treated"
         The comparison units: also units not yet treated by the period compared,
-        or never-treated units only.
+        or never-treated units only. ``"lowest_dose"`` is for samples in which
+        every unit is treated, at one date: the units at the lowest dose are the
+        comparison, and the curves are ATT(d) - ATT(d_L) (the paper's Remark 3.1,
+        which needs strong parallel trends).
+    reference_dose : float, optional
+        With ``"lowest_dose"`` and a continuous dose: the units with a dose up to
+        this one are the comparison, instead of those at the lowest dose. The
+        curves are then ATT(d) less the comparison units' average ATT, for doses
+        above it.
     base_period : {"varying", "universal"}, default "varying"
         The pre-treatment comparison period, as in ``did_callaway_santanna``.
     {ANTICIPATION}
@@ -920,4 +1043,10 @@ def did_continuous(
     """
     options = dict(locals())
     fml, data = options.pop("fml"), options.pop("data")
-    return public_profile(_continuous(fml, data, **_options.internal(options)))
+    lowest = options["control_group"] == "lowest_dose"
+    if lowest:
+        options["control_group"] = "never_treated"
+    options = _options.internal(options)
+    if lowest:
+        options["control_group"] = "lowestdose"
+    return public_profile(_continuous(fml, data, **options))

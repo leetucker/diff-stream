@@ -183,6 +183,7 @@ class PanelStore(GroupPartitions):
         allow_always_treated=False,
         actual_cohort_column=None,
         switching=False,
+        single_group=False,
     ):
         super().__init__(root, budget, preprocess_mb)
         # With switching, a treatment column labels each unit by its first change
@@ -257,7 +258,14 @@ class PanelStore(GroupPartitions):
             self.unit_weight_anchor = "mean observed weight per retained unit"
         if require_never_treated and (0 not in self.gc or len(self.gc) < 2):
             raise ValueError("at least one never-treated and one treated cohort are required")
-        if not require_never_treated and len(self.gc) < 2 and not self.switching:
+        # A single treated cohort and no untreated units is valid only when the
+        # estimator compares units within the cohort (single_group).
+        if (
+            not require_never_treated
+            and len(self.gc) < 2
+            and not self.switching
+            and not single_group
+        ):
             raise ValueError(
                 "at least two distinct treatment-timing groups are required; an all-never-treated sample has no treatment effects"
             )
