@@ -55,6 +55,7 @@ fit.aggregate(target="slope").summary()  # event study of the ACRT
 | An unbalanced panel (`incomplete_units="keep"`) | An extension; the paper assumes a balanced panel | A direct calculation | yes |
 | Sampling weights, constant within units (`weights`) | The paper's estimators with each unit weighted, as R did weights Callaway-Sant'Anna | diff-diff's survey weights (estimates); R did's weighted Callaway-Sant'Anna (the effect of being treated); a direct calculation | no |
 | Weights that change over time (`allow_time_varying_weights=True`) | An extension | A direct calculation | yes |
+| Standard errors clustered above the unit (`cluster`) | The paper's influence functions, summed by cluster (the usual cluster-robust variance) | diff-diff's survey clusters (primary sampling units); a direct calculation | no |
 
 Features from the paper need the paper's assumptions, described with each. The
 experimental ones need further assumptions, set out in
@@ -278,7 +279,20 @@ Once you have weighed these conditions, you can silence the warning with
 ## Inference
 
 Standard errors come from the influence functions of the estimates, clustered by
-unit. For the overall ATT and for `aggregate()`, they include the uncertainty of the
+unit, or by `cluster` (a column constant within each unit, such as the group whose
+members share a dose, or a region): the units' influence is summed by cluster, and
+`vcov="CRV1"` multiplies the variance by G/(G-1) with G the clusters. The degrees of
+freedom are then G - 1. Clustering matters when units in the same cluster share
+shocks; when the dose is set for a group of units (an occupation, a school, a
+county), clustering by that group is the usual choice.
+
+Each cohort and period's comparison and treated units need to span several clusters.
+If all the comparison units of a cohort-period are in one cluster, the sum of their
+influence within it is zero, so the uncertainty of their mean change drops out of the
+clustered standard errors, which are then too small; the fit warns, and
+`diagnostics["fewest_comparison_clusters"]` and `["fewest_treated_clusters"]` give
+the smallest numbers. This happens with the lowest-dose comparison when one group
+holds the lowest dose: `reference_dose` then takes in units from more clusters. For the overall ATT and for `aggregate()`, they include the uncertainty of the
 estimated cohort shares that weight them, as R's did does. The curves and the overall
 ACRT treat those weights as fixed, as R's contdid does. The overall ACRT includes the
 uncertainty of the treated units' doses it averages over, which for a discrete dose
@@ -327,6 +341,15 @@ the standard errors here equal a direct calculation, and the effect of being tre
 and its standard errors equal weighted Callaway-Sant'Anna, which matches R did's.
 Integer weights give the estimates of the units replicated that many times, and
 time-varying weights are checked against a direct calculation.
+
+Clustered standard errors are checked against diff-diff's survey clusters
+(`SurveyDesign(psu=...)`): the estimates, both curves and their standard errors, the
+cohort-period effects and the event study, with the lowest-dose comparison clustered
+by the groups that share a dose and with three cohorts clustered by region. diff-diff
+holds the average slope, and with several cohorts the cohort shares, fixed in its
+overall and event-study standard errors; with those fixed, a direct calculation gives
+its numbers. Clusters with weights, covariates, a fixed effect and missing periods
+together are checked against a direct calculation.
 
 An unbalanced panel, with and without covariates and a fixed effect, with both
 comparison groups and with the lowest-dose comparison, is checked against a direct

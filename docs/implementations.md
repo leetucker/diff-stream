@@ -134,6 +134,11 @@ its point estimates, with these differences:
   validation panels). diff-diff's `CallawaySantAnna` weights them once, as R did does
   and as these do. Weights that change over time are not in diff-diff; here they are
   experimental.
+- *Clustered standard errors.* contdid clusters by unit only. diff-diff 4.0.0
+  clusters through a survey design's primary sampling units
+  (`SurveyDesign(psu=...)`), and without weights its curves' standard errors match
+  `cluster=` here with `vcov="CRV1"`; its overall and event-study standard errors
+  differ as above, by holding estimated shares and the average slope fixed.
 - *Unbalanced panels (experimental here).* contdid and diff-diff require a balanced
   panel. With `incomplete_units="keep"`, each comparison here uses the units observed
   in both of its periods, unlike R did's unbalanced panels (and
