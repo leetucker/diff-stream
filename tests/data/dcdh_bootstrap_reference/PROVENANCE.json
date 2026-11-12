@@ -1,0 +1,10 @@
+{
+  "reference": "R DIDmultiplegtDYN 2.4.0 (did_multiplegt_dyn, with R polars 2.1.0.9000) bootstrap standard errors, bootstrap = c(500, 1), on the switching panel of dcdh_panel.csv with 2 effects and 1 placebo, resampling groups and, with cluster = 'cl' (id %/% 8), clusters. Its draws use R's random numbers, not did_dcdh's, so the tests compare 500 of did_dcdh's draws within a statistical tolerance (two independent 500-draw standard errors differ by about 4.5%).",
+  "files": {
+    "benchmarks/external/dcdh_bootstrap_reference.R": "9f87ce4c017260c40ef1866a0d640c0ed5d790602335988d06e4a2a38ba4b5ca",
+    "benchmarks/external/dcdh_panel.py": "c72eb6a851a91376242c199456ced6d69b400ef6098796d25fe95e9bbfac34c0",
+    "tests/data/dcdh_panel.csv": "b5b922bd778aa6c4d2cd1dcab3095cf2d5317e48229d654a00b02b2c08cba93f",
+    "tests/data/dcdh_bootstrap_reference/bootstrap.csv": "ed83c2439fbb5a10a2ee313ea5c65e9ca8f4670d7a7739112daa6a2366a595d9",
+    "tests/data/dcdh_bootstrap_reference/versions.csv": "7ba2c03044fba835d1a14cb04a36e02e9784595d85ee2f0011af7202a5faa468"
+  }
+}

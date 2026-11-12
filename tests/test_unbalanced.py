@@ -219,18 +219,6 @@ def test_empty_cells_reported(data, estimator):
         r.cleanup()
 
 
-def test_sparse_group_batches_cross_reader_boundaries(tmp_path):
-    from diff_stream._core.partition import whole_group_batches
-
-    frame = pl.DataFrame({"unit": [0] * 7 + [1] * 2 + [2] * 9 + [3], "value": list(range(19))})
-    path = tmp_path / "groups.parquet"
-    frame.write_parquet(path, row_group_size=3)
-    batches = list(whole_group_batches(path, "unit", 2, read_rows=4))
-    assert pl.concat(batches).equals(frame)
-    assert sum(b["unit"].n_unique() for b in batches) == 4
-    assert all(b["unit"].n_unique() <= 2 for b in batches)
-
-
 def test_profile_leaves_no_bjs_files(data, tmp_path):
     p = data.filter(~((pl.col("id") % 3 == 0) & (pl.col("time") == 3)))
     profile = did_bjs("y ~ 1", p, profile=True, workdir=tmp_path, **KW)

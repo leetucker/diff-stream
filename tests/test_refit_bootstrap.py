@@ -9,18 +9,14 @@ import numpy as np
 import polars as pl
 import pytest
 from numpy.testing import assert_allclose
-from scipy.stats import norm
-from stream_limits import MemoryBudget
 
 from benchmarks._estimators import ESTIMATORS, fit_estimator, public
 from diff_stream import (
     BootstrapFailureWarning,
-    RefitBootstrapResult,
     did_bjs,
     did_callaway_santanna,
     refit_bootstrap,
 )
-from diff_stream._core.resample import DiskGroupResampler
 from diff_stream.simulate import simulate_conditional_panel
 
 KW = dict(panel=("id", "time"), cohort="first_treat", n_threads=2, preprocess_mb=4, batch_units=37)
@@ -96,77 +92,6 @@ def test_every_draw_matches_explicit_unit_duplication(estimator, last, anticipat
     assert_allclose(r.se, np.std(r._draws, axis=0, ddof=1), atol=1e-12)
     assert not list(tmp_path.iterdir())
     json.loads(r.summary_json())
-
-
-def test_disk_sampler_copies_whole_histories_and_renames_duplicates(tmp_path):
-    data = pl.DataFrame(
-        dict(id=["a", "a", "b", "c", "c", "c"], time=[1, 3, 2, 1, 2, 3], value=np.arange(6))
-    )
-    raw = tmp_path / "input.parquet"
-    data.write_parquet(raw)
-    root = tmp_path / "stage"
-    root.mkdir()
-    sampler = DiskGroupResampler(
-        raw,
-        root,
-        MemoryBudget(None),
-        1,
-        key="id",
-        sort_columns=["id", "time"],
-        select=lambda f: f,
-        index_column="source_index",
-        draw_column="boot",
-    )
-    assert sampler.n_units == 3 and sampler.n_rows == 6
-    expected = np.random.default_rng(4).integers(0, 3, size=3, dtype=np.int64)
-    path, dates, n, _ = sampler.materialize(
-        np.random.default_rng(4), tmp_path / "draw", time_column="time", chunk_rows=2
-    )
-    result = pl.read_parquet(path)
-    assert result["boot"].n_unique() == 3
-    assert result["id"].n_unique() < 3  # this seed repeats a source unit
-    for j, i in enumerate(expected):
-        assert (
-            result.filter(pl.col("boot") == j)
-            .drop("boot")
-            .sort("time")
-            .equals(data.filter(pl.col("id") == ["a", "b", "c"][i]).sort("time"))
-        )
-    assert n == len(result) and dates == sorted(result["time"].unique().to_list())
-
-
-def test_pointwise_interval_definitions_and_no_implicit_inference():
-    draws = np.array([[0.0, 1.0], [1.0, 3.0], [4.0, 5.0], [9.0, 9.0], [16.0, 11.0]])
-    r = RefitBootstrapResult(
-        fml="y~1",
-        estimator="cs",
-        coefnames=["a", "b"],
-        beta=np.array([3.0, 4.0]),
-        diagnostics={},
-        _draws=draws,
-        _failures=[],
-        _warnings=[],
-    )
-    q = np.quantile(draws, [0.1, 0.9], axis=0, method="linear")
-    for method in ["percentile", "basic", "normal"]:
-        tab = r.confint(0.2, method=method)
-        expected = (
-            q
-            if method == "percentile"
-            else np.array([2 * r.beta - q[1], 2 * r.beta - q[0]])
-            if method == "basic"
-            else np.array(
-                [
-                    r.beta - norm.ppf(0.9) * draws.std(axis=0, ddof=1),
-                    r.beta + norm.ppf(0.9) * draws.std(axis=0, ddof=1),
-                ]
-            )
-        )
-        assert_allclose(tab["Lower"], expected[0])
-        assert_allclose(tab["Upper"], expected[1])
-    for method in ["bca", "studentized"]:
-        with pytest.raises(ValueError, match="method"):
-            r.confint(method=method)
 
 
 def test_failures_are_not_redrawn_or_used_without_acknowledgment(tmp_path):

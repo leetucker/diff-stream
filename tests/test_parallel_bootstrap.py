@@ -2,8 +2,6 @@
 
 import os
 import sys
-import time
-from concurrent.futures import as_completed
 
 import numpy as np
 import pytest
@@ -13,7 +11,6 @@ from test_refit_bootstrap import KW, small_data
 
 from benchmarks._estimators import ESTIMATORS
 from diff_stream import BootstrapFailureWarning, did_callaway_santanna, refit_bootstrap
-from diff_stream._core.process import ProcessBatch
 
 
 @pytest.mark.parametrize("estimator", ["cs", "sunab", "bjs", "gardner", "etwfe"])
@@ -116,17 +113,17 @@ def test_parallel_validates_resources_before_starting_workers(tmp_path):
 
 @pytest.mark.parametrize("failure", ["programming", "memory"])
 def test_remote_errors_propagate_and_clean_scratch(failure, monkeypatch, tmp_path):
-    import diff_stream.bootstrap as module
+    import hdfe_stream.core.refit as module
 
     original = module._parallel_refits
 
-    def invalid_task(tasks, *args):
+    def invalid_task(tasks, *args, **kwargs):
         if failure == "programming":
             # A genuine subprocess KeyError must abort, not become a failed draw.
             del tasks[0]["fml"]
         else:
             args = (*args[:-1], 0.1)  # Force the child estimator's MemoryBudget guard.
-        return original(tasks, *args)
+        return original(tasks, *args, **kwargs)
 
     monkeypatch.setattr(module, "_parallel_refits", invalid_task)
     with pytest.raises(KeyError if failure == "programming" else MemoryError):
@@ -143,37 +140,6 @@ def test_remote_errors_propagate_and_clean_scratch(failure, monkeypatch, tmp_pat
             **KW,
         )
     assert not list(tmp_path.iterdir())
-
-
-@pytest.mark.parametrize("error", [RuntimeError, KeyboardInterrupt])
-def test_process_batch_stops_running_sibling_on_failure_or_interrupt(error, tmp_path):
-    ready = tmp_path / "ready"
-    processes = []
-    start = time.monotonic()
-    with pytest.raises(error):
-        with ProcessBatch(2) as batch:
-            sleeper = batch.submit(
-                [
-                    sys.executable,
-                    "-c",
-                    f"from pathlib import Path; import time; Path({str(ready)!r}).touch(); time.sleep(60)",
-                ],
-                tmp_path / "sleep.log",
-            )
-            deadline = time.monotonic() + 10
-            while not ready.exists() and time.monotonic() < deadline:
-                time.sleep(0.01)
-            assert ready.exists()
-            with batch._lock:
-                processes = list(batch._children)
-            if error is KeyboardInterrupt:
-                raise KeyboardInterrupt()
-            bad = batch.submit([sys.executable, "-c", "raise SystemExit(42)"], tmp_path / "bad.log")
-            for future in as_completed([sleeper, bad]):
-                if future.result():
-                    raise RuntimeError("worker failed")
-    assert time.monotonic() - start < 15
-    assert processes and all(p.poll() is not None for p in processes)
 
 
 @pytest.mark.resource

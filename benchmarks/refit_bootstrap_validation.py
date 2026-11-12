@@ -21,9 +21,10 @@ from numpy.testing import assert_allclose
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from hdfe_stream.core.resample import DiskGroupResampler  # noqa: E402
+
 from benchmarks._estimators import public  # noqa: E402
 from diff_stream import did_callaway_santanna, refit_bootstrap  # noqa: E402
-from diff_stream._core.resample import DiskGroupResampler  # noqa: E402
 from diff_stream.simulate import simulate_conditional_panel  # noqa: E402
 
 REF = ROOT / "tests/data/refit_bootstrap_reference"
