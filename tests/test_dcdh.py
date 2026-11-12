@@ -6,6 +6,7 @@ Callaway-Sant'Anna where treatment is binary and absorbing.
 """
 
 import json
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +15,7 @@ import pytest
 from numpy.testing import assert_allclose
 
 from benchmarks._files import digest, read_csv
-from diff_stream import did_callaway_santanna, did_dcdh
+from diff_stream import ContinuousBaselineWarning, did_callaway_santanna, did_dcdh
 from diff_stream.simulate import simulate_panel
 from tests import dcdh_oracle
 
@@ -461,6 +462,7 @@ def test_constrained_fit_matches_unconstrained_fit(
     options = dict(effects=3, placebos=2, preprocess_mb=4, batch_units=37, n_threads=2, **extra)
     code = f"""
 import json
+import warnings
 from diff_stream import did_dcdh
 r = did_dcdh({fml!r}, {str(path)!r}, panel=("id", "time"), treatment="d",
     workdir={str(tmp_path / "child")!r}, **{options!r})
@@ -557,3 +559,170 @@ def test_matches_did_multiplegt_dyn(reference_panels, name):
     assert_allclose(
         fit.effects_equal_test()["pvalue"], tests["effects_equal"], rtol=1e-8, atol=1e-14
     )
+
+
+# Clustering above the group and a continuous first-period treatment, against
+# DIDmultiplegtDYN's cluster and continuous options (dcdh_extensions_reference.R).
+
+EXT = Path(__file__).parent / "data" / "dcdh_extensions_reference"
+EXT_CASES = {
+    "cluster": ("switching", "switching", "y ~ 1", {"cluster": "cl"}),
+    "cluster_region": ("switching", "switching", "y ~ 1", {"cluster": "region"}),
+    "cluster_normalized": (
+        "switching",
+        "switching",
+        "y ~ 1",
+        {"cluster": "cl", "normalized": True},
+    ),
+    "cluster_covariates": ("switching", "switching", "y ~ x + z", {"cluster": "cl"}),
+    "cluster_unbalanced": (
+        "switching",
+        "unbalanced",
+        "y ~ 1",
+        {"cluster": "cl", "incomplete_units": "keep"},
+    ),
+    "cluster_weights": ("switching", "switching", "y ~ 1", {"cluster": "cl", **TIME_WEIGHTS}),
+    "cluster_trends_by": (
+        "switching",
+        "switching",
+        "y_trend ~ 1",
+        {"cluster": "cl", "trends_by": "region"},
+    ),
+    "cluster_linear_trends": (
+        "switching",
+        "switching",
+        "y_trend ~ 1",
+        {"cluster": "cl", "linear_trends": True},
+    ),
+    "continuous_1": ("continuous", "continuous", "y ~ 1", {"continuous_baseline": 1}),
+    "continuous_2": ("continuous", "continuous", "y ~ 1", {"continuous_baseline": 2}),
+    "continuous_normalized": (
+        "continuous",
+        "continuous",
+        "y ~ 1",
+        {"continuous_baseline": 2, "normalized": True},
+    ),
+    "continuous_covariates": ("continuous", "continuous", "y ~ x", {"continuous_baseline": 2}),
+    "continuous_weights": (
+        "continuous",
+        "continuous",
+        "y ~ 1",
+        {"continuous_baseline": 2, **TIME_WEIGHTS},
+    ),
+    "continuous_switchers_in": (
+        "continuous",
+        "continuous",
+        "y ~ 1",
+        {"continuous_baseline": 2, "switchers": "in"},
+    ),
+    "continuous_cluster": (
+        "continuous",
+        "continuous",
+        "y ~ 1",
+        {"continuous_baseline": 2, "cluster": "cluster"},
+    ),
+}
+
+
+@pytest.fixture(scope="module")
+def extension_panels():
+    for name, h in json.loads((EXT / "PROVENANCE.json").read_text())["files"].items():
+        assert digest(Path(__file__).parents[1] / name) == h, name
+    return {
+        "switching": read_csv(REF.parent / "dcdh_panel.csv").with_columns(cl=pl.col("id") // 8),
+        "continuous": read_csv(REF.parent / "dcdh_continuous_panel.csv"),
+    }
+
+
+def _fit_reference(panels, data, panel, fml, options):
+    frame = panels[data].filter(pl.col("panel") == panel).drop("panel")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ContinuousBaselineWarning)
+        return did_dcdh(fml, frame, **KW, effects=4, placebos=3, **options)
+
+
+def _compare(fit, name, rows=None):
+    ref = read_csv(EXT / f"{name}.csv").filter(pl.col("estimate").is_not_null())
+    if rows is not None:
+        ref = ref.head(rows)
+    n = len(ref)
+    assert fit.coefnames[:n] == ref["coefficient"].to_list()
+    assert_allclose(fit.beta[:n], ref["estimate"].to_numpy(), rtol=1e-10, atol=1e-12)
+    assert_allclose(fit.se[:n], ref["se"].to_numpy(), rtol=1e-10)
+    table = fit.switchers()
+    k = min(len(table), n)
+    assert_allclose(
+        (table["weight_in"] + table["weight_out"]).to_numpy()[:k],
+        ref["switchers_weighted"].to_numpy()[:k],
+        rtol=1e-12,
+    )
+    tests = dict(read_csv(EXT / f"{name}_tests.csv").iter_rows())
+    assert_allclose(fit.pretrend_test()["pvalue"], tests["placebos_zero"], rtol=1e-8, atol=1e-14)
+    assert_allclose(
+        fit.effects_equal_test()["pvalue"], tests["effects_equal"], rtol=1e-8, atol=1e-14
+    )
+
+
+@pytest.mark.parametrize("name", EXT_CASES)
+def test_cluster_and_continuous_baseline_match_did_multiplegt_dyn(extension_panels, name):
+    """Estimates, standard errors, switchers and the joint tests."""
+    data, panel, fml, options = EXT_CASES[name]
+    fit = _fit_reference(extension_panels, data, panel, fml, options)
+    _compare(fit, name)
+    if "cluster" in options:
+        clusters = extension_panels[data][options["cluster"]].n_unique()
+        assert fit.n_clusters == {options["cluster"]: clusters}
+        assert fit.df_t == clusters - 1
+
+
+def test_continuous_baseline_with_missing_periods_is_the_options_construction(extension_panels):
+    """With gaps in switchers' periods, did_multiplegt_dyn's continuous option departs
+    from the estimator it describes; this is that estimator, run by hand through
+    did_multiplegt_dyn without the option (the binarized treatment and the polynomial
+    controls). Its average total effect uses the binarized treatment's changes, so only
+    the effects, placebos and tests are compared."""
+    fit = _fit_reference(
+        extension_panels,
+        "continuous",
+        "continuous_unbalanced",
+        "y ~ 1",
+        {"continuous_baseline": 2, "incomplete_units": "keep"},
+    )
+    _compare(fit, "continuous_unbalanced_construction", rows=7)
+    option = read_csv(EXT / "continuous_unbalanced.csv")
+    assert not np.allclose(fit.beta[:7], option["estimate"].to_numpy()[:7], rtol=1e-6)
+
+
+def test_cluster_by_the_group_is_the_default_and_clusters_nest_groups(extension_panels):
+    frame = extension_panels["switching"].filter(pl.col("panel") == "switching").drop("panel")
+    plain = did_dcdh("y ~ 1", frame, **KW, effects=2, placebos=1)
+    by_group = did_dcdh("y ~ 1", frame, **KW, effects=2, placebos=1, cluster="id")
+    assert_allclose(by_group.vcov, plain.vcov, rtol=1e-14)
+    crossing = frame.with_columns(cl=(pl.col("id") + pl.col("time")) % 5)
+    with pytest.raises(ValueError, match="constant within groups"):
+        did_dcdh("y ~ 1", crossing, **KW, effects=2, cluster="cl")
+    with pytest.raises(ValueError, match="unknown cluster columns"):
+        did_dcdh("y ~ 1", frame, **KW, effects=2, cluster="nowhere")
+    with pytest.raises(ValueError, match="continuous_baseline must be an integer >= 1"):
+        did_dcdh("y ~ 1", frame, **KW, effects=2, continuous_baseline=0)
+
+
+def test_continuous_baseline_warns_and_is_reported(extension_panels):
+    frame = extension_panels["continuous"].filter(pl.col("panel") == "continuous").drop("panel")
+    with pytest.warns(ContinuousBaselineWarning, match="not backed by a proven"):
+        fit = did_dcdh("y ~ 1", frame, **KW, effects=2, continuous_baseline=2)
+    assert fit.diagnostics["continuous_baseline"] == 2
+    assert fit.diagnostics["baselines"] == [0.0]
+    assert "not backed" in fit.diagnostics["warnings"][0]
+    # without the option, no two groups share a first-period treatment
+    with pytest.raises(ValueError, match="Design Restriction 1"):
+        did_dcdh("y ~ 1", frame, **KW, effects=2)
+
+
+def test_clustered_fit_does_not_depend_on_threads_or_batches(extension_panels):
+    frame = extension_panels["switching"].filter(pl.col("panel") == "unbalanced").drop("panel")
+    options = dict(effects=3, placebos=2, cluster="cl", incomplete_units="keep")
+    one = did_dcdh("y ~ x + z", frame, **(KW | dict(n_threads=1)), **options)
+    many = did_dcdh("y ~ x + z", frame, **(KW | dict(n_threads=4)), batch_units=37, **options)
+    assert_allclose(many.beta, one.beta, rtol=1e-12)
+    assert_allclose(many.vcov, one.vcov, rtol=1e-10)
