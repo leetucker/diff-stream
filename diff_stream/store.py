@@ -6,9 +6,9 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
+from hdfe_stream.core.partition import GroupPartitions, Part
 
 from ._core import staging_kernels
-from ._core.partition import GroupPartitions, Part
 from ._core.weights import validate_weights
 from .periods import PeriodLabels, cohorts_from_treatment, first_changes
 
@@ -686,7 +686,7 @@ class PanelStore(GroupPartitions):
         self, *, include_x=False, include_weights=False, actual_cohort=False, row_weights=False
     ):
         """Pad only a numerical batch, never a whole sparse partition."""
-        from ._core.partition import whole_group_batches
+        from hdfe_stream.core.partition import whole_group_batches
 
         K = len(self.design.names) if self.design is not None else 1
         for path in self.paths:

@@ -23,8 +23,8 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import polars as pl
 from hdfe_stream.core.influence import ClusterScoreAccumulator
+from hdfe_stream.core.partition import whole_group_batches
 
-from ._core.partition import whole_group_batches
 from .absorbed import (
     _DROPPED,
     absorbed_terms,

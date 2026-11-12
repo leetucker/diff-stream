@@ -7,12 +7,13 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import polars as pl
 import pyarrow as pa
+from hdfe_stream.core.partition import preprocess_budget_mb
 from hdfe_stream.core.profile import Component, Profile
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
 from . import _docs, _options
 from ._core.multiplier import MAX_DRAW_ENTRIES, StreamingMultiplier, validate_bootstrap
-from ._core.partition import preprocess_budget_mb, staging_bytes
+from ._core.partition import staging_bytes
 from ._present import present, public_profile
 from .bjs import BJSInference
 from .bjs_placebo import fit_placebos

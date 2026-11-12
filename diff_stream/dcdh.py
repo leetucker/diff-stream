@@ -22,13 +22,14 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import polars as pl
 import pyarrow as pa
+from hdfe_stream.core.partition import preprocess_budget_mb
 from hdfe_stream.core.profile import Component, Profile
 from hdfe_stream.core.results_base import RegressionResult
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
 from . import _docs, _options
 from ._core.dcdh_kernels import group_terms
-from ._core.partition import preprocess_budget_mb, staging_bytes
+from ._core.partition import staging_bytes
 from ._present import public_profile
 from .continuous_covariates import join_levels
 from .store import PanelStore, inspect, source
@@ -1063,7 +1064,8 @@ def _dcdh(
                     "analytic standard errors are not backed by a proven asymptotic result: "
                     "conservative with a correctly specified polynomial in simulations, they "
                     "can be too small if it is misspecified (DIDmultiplegtDYN's continuous "
-                    "option). Check the results' sensitivity to continuous_baseline."
+                    "option). Check the results' sensitivity to continuous_baseline, and "
+                    "consider refit_bootstrap(estimator=did_dcdh), as the authors recommend."
                 )
                 diagnostics["warnings"] = [message]
                 warnings.warn(message, ContinuousBaselineWarning, 3)

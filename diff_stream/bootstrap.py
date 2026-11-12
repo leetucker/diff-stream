@@ -1,152 +1,36 @@
-"""Ordinary unit-cluster pairs bootstrap with serial or parallel full refits."""
+"""The refit bootstrap of diff-stream's estimators: resample units (or clusters) and refit.
 
-import json
-import pickle
-import sys
+The resampling, the refits in worker processes, the failure ledger and the
+intervals are hdfe_stream.core's (``core.refit``). This module owns what is
+particular to the estimators: which columns a fit needs, the sample and comparison
+group the original fit chose (held fixed across draws), the checks that a draw
+keeps them, and the dispatch to each estimator.
+"""
+
 import warnings
-from concurrent.futures import as_completed
-from contextlib import closing, nullcontext
-from dataclasses import dataclass, field
 from inspect import signature
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import numpy as np
 import polars as pl
-import pyarrow as pa
-from scipy.stats import norm
-from stream_limits import MemoryBudget, detect_cpus, thread_scope
+from hdfe_stream.core.partition import preprocess_budget_mb
+from hdfe_stream.core.refit import (
+    BootstrapFailureWarning,
+    RefitBootstrapResult,
+    refit_draws,
+    refit_workers,
+)
+from stream_limits import MemoryBudget, thread_scope
 
 from . import _options
-from ._core.partition import preprocess_budget_mb
-from ._core.process import ProcessBatch
-from ._core.resample import DiskGroupResampler
 from .api import _fit, did_bjs, did_callaway_santanna, did_sun_abraham
+from .dcdh import did_dcdh
 from .etwfe import did_extended_twfe
 from .gardner import did_two_stage
 from .store import inspect, source
 
-
-class BootstrapFailureWarning(UserWarning):
-    """Some ordinary resamples failed; inference requires explicit acknowledgment."""
-
-
-@dataclass(kw_only=True)
-class RefitBootstrapResult:
-    """Point estimates, ordinary refit draws and pointwise bootstrap inference.
-
-    No source or fit scratch survives. Failed attempts remain in the ledger and
-    are never redrawn. Inference on successful draws requires allow_incomplete
-    when any attempt failed; such inference is conditional on successful fits.
-    """
-
-    fml: str
-    estimator: str
-    coefnames: list
-    beta: np.ndarray
-    diagnostics: dict
-    _draws: np.ndarray = field(repr=False)
-    _failures: list = field(repr=False)
-    _warnings: list = field(repr=False)
-
-    @property
-    def successful_reps(self):
-        return int(np.isfinite(self._draws).all(axis=1).sum())
-
-    @property
-    def se(self):
-        """Sample SD of refitted estimates; refuses incomplete bootstrap runs."""
-        return self.standard_errors()
-
-    def _valid(self, allow_incomplete):
-        if self._failures and not allow_incomplete:
-            raise ValueError(
-                "some refits failed; inspect failures() and explicitly set allow_incomplete=True for inference conditional on success"
-            )
-        data = self._draws[np.isfinite(self._draws).all(axis=1)]
-        if len(data) < 2:
-            raise ValueError("at least two successful refits are required for bootstrap inference")
-        return data
-
-    def standard_errors(self, *, allow_incomplete=False):
-        return np.std(self._valid(allow_incomplete), axis=0, ddof=1)
-
-    def confint(self, alpha=0.05, *, method="percentile", allow_incomplete=False):
-        """Pointwise percentile/type-7, basic, or uncorrected normal intervals.
-
-        Normal intervals are point estimate +/- normal critical value times
-        bootstrap SD, without boot.ci's normal bias correction. No simultaneous,
-        studentized or BCa intervals are supplied.
-        """
-        if isinstance(alpha, bool) or not np.isfinite(alpha) or not 0 < alpha < 1:
-            raise ValueError("alpha must be between zero and one")
-        if method not in ("percentile", "basic", "normal"):
-            raise ValueError("method must be percentile, basic or normal")
-        draws = self._valid(allow_incomplete)
-        if method == "normal":
-            spread = norm.ppf(1 - alpha / 2) * np.std(draws, axis=0, ddof=1)
-            lower, upper = self.beta - spread, self.beta + spread
-        else:
-            low, high = np.quantile(draws, [alpha / 2, 1 - alpha / 2], axis=0, method="linear")
-            lower, upper = (
-                (low, high)
-                if method == "percentile"
-                else (2 * self.beta - high, 2 * self.beta - low)
-            )
-        return pl.DataFrame(
-            {"Coefficient": self.coefnames, "Estimate": self.beta, "Lower": lower, "Upper": upper}
-        )
-
-    def tidy(self, alpha=0.05, *, method="percentile", allow_incomplete=False):
-        draws = self._valid(allow_incomplete)
-        return self.confint(alpha, method=method, allow_incomplete=allow_incomplete).with_columns(
-            pl.Series("Std. Error", np.std(draws, axis=0, ddof=1)),
-            pl.Series("Bootstrap Mean", draws.mean(axis=0)),
-            pl.Series("Bias", draws.mean(axis=0) - self.beta),
-            pl.lit(len(draws)).alias("Successful Reps"),
-        )
-
-    def draws(self):
-        """Copy attempted estimates; failed rows are NaN for every coefficient."""
-        return pl.DataFrame(
-            {
-                "draw": np.arange(len(self._draws)),
-                "successful": np.isfinite(self._draws).all(axis=1),
-                **{n: self._draws[:, j].copy() for j, n in enumerate(self.coefnames)},
-            }
-        )
-
-    def failures(self):
-        return pl.DataFrame(
-            self._failures, schema={"draw": pl.Int64, "error_type": pl.String, "reason": pl.String}
-        )
-
-    def refit_warnings(self):
-        return pl.DataFrame(
-            self._warnings, schema={"draw": pl.Int64, "category": pl.String, "message": pl.String}
-        )
-
-    def summary_dict(self):
-        return dict(
-            fml=self.fml,
-            estimator=self.estimator,
-            coefficients=dict(zip(self.coefnames, self.beta.tolist(), strict=True)),
-            requested_reps=len(self._draws),
-            successful_reps=self.successful_reps,
-            failures=self.failures().to_dicts(),
-            refit_warnings=self.refit_warnings().to_dicts(),
-            diagnostics=self.diagnostics,
-        )
-
-    def summary(self):
-        """Run/sample/failure diagnostics; inference is available through tidy()."""
-        return self.summary_dict()
-
-    def summary_json(self, path=None):
-        content = json.dumps(self.summary_dict(), indent=2, allow_nan=False, default=str)
-        if path is not None:
-            Path(path).write_text(content + "\n")
-        return content
+__all__ = ["BootstrapFailureWarning", "RefitBootstrapResult", "refit_bootstrap"]
 
 
 def _target(result, aggregate, aggregate_options, coefficients):
@@ -168,79 +52,63 @@ def _replicate_formula(fml, unit):
     return regression if not terms else regression + "|" + "+".join(terms)
 
 
-def _refit_attempt(task):
-    """Identical fit/sample/failure policy for in-process and subprocess draws."""
-    result, values, failure, captured = None, None, None, []
-    b = task["draw"]
+def _estimate(fml, path, *, panel, cohort, treatment, estimator, workdir, options):
+    """One fit of an estimator, by its internal code and option names."""
+    if estimator == "dcdh":
+        from .dcdh import _dcdh  # noqa: PLC0415 (dcdh's internal function)
+
+        return _dcdh(fml, path, panel=panel, treatment=treatment, workdir=workdir, **options)
+    return _fit(
+        fml,
+        path,
+        panel=panel,
+        cohort=cohort,
+        treatment=treatment,
+        estimator=estimator,
+        workdir=workdir,
+        **options,
+    )
+
+
+def _refit_task(task):
+    """One draw's refit (core.refit calls it, in this process or a worker)."""
+    if task["dates"] != task["expected_dates"]:
+        raise ValueError("resample loses dates from the fixed analysis window")
+    options = dict(task["options"], threads=task["threads"], memory_gb=task["memory_gb"])
+    result = None
     try:
-        if task["dates"] != task["expected_dates"]:
-            raise ValueError("resample loses dates from the fixed analysis window")
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            try:
-                result = _fit(
-                    task["fml"],
-                    task["path"],
-                    panel=task["panel"],
-                    cohort=task["cohort"],
-                    treatment=task["treatment"],
-                    estimator=task["estimator"],
-                    workdir=task["workdir"],
-                    **task["options"],
-                )
-                if result.n_units != task["n_units"] or result.n_obs != task["draw_rows"]:
-                    raise ValueError("refit changed the fixed sampled population")
-                _, values = _target(
-                    result, task["aggregate"], task["aggregate_options"], task["names"]
-                )
-            finally:
-                captured.extend(
-                    dict(draw=b, category=w.category.__name__, message=str(w.message)[:2000])
-                    for w in caught
-                )
-    except (ValueError, FloatingPointError, np.linalg.LinAlgError) as exc:
-        failure = dict(draw=b, error_type=type(exc).__name__, reason=str(exc)[:2000])
+        result = _estimate(
+            task["fml"],
+            task["path"],
+            panel=(task["unit_column"], task["time"]),
+            cohort=task["cohort"],
+            treatment=task["treatment"],
+            estimator=task["estimator"],
+            workdir=task["workdir"],
+            options=options,
+        )
+        # Resampled units keep the original sample; resampled clusters vary in size.
+        if task["n_units"] is not None and (
+            result.n_units != task["n_units"] or result.n_obs != task["rows"]
+        ):
+            raise ValueError("refit changed the fixed sampled population")
+        _, values = _target(result, task["aggregate"], task["aggregate_options"], task["names"])
+        return values
     finally:
         if result is not None:
             result.cleanup()
-        pa.default_memory_pool().release_unused()
-    return values, failure, captured
 
 
-def _parallel_refits(tasks, workers, threads, memory_gb):
-    """Yield completed bounded-batch results; stop children before scratch cleanup."""
-    with ProcessBatch(workers) as batch:
-        pending = {}
-        for task in tasks:
-            root = Path(task["workdir"]).parent
-            job, output, log = root / "job.pkl", root / "result.pkl", root / "worker.log"
-            task = dict(task, options=dict(task["options"], threads=threads, memory_gb=memory_gb))
-            with job.open("wb") as f:
-                pickle.dump(task, f, protocol=pickle.HIGHEST_PROTOCOL)
-            command = [
-                sys.executable,
-                str(Path(__file__).with_name("_bootstrap_worker.py")),
-                str(job),
-                str(output),
-                str(threads),
-                repr(memory_gb),
-            ]
-            pending[batch.submit(command, log)] = (task["draw"], output, log)
-        for future in as_completed(pending):
-            b, output, log = pending[future]
-            returncode = future.result()
-            if returncode or not output.exists():
-                with log.open("rb") as f:
-                    f.seek(max(0, log.stat().st_size - 4000))
-                    detail = f.read().decode(errors="replace")
-                raise RuntimeError(f"bootstrap worker for draw {b} exited {returncode}: {detail}")
-            with output.open("rb") as f:
-                payload = pickle.load(f)  # Private output of our own worker.
-            if "error" in payload:
-                error = payload["error"]
-                # Keep the exception type (notably MemoryError) and remote trace.
-                raise error from RuntimeError(payload["traceback"])
-            yield b, payload["result"], payload["resources"]
+def _dcdh_columns(fml, panel, treatment, options):
+    """The source columns a did_dcdh fit reads."""
+    import formulaic
+
+    y, rhs = [s.strip() for s in fml.split("~")]
+    covariates = [] if rhs == "1" else sorted(formulaic.Formula(rhs).required_variables)
+    trends = options.get("trends_by")
+    trends = [] if trends is None else ([trends] if isinstance(trends, str) else list(trends))
+    extra = [options.get("weights"), options.get("cluster")]
+    return [*panel, treatment, y, *covariates, *trends, *[c for c in extra if c is not None]]
 
 
 def _refit_bootstrap(
@@ -268,32 +136,18 @@ def _refit_bootstrap(
     **fit_options,
 ):
     """refit_bootstrap with internal estimator codes and option names."""
-    for name, value, minimum in [
-        ("reps", reps, 2),
-        ("batch_units", batch_units, 1),
-        ("n_workers", workers, 1),
-    ]:
-        if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
-            raise ValueError(f"{name} must be an integer >= {minimum}")
+    if isinstance(batch_units, bool) or not isinstance(batch_units, int) or batch_units < 1:
+        raise ValueError("batch_units must be an integer >= 1")
+    refit_workers(reps, workers, threads)
     if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int) or seed < 0):
         raise ValueError("seed must be a nonnegative integer or None")
-    if threads is not None and (
-        isinstance(threads, bool) or not isinstance(threads, int) or threads < 1
-    ):
-        raise ValueError("n_threads must be a positive integer")
-    active_workers = min(workers, reps)
-    job_threads = threads if threads is not None else detect_cpus()
-    if active_workers > 1 and active_workers > job_threads:
-        raise ValueError(
-            "n_workers cannot exceed the total thread budget; increase n_threads or reduce n_workers"
-        )
-    worker_threads = max(1, job_threads // active_workers)
+    dcdh = estimator == "dcdh"
     if aggregate not in (None, "event_time", "overall", "cohort", "calendar"):
         raise ValueError("aggregate must be 'event_time', 'overall', 'cohort', 'calendar' or None")
-    if estimator == "gardner" and aggregate is not None:
+    if estimator in ("gardner", "dcdh") and aggregate is not None:
         raise ValueError(
-            "did_two_stage coefficients are reported directly: use aggregate=None "
-            "(and event_study=False for a single ATT)"
+            f"{public_estimator} coefficients are reported directly: use aggregate=None"
+            + (" (and event_study=False for a single ATT)" if estimator == "gardner" else "")
         )
     aggregate_options = {} if aggregate_options is None else dict(aggregate_options)
     if aggregate is None and aggregate_options:
@@ -319,39 +173,40 @@ def _refit_bootstrap(
     preprocess_mb = preprocess_budget_mb(64 if preprocess_mb is None else preprocess_mb, budget)
     if not budget.fits((preprocess_mb * 1e6 + 96e6) / 1e9):
         raise MemoryError("bootstrap preprocessing buffers exceed job headroom")
-    weights = fit_options.get("weights")
-    _, y, design, absorbed, _ = inspect(
-        fml,
-        data,
-        panel,
-        cohort,
-        treatment=treatment,
-        allow_covariates=True,
-        weights=weights,
-        allow_fe=estimator in ("sunab", "bjs", "gardner"),
-        fe_solver=fit_options.get("fe_solver", "auto"),
-    )
-    required = list(
-        dict.fromkeys(
-            [
-                *panel,
-                cohort if cohort is not None else treatment,
-                y,
-                *([] if weights is None else [weights]),
-                *([] if design is None else design.required),
-                *[c for _, written in absorbed or [] for c in written.split("^")],
-            ]
+    cluster = fit_options.get("cluster") if dcdh else None
+    if cluster == panel[0]:
+        cluster = None
+    if dcdh:
+        required = list(dict.fromkeys(_dcdh_columns(fml, panel, treatment, fit_options)))
+    else:
+        weights = fit_options.get("weights")
+        _, y, design, absorbed, _ = inspect(
+            fml,
+            data,
+            panel,
+            cohort,
+            treatment=treatment,
+            allow_covariates=True,
+            weights=weights,
+            allow_fe=estimator in ("sunab", "bjs", "gardner"),
+            fe_solver=fit_options.get("fe_solver", "auto"),
         )
-    )
+        required = list(
+            dict.fromkeys(
+                [
+                    *panel,
+                    cohort if cohort is not None else treatment,
+                    y,
+                    *([] if weights is None else [weights]),
+                    *([] if design is None else design.required),
+                    *[c for _, written in absorbed or [] for c in written.split("^")],
+                ]
+            )
+        )
     src = source(data)
-    used = set(src.collect_schema().names())
-    index_column = "__diff_source_unit"
-    while index_column in used:
-        index_column += "_"
-    used.add(index_column)
-    draw_column = "__diff_boot_unit"
-    while draw_column in used:
-        draw_column += "_"
+    missing = set(required) - set(src.collect_schema().names())
+    if missing:
+        raise ValueError(f"unknown columns: {sorted(missing)}")
     options = dict(
         fit_options,
         threads=threads,
@@ -360,8 +215,6 @@ def _refit_bootstrap(
         preprocess_mb=refit_preprocess_mb,
         batch_units=batch_units,
     )
-    seed_sequence = np.random.SeedSequence(seed)
-    rng = np.random.default_rng(seed_sequence)
     if workdir is not None:
         Path(workdir).mkdir(parents=True, exist_ok=True)
     with thread_scope(threads), TemporaryDirectory(prefix="diff-stream-refit-", dir=workdir) as run:
@@ -378,7 +231,7 @@ def _refit_bootstrap(
             .collect(engine="streaming")
             .row(0)
         )
-        original = _fit(
+        original = _estimate(
             fml,
             snapshot,
             panel=panel,
@@ -386,7 +239,7 @@ def _refit_bootstrap(
             treatment=treatment,
             estimator=estimator,
             workdir=run / "fit",
-            **options,
+            options=options,
         )
         try:
             names, beta = _target(original, aggregate, aggregate_options, coefficients)
@@ -395,7 +248,11 @@ def _refit_bootstrap(
         finally:
             original.cleanup()
         del original
-        step = diag.get("period_step", 1)
+        if dcdh:
+            periods = diag["periods"]
+            step = (diag["time_max"] - diag["time_min"]) // max(periods - 1, 1)
+        else:
+            step = diag.get("period_step", 1)
         expected_dates = list(range(diag["time_min"], diag["time_max"] + 1, step))
         cutoff = diag.get("reference_cutoff")
         mode = options.get("panel_mode", "balanced")
@@ -416,112 +273,50 @@ def _refit_bootstrap(
                 frame = frame.filter(pl.col(panel[1]) < cutoff)
             return frame
 
-        stage = run / "units"
-        stage.mkdir()
-        sampler = DiskGroupResampler(
+        options.update(panel_mode="unbalanced" if mode == "unbalanced" else "balanced")
+        if dcdh:
+            # the estimates do not depend on the clusters, which the draws resample
+            options.pop("cluster", None)
+        else:
+            options.update(reference_group="nevertreated")
+        task = dict(
+            fml=_replicate_formula(fml, panel[0]),
+            time=panel[1],
+            cohort=cohort,
+            treatment=treatment,
+            estimator=estimator,
+            options=options,
+            expected_dates=expected_dates,
+            n_units=None if cluster is not None else n_units,
+            aggregate=aggregate,
+            aggregate_options=aggregate_options,
+            names=names,
+        )
+        out = refit_draws(
             snapshot,
-            stage,
-            budget,
-            preprocess_mb,
-            key=panel[0],
-            sort_columns=list(panel),
-            select=select,
-            index_column=index_column,
-            draw_column=draw_column,
-        )
-        if (sampler.n_units, sampler.n_rows) != (n_units, n_obs):
-            raise RuntimeError("bootstrap staging differs from the original fitted sample")
-        numeric = 8 * 4 * reps * len(names) + 48e6
-        pa.default_memory_pool().release_unused()
-        if not budget.fits(numeric / 1e9):
-            raise MemoryError(
-                "bootstrap draw matrix exceeds job headroom; reduce reps/coefficients"
-            )
-        draws = np.full((reps, len(names)), np.nan)
-        failures, captured, hashes = [], [], []
-        options.update(
-            reference_group="nevertreated",
-            panel_mode="unbalanced" if mode == "unbalanced" else "balanced",
-        )
-        replicate_fml = _replicate_formula(fml, panel[0])
-        batches, worker_resources = [], []
-        for start in range(0, reps, active_workers):
-            with TemporaryDirectory(prefix="batch-", dir=run) as batch_root:
-                tasks = []
-                for b in range(start, min(start + active_workers, reps)):
-                    attempt = Path(batch_root) / f"draw-{b}"
-                    attempt.mkdir()
-                    path, dates, draw_rows, identity = sampler.materialize(
-                        rng, attempt / "data", time_column=panel[1]
-                    )
-                    hashes.append(identity)
-                    tasks.append(
-                        dict(
-                            draw=b,
-                            fml=replicate_fml,
-                            path=path,
-                            panel=(draw_column, panel[1]),
-                            cohort=cohort,
-                            treatment=treatment,
-                            estimator=estimator,
-                            workdir=attempt / "fit",
-                            options=options,
-                            dates=dates,
-                            expected_dates=expected_dates,
-                            n_units=n_units,
-                            draw_rows=draw_rows,
-                            aggregate=aggregate,
-                            aggregate_options=aggregate_options,
-                            names=names,
-                        )
-                    )
-                if active_workers == 1:
-                    completed = [(start, _refit_attempt(tasks[0]), None)]
-                else:
-                    pa.default_memory_pool().release_unused()
-                    # Parent staging is idle while children fit. Reserve its
-                    # current RSS plus the job reserve; workers share only the
-                    # remainder and also retain their own MemoryBudget reserve.
-                    worker_memory = budget.headroom_gb() / active_workers
-                    minimum = 0.35 + (refit_preprocess_mb or 64) / 1000 + 0.096
-                    if worker_memory * (1 - budget.reserve) < minimum:
-                        raise MemoryError(
-                            "insufficient whole-job memory for parallel refits including worker runtimes; "
-                            "reduce n_workers/preprocess_mb or increase max_memory_gb"
-                        )
-                    batches.append(
-                        dict(first_draw=start, refits=len(tasks), worker_memory_gb=worker_memory)
-                    )
-                    completed = _parallel_refits(
-                        tasks, active_workers, worker_threads, worker_memory
-                    )
-                # Closing the generator stops/reaps workers before the batch
-                # temporary directory is removed, including on interruption.
-                with (
-                    closing(completed) if active_workers > 1 else nullcontext(completed) as results
-                ):
-                    for b, (values, failure, notes), resources in results:
-                        if values is not None:
-                            draws[b] = values
-                        if failure is not None:
-                            failures.append(failure)
-                        captured.extend(notes)
-                        if resources is not None:
-                            worker_resources.append(dict(draw=b, **resources))
-        failures.sort(key=lambda x: x["draw"])
-        captured.sort(key=lambda x: x["draw"])
-        worker_resources.sort(key=lambda x: x["draw"])
-        diagnostics = dict(
-            workers_requested=workers,
-            workers=active_workers,
-            job_threads=job_threads,
-            worker_threads=worker_threads if active_workers > 1 else threads,
-            parallel_batches=batches,
-            worker_resources=worker_resources,
-            seed=seed,
-            seed_entropy=seed_sequence.entropy,
-            bit_generator=type(rng.bit_generator).__name__,
+            run,
+            fit=_refit_task,
+            task=task,
+            width=len(names),
             reps=reps,
+            seed=seed,
+            workers=workers,
+            threads=threads,
+            memory_gb=memory_gb,
+            budget=budget,
+            preprocess_mb=preprocess_mb,
+            key=cluster if cluster is not None else panel[0],
+            within=panel[0] if cluster is not None else None,
+            sort_columns=[cluster, *panel] if cluster is not None else list(panel),
+            select=select,
+            time_column=panel[1],
+            expected_groups=n_units,
+            expected_rows=n_obs,
+            worker_minimum_gb=0.35 + (refit_preprocess_mb or 64) / 1000 + 0.096,
+            preload=("diff_stream",),
+        )
+        diagnostics = dict(
+            out.diagnostics,
             unit_count=n_units,
             original_rows=n_obs,
             analysis_rows=n_obs,
@@ -537,35 +332,35 @@ def _refit_bootstrap(
             reference_cutoff=cutoff,
             analysis_time_min=diag["time_min"],
             analysis_time_max=diag["time_max"],
-            replicate_reference="never_treated",
-            sampling="ordinary uniform unit pairs with replacement; fresh ID for each copy",
+            replicate_reference=None if dcdh else "never_treated",
+            sampling=(
+                f"ordinary uniform clusters of {cluster} with replacement; fresh group IDs in "
+                "each copy"
+                if cluster is not None
+                else "ordinary uniform unit pairs with replacement; fresh ID for each copy"
+            ),
             inference="pointwise; complete successful rows only; failed attempts never redrawn",
-            unit_order="hash leaf traversal, sorted source IDs within leaf; fixed input/layout reproducibility",
-            unit_order_sha256=sampler.identity.hexdigest(),
-            draw_plan_sha256=hashes,
             source_columns=required,
-            partitions=sampler.partition_count,
-            preprocess_mb=preprocess_mb,
             batch_units=batch_units,
-            added_generic_infrastructure="bounded whole-group resampling adapter in diff_stream._core.resample",
         )
-    out = RefitBootstrapResult(
+    result = RefitBootstrapResult(
         fml=fml,
         estimator=public_estimator,
         coefnames=names,
         beta=beta,
         diagnostics=diagnostics,
-        _draws=draws,
-        _failures=failures,
-        _warnings=captured,
+        _draws=out.draws,
+        _failures=out.failures,
+        _warnings=out.warnings,
     )
-    if failures:
+    if out.failures:
         warnings.warn(
-            f"{len(failures)} of {reps} unit-cluster refits failed. Inspect failures(); incomplete-run inference requires allow_incomplete=True and is conditional on successful fits.",
+            f"{len(out.failures)} of {reps} refits failed. Inspect failures(); incomplete-run "
+            "inference requires allow_incomplete=True and is conditional on successful fits.",
             BootstrapFailureWarning,
             stacklevel=2,
         )
-    return out
+    return result
 
 
 # refit_bootstrap() sets these itself, for the original fit and every refit.
@@ -574,6 +369,7 @@ _CONTROLLED = {
     "data",
     "panel",
     "cohort",
+    "treatment",
     "n_threads",
     "max_memory_gb",
     "memory_reserve",
@@ -609,11 +405,13 @@ def refit_bootstrap(
     preprocess_mb=None,
     **fit_options,
 ):
-    """Bootstrap by resampling units and refitting the estimator.
+    """Bootstrap by resampling units (or clusters) and refitting the estimator.
 
     Draws ``reps`` samples of the units with replacement (each copy of a unit
     gets its own ID) and refits the whole estimator on each, including its
-    propensity scores, trimming and aggregation weights. Reports bootstrap
+    propensity scores, trimming and aggregation weights. For ``did_dcdh`` with
+    ``cluster=``, whole clusters are drawn instead, as did_multiplegt_dyn's
+    bootstrap does, each copy's groups with IDs of their own. Reports bootstrap
     standard errors and percentile, basic or normal intervals for each
     coefficient. The sample and comparison group chosen by the original fit
     (incomplete units dropped, a last-treated reference window) are held
@@ -623,10 +421,12 @@ def refit_bootstrap(
 
     Parameters
     ----------
-    fml, data, panel, cohort
-        As for the estimator.
+    fml, data, panel, cohort, treatment
+        As for the estimator (``did_dcdh`` takes ``treatment``).
     estimator : function
-        One of the estimator functions, e.g. ``did_bjs``.
+        One of the estimator functions: ``did_callaway_santanna``,
+        ``did_sun_abraham``, ``did_bjs``, ``did_two_stage``, ``did_extended_twfe``
+        or ``did_dcdh``.
     reps : int, default 199
         Bootstrap draws.
     seed : int, optional
@@ -635,8 +435,8 @@ def refit_bootstrap(
     aggregate : {"event_time", "overall", "cohort", "calendar"}, optional
         Bootstrap an aggregate (``result.aggregate(aggregate,
         **aggregate_options)``) instead of the fitted coefficients. Not
-        available for ``did_two_stage``, whose coefficients are reported
-        directly.
+        available for ``did_two_stage`` and ``did_dcdh``, whose coefficients
+        are reported directly.
     aggregate_options : dict, optional
         Options for ``aggregate()``, such as ``{"balanced_horizon": 2}``.
     coefficients : list of str, optional
@@ -696,6 +496,7 @@ def refit_bootstrap(
 
 
 _ESTIMATOR_CODES = {
+    did_dcdh: "dcdh",
     did_callaway_santanna: "cs",
     did_sun_abraham: "sunab",
     did_bjs: "bjs",

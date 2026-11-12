@@ -3,9 +3,9 @@
 import numpy as np
 import polars as pl
 import pyarrow.parquet as pq
+from hdfe_stream.core.partition import GroupPartitions, Part, whole_group_batches
 
 from ._core.design import CovariatePlan
-from ._core.partition import GroupPartitions, Part, whole_group_batches
 from ._core.weights import validate_weights
 from .store import source
 

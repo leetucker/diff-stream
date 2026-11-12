@@ -25,8 +25,7 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 import polars as pl
-
-from ._core.partition import whole_group_batches
+from hdfe_stream.core.partition import whole_group_batches
 
 _DROPPED = ".*variables dropped due to multicollinearity"
 

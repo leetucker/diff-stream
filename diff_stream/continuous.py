@@ -22,6 +22,7 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import polars as pl
 import pyarrow as pa
+from hdfe_stream.core.partition import preprocess_budget_mb
 from hdfe_stream.core.profile import Component, Profile
 from hdfe_stream.core.results_base import RegressionResult
 from scipy.interpolate import BSpline
@@ -36,7 +37,7 @@ from ._core.multiplier import (
     multiplier_band,
     validate_bootstrap,
 )
-from ._core.partition import preprocess_budget_mb, staging_bytes
+from ._core.partition import staging_bytes
 from ._present import present, public_diagnostics, public_profile
 from .cohort_scores import CohortScoreCovariance
 from .estimators import fit_means, setup

@@ -30,11 +30,12 @@ import numpy as np
 import polars as pl
 import pyarrow as pa
 from hdfe_stream.core.influence import ClusterScoreAccumulator
+from hdfe_stream.core.partition import preprocess_budget_mb
 from hdfe_stream.core.profile import Component, Profile
 from stream_limits import MemoryBudget, current_rss_gb, detect_cpus, thread_scope
 
 from . import _docs, _options
-from ._core.partition import preprocess_budget_mb, staging_bytes
+from ._core.partition import staging_bytes
 from ._present import label_frame, labels_of, present, public_profile
 from .gardner import TwoStageResult
 from .store import PanelStore, inspect
