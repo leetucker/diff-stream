@@ -1,0 +1,27 @@
+{
+  "reference": "diff-diff 4.0.0 (ContinuousDiD with survey_design=SurveyDesign(psu=...), unweighted, no covariates): the lowest-dose comparison clustered by major, with the continuous dose's reference doses up to 3 set to 3 (reference_dose=3) and with the discrete dose, and three cohorts with never-treated and not-yet-treated comparisons clustered by region. Estimates, curves, their standard errors, cells and the event study's estimates are compared directly, with did_continuous's CRV1. diff-diff's overall ACRT standard error holds the average slope fixed and, with several cohorts, its overall ATT and event-study standard errors hold the cohort shares fixed; the tests reproduce them with the dense oracle under those conventions.",
+  "files": {
+    "benchmarks/external/continuous_cluster_reference.py": "eaeb549869a6420fb62d405a7a9d63af9299904ffe4542af048eadd6ff505ed3",
+    "benchmarks/external/continuous_lowest_panel.py": "ed435154a403cfc8d27a9fc909969216b0eeb9bbbe0505ace3b4e404989acf5d",
+    "tests/data/continuous_lowest_panel.csv": "78ff3d7afe1c931c1b378fbf698386b6e2e80d8b5f0dd6d5dd7994fd3faf0fd6",
+    "benchmarks/external/continuous_covariates_panel.py": "b8c5d2ab7f3fc318d4d2aa25d1c47460ad8bf77afbef0ecd1d0870ebee9b6460",
+    "tests/data/continuous_covariates_panel.csv": "9108011b7ce8c17ccd2f0998b7baf9534839f7b688a097b1b02e1d15370577e9",
+    "tests/data/continuous_cluster_reference/cells_lowest_discrete.csv": "8a0393cb08b6d140a7d83c1b07d62f2e3ded511af8a2df161dc01987dfa7bb84",
+    "tests/data/continuous_cluster_reference/cells_reference_continuous.csv": "04fa6cebf2965df31ebfbcabb60dd7f2403d9d4b1161efb71efb8c11be2d82ed",
+    "tests/data/continuous_cluster_reference/cells_staggered_never_treated.csv": "4dac141f8ff871fcc2b5430b5c223daf9631b94908a2d4a701f6c0bbf42de3fa",
+    "tests/data/continuous_cluster_reference/cells_staggered_not_yet_treated.csv": "f996b3ea1246b7cd8fb301cd632fcfe1c3ef77097155504229d29552df17ec46",
+    "tests/data/continuous_cluster_reference/curves_lowest_discrete.csv": "ee2a6a46be5a6d36ceb1cbe10dc5b9b64fd7d5f9724d629d2c1069f230d9e7d5",
+    "tests/data/continuous_cluster_reference/curves_reference_continuous.csv": "2d5831d6f6c12096cf12d23a6955e331b55ad45a6c9f3c3ee00b41d1d5df3575",
+    "tests/data/continuous_cluster_reference/curves_staggered_never_treated.csv": "0628d54aa7549484a13ee1dca7258fd66294765c14bfb6e03dfa67f32bdcd35e",
+    "tests/data/continuous_cluster_reference/curves_staggered_not_yet_treated.csv": "09eaa303b48993d8688fbb940145b97726813ca8f8ca1d89fb628bf6d2f838c8",
+    "tests/data/continuous_cluster_reference/event_lowest_discrete.csv": "cb10fff26eb274412bedda818f8c9795cf818b51cc6f120e2e60bc764634eff5",
+    "tests/data/continuous_cluster_reference/event_reference_continuous.csv": "3414fe9b4166246ef048aa11ba7782fa66323f94ae22fd262c07eea4a29e0e24",
+    "tests/data/continuous_cluster_reference/event_staggered_never_treated.csv": "48dd88be2a76fc24fcd12c968384bdde5884e948bccf9e6dbe6f75524ecd3276",
+    "tests/data/continuous_cluster_reference/event_staggered_not_yet_treated.csv": "5555923846f18722d86b6417acd50baeb797f70f6b8aab51b3405581c440f455",
+    "tests/data/continuous_cluster_reference/overall_lowest_discrete.csv": "b2349f54e7dc1b7e9c0179c293103407010898838ee7046a191c5e690f972e2b",
+    "tests/data/continuous_cluster_reference/overall_reference_continuous.csv": "c20ae5903d20e1296365fe3ab87ccc58e764acfe48691925000b2fa87f286f1b",
+    "tests/data/continuous_cluster_reference/overall_staggered_never_treated.csv": "7ce8c78738878339bc136f4829829525ab988af8d858160acfa6b4ee4de6a31c",
+    "tests/data/continuous_cluster_reference/overall_staggered_not_yet_treated.csv": "47e6f58724513de6ef36e8f15e7329984cb15113200e38bc19f1f1b4244e1d40",
+    "tests/data/continuous_cluster_reference/versions.csv": "84e7fa6472acdbdf543c3d38e76fbf5f55a3d1226235b9b75319cc597d655a34"
+  }
+}

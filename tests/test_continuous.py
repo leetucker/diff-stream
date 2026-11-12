@@ -849,6 +849,7 @@ def general_oracle(
     weights=None,
     cluster=None,
     fixed_slopes=False,
+    fixed_shares=False,
     gradients=False,
 ):
     """The overall ATT and ACRT from dense regressions, with standard errors from their
@@ -861,7 +862,8 @@ def general_oracle(
     dose basis. ``reference(d)`` marks the lowest-dose comparison's reference units.
     Treated units whose region has no comparison units in a cell they are observed
     in are left out of their cohort. ``fixed_slopes`` holds each cell's average slope
-    of the basis fixed, as diff-diff does for the overall ACRT. ``gradients=True``
+    of the basis fixed, as diff-diff does for the overall ACRT, and ``fixed_shares``
+    the cohort shares in the overall ATT, as it does there. ``gradients=True``
     returns the units' (or clusters') gradients in place of the standard errors.
     """
     ids = panel["id"].unique().sort()
@@ -932,7 +934,8 @@ def general_oracle(
             post = np.array([c == g and t >= g for c, t in cells])
             w[post] = n[g] / total / post.sum()
         cell_weights = w.real if fixed is None else fixed[0]
-        return np.r_[w @ np.array(att), cell_weights @ np.array(acrt)], (w.real, slopes)
+        att_weights = cell_weights if fixed_shares else w
+        return np.r_[att_weights @ np.array(att), cell_weights @ np.array(acrt)], (w.real, slopes)
 
     base, fixed = estimate(np.ones(len(G)))
     grads = []
@@ -1417,3 +1420,167 @@ def test_time_varying_weights_match_the_dense_oracle(lowest_panel, unbalanced):
 def test_time_varying_weights_need_permission(lowest_panel):
     with pytest.raises(ValueError, match="constant within unit"):
         did_continuous("y ~ 1", lowest_panel, **LOWEST_KW, dose="dose", weights="weight_t")
+
+
+# Standard errors clustered above the unit, against diff-diff's survey PSUs. Its overall
+# ACRT holds the average slope fixed, and with several cohorts its overall ATT and event
+# study hold the cohort shares fixed; those are reproduced with the dense calculation.
+
+CLUSTERED = DATA / "continuous_cluster_reference"
+CLUSTERED_FITS = {
+    "reference_continuous": (
+        "lowest",
+        "y ~ 1",
+        dict(dose="dose", control_group="lowest_dose", reference_dose=3.0, cluster="major"),
+    ),
+    "lowest_discrete": (
+        "lowest",
+        "y_level ~ 1",
+        dict(dose="dose_level", dose_type="discrete", control_group="lowest_dose", cluster="major"),
+    ),
+    "staggered_never_treated": (
+        "staggered",
+        "y ~ 1",
+        dict(dose="dose", control_group="never_treated", cluster="region"),
+    ),
+    "staggered_not_yet_treated": (
+        "staggered",
+        "y ~ 1",
+        dict(dose="dose", control_group="not_yet_treated", cluster="region"),
+    ),
+}
+
+
+@pytest.fixture(scope="module")
+def clustered_panels(lowest_panel, covariate_panel):
+    for name, h in json.loads((CLUSTERED / "PROVENANCE.json").read_text())["files"].items():
+        assert digest(Path(__file__).parents[1] / name) == h, name
+    return {"lowest": lowest_panel, "staggered": covariate_panel}
+
+
+@pytest.mark.parametrize("name", CLUSTERED_FITS)
+def test_clusters_match_diff_diff(clustered_panels, name):
+    which, fml, options = CLUSTERED_FITS[name]
+    data = clustered_panels[which]
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # clustering is not experimental; no one-cluster cell
+        fit = did_continuous(
+            fml, data, panel=("id", "time"), cohort="first_treat", **options, vcov="CRV1"
+        )
+    G = data[options["cluster"]].n_unique()
+    assert fit.n_clusters == {options["cluster"]: G} and fit.df_t == G - 1
+    assert fit.diagnostics["inference"].startswith(f"clustered by {options['cluster']}")
+    overall = read_csv(CLUSTERED / f"overall_{name}.csv")
+    assert_allclose(fit.beta, overall["estimate"].to_numpy(), rtol=1e-12)
+    grid = LOWEST_GRID if options.get("dose_type") != "discrete" else None
+    if "reference_dose" in options:
+        grid = grid[grid > 3]
+    curves = read_csv(CLUSTERED / f"curves_{name}.csv")
+    for target, column in (("level", "att"), ("slope", "acrt")):
+        frame = fit.dose_response(target, dose=grid)
+        assert_allclose(frame["estimate"].to_numpy(), curves[column].to_numpy(), rtol=1e-11)
+        assert_allclose(
+            frame["std_error"].to_numpy(), curves[f"{column}_se"].to_numpy(), rtol=1e-10
+        )
+    cells = read_csv(CLUSTERED / f"cells_{name}.csv")
+    assert_allclose(fit._att.beta, cells["att"].to_numpy(), rtol=1e-10, atol=1e-13)
+    event = read_csv(CLUSTERED / f"event_{name}.csv")
+    es = fit.aggregate()
+    assert_allclose(es.beta, event["estimate"].to_numpy(), rtol=1e-10, atol=1e-13)
+    outcome, cg = fml.split("~")[0].strip(), options["control_group"]
+    if cg == "lowest_dose":
+        cut = options.get("reference_dose")
+        reference = (lambda d: d <= cut) if cut else (lambda d: d == d.min())
+    else:
+        reference = None
+    oracle = dict(reference=reference, cluster=options["cluster"])
+    # ours: the dense calculation, clustered (CRV0 there, so the factor here)
+    estimate, se = general_oracle(data, fit, outcome, options["dose"], cg, **oracle)
+    assert_allclose(fit.beta, estimate, rtol=1e-12)
+    assert_allclose(fit.se, se * np.sqrt(G / (G - 1)), rtol=1e-10)
+    # diff-diff's: the average slope (and the cohort shares) held fixed
+    _, fixed = general_oracle(
+        data, fit, outcome, options["dose"], cg, **oracle, fixed_slopes=True, fixed_shares=True
+    )
+    assert_allclose(fixed * np.sqrt(G / (G - 1)), overall["se"].to_numpy(), rtol=1e-10)
+    sizes = {int(g): n for g, n in fit.diagnostics["cohort_sizes"].items()}
+    held = []
+    for e in event["event"]:
+        w = np.array([sizes[g] * (t - g == e) for g, t in fit._att.cells], dtype=float)
+        w /= w.sum()
+        held.append(np.sqrt(w @ fit._att.vcov @ w))
+    assert_allclose(held, event["se"].to_numpy(), rtol=1e-10)
+
+
+def test_clustered_weighted_fit_matches_the_dense_oracle(lowest_panel):
+    """Clusters, weights, a fixed effect, covariates and missing periods together."""
+    data = _unbalanced(lowest_panel, 9)
+    fit = fit_quietly(
+        "y ~ x | region",
+        data,
+        **LOWEST_KW,
+        dose="dose",
+        reference_dose=3.0,
+        weights="weight",
+        cluster="major",
+        incomplete_units="keep",
+        multiplier_bootstrap_reps=30,
+    )
+    estimate, se = general_oracle(
+        data,
+        fit,
+        "y",
+        "dose",
+        "lowest_dose",
+        reference=lambda d: d <= 3.0,
+        covariates=True,
+        fixed_effect=True,
+        weights="weight",
+        cluster="major",
+    )
+    assert_allclose(fit.beta, estimate, rtol=1e-12)
+    assert_allclose(fit.se, se, rtol=1e-10)
+    # CRV1 uses the number of clusters, also after with_vcov and in aggregations
+    crv1 = fit.with_vcov("CRV1")
+    assert_allclose(crv1.se, se * np.sqrt(40 / 39), rtol=1e-10)
+    assert_allclose(crv1.aggregate().se, fit.aggregate().se * np.sqrt(40 / 39), rtol=1e-12)
+    band = fit.dose_response(uniform=True)
+    assert (band["ci_high"] > band["estimate"]).all()
+
+
+def test_one_cluster_of_reference_units_warns(lowest_panel):
+    with pytest.warns(UserWarning, match="all the comparison units are in one cluster"):
+        fit = did_continuous("y ~ 1", lowest_panel, **LOWEST_KW, dose="dose", cluster="major")
+    assert fit.diagnostics["fewest_comparison_clusters"] == 1
+    assert "give reference_dose" in fit.diagnostics["warnings"][-1]
+
+
+def test_clustered_fit_does_not_depend_on_threads_or_batches(lowest_panel):
+    options = dict(
+        LOWEST_KW,
+        dose="dose",
+        reference_dose=3.0,
+        cluster="major",
+        multiplier_bootstrap_reps=40,
+        multiplier_bootstrap_seed=2,
+    )
+    one = did_continuous("y ~ 1", lowest_panel, **(options | dict(n_threads=1)))
+    many = did_continuous("y ~ 1", lowest_panel, **(options | dict(n_threads=4, batch_units=61)))
+    assert_allclose(many.vcov, one.vcov, rtol=1e-10)
+    a, b = one.dose_response(uniform=True), many.dose_response(uniform=True)
+    assert_allclose(b["ci_low"].to_numpy(), a["ci_low"].to_numpy(), rtol=1e-10)
+
+
+@pytest.mark.parametrize(
+    "options,message",
+    [
+        (dict(cluster="id"), "above the unit"),
+        (dict(cluster="nowhere"), "unknown cluster columns"),
+        (dict(cluster="x"), "constant within each unit"),
+    ],
+)
+def test_cluster_errors(lowest_panel, options, message):
+    with pytest.raises(ValueError, match=message):
+        did_continuous(
+            "y ~ 1", lowest_panel, **LOWEST_KW, dose="dose", reference_dose=3.0, **options
+        )
