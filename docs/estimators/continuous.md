@@ -34,9 +34,14 @@ fit.aggregate(target="slope").summary()  # event study of the ACRT
   [No untreated units](#no-untreated-units-the-lowest-dose-comparison)).
 - The panel should be balanced: `incomplete_units="drop"` drops units with missing
   periods, and `"keep"` keeps them (experimental, see
-  [An unbalanced panel](#an-unbalanced-panel)). Sampling weights are not supported.
-  Covariates and a fixed effect are experimental (see
-  [Experimental extensions](#experimental-extensions)).
+  [An unbalanced panel](#an-unbalanced-panel)). Covariates and a fixed effect are
+  experimental (see [Experimental extensions](#experimental-extensions)).
+- **`weights`**: a column of sampling weights, such as each unit's number of people
+  when the units are groups. They weight the units in every regression and average
+  and in the cohort shares, so the estimates are those of the weighted population.
+  They must be constant within each unit; weights that change over time need
+  `allow_time_varying_weights=True` and are experimental (see
+  [Time-varying weights](#time-varying-weights)).
 
 ## What comes from the paper, and what goes further
 
@@ -48,6 +53,8 @@ fit.aggregate(target="slope").summary()  # event study of the ACRT
 | The units up to a dose as the comparison (`reference_dose`) | Remark 3.1 with a group of doses in place of one (derived [below](#a-group-of-reference-doses)) | diff-diff, with the reference units' doses set to one value | no |
 | Covariates and a fixed effect (`"y ~ x \| region"`) | An extension; the paper shows what is identified given covariates (Supplementary Appendix SE.3) but develops no estimator | diff-diff's regression adjustment; Callaway-Sant'Anna; a direct calculation | yes |
 | An unbalanced panel (`incomplete_units="keep"`) | An extension; the paper assumes a balanced panel | A direct calculation | yes |
+| Sampling weights, constant within units (`weights`) | The paper's estimators with each unit weighted, as R did weights Callaway-Sant'Anna | diff-diff's survey weights (estimates); R did's weighted Callaway-Sant'Anna (the effect of being treated); a direct calculation | no |
+| Weights that change over time (`allow_time_varying_weights=True`) | An extension | A direct calculation | yes |
 
 Features from the paper need the paper's assumptions, described with each. The
 experimental ones need further assumptions, set out in
@@ -247,6 +254,23 @@ a change in which units are observed; `incomplete_units="drop"` keeps one set of
 units throughout. A fit on a panel that turns out to be balanced is the usual fit and
 does not warn.
 
+### Time-varying weights
+
+With `allow_time_varying_weights=True`, a unit's weight may change over time, such as
+a group's size in each period. Each cohort and period then weights its units (treated
+and comparison) by their weights in the period compared, so the effects for that
+period are those of its weighted population: with group sizes, its people in that
+period. A unit's share in its cohort's weight, which weights the cohorts in the
+overall effects, is its average weight over its observed periods. With weights that
+are constant within units this is the usual weighted fit.
+
+Weighting by the period compared changes which population each period describes,
+not the comparison within units: each unit's outcome change is still compared with
+the comparison units' changes. If the weights change because the groups' make-up
+changes (a group's size grows with people who differ from those already in it), the
+group's average outcome changes for that reason too, and parallel trends must hold
+for those averages. Event studies then compare periods whose populations differ.
+
 Once you have weighed these conditions, you can silence the warning with
 `warnings.filterwarnings("ignore", category=diff_stream.ExperimentalWarning)`;
 `hdfe_stream.ExperimentalWarning` silences it for every package built on hdfe-stream.
@@ -293,6 +317,16 @@ diff-diff's overall ACRT standard error treats the treated units' average slope 
 known, as above, and is checked the same way. With a fixed effect and covariates,
 every standard error equals a direct calculation, and an absorbed fixed effect equals
 its dummies.
+
+Sampling weights are checked against diff-diff's survey weights: the estimates, both
+curves, the cohort-period effects and the event study, with the lowest-dose
+comparison for both dose types and with three cohorts and both comparison groups.
+diff-diff's weighted standard errors apply each unit's weight twice (see
+[Differences from other packages](../implementations.md#conventions-that-differ));
+the standard errors here equal a direct calculation, and the effect of being treated
+and its standard errors equal weighted Callaway-Sant'Anna, which matches R did's.
+Integer weights give the estimates of the units replicated that many times, and
+time-varying weights are checked against a direct calculation.
 
 An unbalanced panel, with and without covariates and a fixed effect, with both
 comparison groups and with the lowest-dose comparison, is checked against a direct

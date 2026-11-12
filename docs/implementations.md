@@ -125,6 +125,15 @@ its point estimates, with these differences:
   and a fixed effect are allowed (experimental), as is a group of reference doses
   (`reference_dose`), which equals diff-diff's estimates with those doses set to one
   value.
+- *Sampling weights.* contdid 0.1.1 ignores weights (contdid issue #19).
+  diff-diff 4.0.0 takes them through `survey_design=SurveyDesign(weights=...)`, and
+  its estimates, curves, cells and event studies match these. Its standard errors
+  apply each unit's weight twice: the units' influence values include their weights,
+  and its survey variance multiplies them by the weights again, so with unequal
+  weights its standard errors are too large or too small (9% to 30% larger on the
+  validation panels). diff-diff's `CallawaySantAnna` weights them once, as R did does
+  and as these do. Weights that change over time are not in diff-diff; here they are
+  experimental.
 - *Unbalanced panels (experimental here).* contdid and diff-diff require a balanced
   panel. With `incomplete_units="keep"`, each comparison here uses the units observed
   in both of its periods, unlike R did's unbalanced panels (and
