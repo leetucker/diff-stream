@@ -1,0 +1,29 @@
+{
+  "reference": "diff-diff 4.0.0 (ContinuousDiD, control_group='lowest_dose', the paper's Remark 3.1) on a panel in which every unit is treated at one date: a cubic spline in a continuous dose with a mass at its lowest value, and the saturated regression of a discrete dose, each with a varying and a universal base period; and the continuous fit with every dose up to 3 set to 3, which is did_continuous's reference_dose=3. Estimates, curves, their standard errors, cells and the event study are compared directly. diff-diff lists the universal base period as a cell with effect 0, which did_continuous omits. diff-diff's overall ACRT standard error holds each cell's average slope of the basis fixed; the tests reproduce it with the dense oracle under that convention.",
+  "files": {
+    "benchmarks/external/continuous_lowest_panel.py": "ed435154a403cfc8d27a9fc909969216b0eeb9bbbe0505ace3b4e404989acf5d",
+    "benchmarks/external/continuous_lowest_reference.py": "c2a3b6e712642bc67b735416abd921a09b50ab297f9cd57d131b169b05d6e066",
+    "tests/data/continuous_lowest_panel.csv": "78ff3d7afe1c931c1b378fbf698386b6e2e80d8b5f0dd6d5dd7994fd3faf0fd6",
+    "tests/data/continuous_lowest_reference/cells_continuous_universal.csv": "60480cba35cf66d018e43089c3d779ddc34253a23d5927e7f5e64cd566acecf2",
+    "tests/data/continuous_lowest_reference/cells_continuous_varying.csv": "193e22f828e8c9b9b751cb1789bfb3ac08aa4c0aae10ce27a8b88a74639fa17f",
+    "tests/data/continuous_lowest_reference/cells_discrete_universal.csv": "2db094fc025ef61791c498e69e443cae7f1cd9807eb615a296e3ff6f7c02cd09",
+    "tests/data/continuous_lowest_reference/cells_discrete_varying.csv": "8a0393cb08b6d140a7d83c1b07d62f2e3ded511af8a2df161dc01987dfa7bb84",
+    "tests/data/continuous_lowest_reference/cells_reference_varying.csv": "04fa6cebf2965df31ebfbcabb60dd7f2403d9d4b1161efb71efb8c11be2d82ed",
+    "tests/data/continuous_lowest_reference/curves_continuous_universal.csv": "1ddd1c7e2010cf494401e166c0ce3ca34c1a21fcba984cf07a78da3234da827e",
+    "tests/data/continuous_lowest_reference/curves_continuous_varying.csv": "1ddd1c7e2010cf494401e166c0ce3ca34c1a21fcba984cf07a78da3234da827e",
+    "tests/data/continuous_lowest_reference/curves_discrete_universal.csv": "c2ad20b1eebef33cfef6d486384fcefc341d53750a66e3976e48624f45a21449",
+    "tests/data/continuous_lowest_reference/curves_discrete_varying.csv": "c2ad20b1eebef33cfef6d486384fcefc341d53750a66e3976e48624f45a21449",
+    "tests/data/continuous_lowest_reference/curves_reference_varying.csv": "3dc527cfab8cf51dfb68d2fea3dd6612ecf5b6b35a36b5b394188ec3b3960f46",
+    "tests/data/continuous_lowest_reference/event_continuous_universal.csv": "c9f00e4d85350e10a60ff58239856cccf62fbd81c6ca589a1e3abaf3dbf44668",
+    "tests/data/continuous_lowest_reference/event_continuous_varying.csv": "1cac088b0b826a2d3ab985f10b7742ee877a9cfbd20febae67a413fe5ca4633f",
+    "tests/data/continuous_lowest_reference/event_discrete_universal.csv": "543607bef7139844fe9fcdf3d9c2acb26489d1f9579d7da9236dc0026453e486",
+    "tests/data/continuous_lowest_reference/event_discrete_varying.csv": "087091b5a1ce324d27dd58ba2812314518efdbdba05bc0bc34104e8e6662690f",
+    "tests/data/continuous_lowest_reference/event_reference_varying.csv": "01317273d5dd05b4723ca13fc6e7a12abe1bf59d98f95b824306496680eae134",
+    "tests/data/continuous_lowest_reference/overall_continuous_universal.csv": "ab8ed039f764e6772cbcfe09118ed4bf8174970114ecec80763caeb0f51c97d8",
+    "tests/data/continuous_lowest_reference/overall_continuous_varying.csv": "ab8ed039f764e6772cbcfe09118ed4bf8174970114ecec80763caeb0f51c97d8",
+    "tests/data/continuous_lowest_reference/overall_discrete_universal.csv": "05a092f5c0aefef708a6c690b7dfa37d8a11862cc7a4d69f89ece718b6c9e99f",
+    "tests/data/continuous_lowest_reference/overall_discrete_varying.csv": "05a092f5c0aefef708a6c690b7dfa37d8a11862cc7a4d69f89ece718b6c9e99f",
+    "tests/data/continuous_lowest_reference/overall_reference_varying.csv": "075e4d09c58574045b961f1c21518f79b10de4639927721fff2c97fad6d37281",
+    "tests/data/continuous_lowest_reference/versions.csv": "84e7fa6472acdbdf543c3d38e76fbf5f55a3d1226235b9b75319cc597d655a34"
+  }
+}
