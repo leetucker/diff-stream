@@ -31,8 +31,9 @@ fit.switchers()             # switching groups behind each estimate
 - **`treatment`**: a numeric column, binary or with several values, which may change
   in any period, up or down, and more than once.
 - **Groups are compared only with groups of the same first-period treatment.** A
-  first-period treatment with very many values (a continuous one) leaves few groups to
-  compare, and more than 10,000 distinct values is an error.
+  first-period treatment with very many values leaves few groups to compare, and more
+  than 10,000 distinct values is an error. For a continuous one, see
+  [A continuous first-period treatment](#a-continuous-first-period-treatment).
 - **`incomplete_units`**: `"error"` (default), `"drop"` (groups missing some periods),
   or `"keep"`, which uses each group's observed periods. A change is then used only
   where both of its periods are observed, and a group not observed in the period
@@ -86,6 +87,35 @@ after the switch equals their baseline. A switcher's effects reach only as far a
 group with its baseline is still unswitched; `switchers()` and
 `diagnostics["last_period_with_controls"]` show what is left.
 
+## A continuous first-period treatment
+
+When the first-period treatment is continuous (a tax rate, a price), no two groups
+share one, so no group has a comparison. `continuous_baseline=k` compares all groups
+together instead, assuming that untreated outcome trends may differ by a polynomial
+of degree k in the first-period treatment, period by period. This is the authors'
+`continuous` option (de Chaisemartin et al., Web Appendix, Section 1.10):
+
+```python
+fit = did_dcdh("y ~ 1", data, panel=("county", "year"), treatment="tax_rate",
+               effects=4, placebos=2, continuous_baseline=2)
+```
+
+- The polynomial enters as covariates: for each period from the second, the
+  first-period treatment's powers 1 to k times being at or after that period. Their
+  changes are each period's trend as a polynomial in the first-period treatment, and
+  they are estimated and removed as other covariates are (see Covariates above), so
+  other covariates can be added.
+- Switchers in and out are still defined by whether their treatment rose or fell, and
+  `normalized=True` and the average total effect use their actual changes in
+  treatment. The switching cohorts of the variance are defined by the period and
+  direction of the switch.
+- **The standard errors are not backed by a proven asymptotic result**, as the
+  authors note: in their simulations they are conservative with a correctly
+  specified polynomial and can be too small with a misspecified one. Every fit issues
+  a `ContinuousBaselineWarning` saying so. Checking how the estimates change with k
+  is a useful guard. The authors also suggest a bootstrap, which `did_dcdh` does not
+  provide.
+
 ## Inference
 
 The standard errors are the authors' conservative ones, clustered by group: each
@@ -93,6 +123,13 @@ switcher's change is demeaned within the groups that share its baseline, first s
 and new treatment, and each control's within its baseline and period. The joint
 covariance of all the estimates is in `fit.vcov`; `pretrend_test()` and
 `effects_equal_test()` are Wald tests that use it.
+
+**Clustering above the group.** `cluster="state"` clusters the standard errors by a
+column constant within each group, as `did_multiplegt_dyn`'s `cluster` option does:
+the groups' terms are summed by cluster, and the demeaning's degrees-of-freedom
+correction counts distinct clusters rather than groups. The variance has no
+small-sample factor, and the degrees of freedom are the clusters less one. Each
+group must be in one cluster.
 
 The fit stages the panel once and reads it three times: for the baselines and switch
 periods, for sums by baseline and period, and for each group's scores. With
@@ -106,7 +143,12 @@ switchers and the p-values of its joint placebo and equal-effects tests, which u
 covariances between the estimates, with each option above, covariates, a panel in which
 every group switches, an unbalanced panel with and without covariates, weights that
 change over time, trends by region and group-specific linear trends, alone and
-combined. See
+combined; standard errors clustered above the group, with each of those options; and
+a continuous first-period treatment with polynomials of degree 1 and 2, with
+normalized effects, covariates, weights, switchers in only and clustering. With
+missing periods in switchers' paths, `did_multiplegt_dyn`'s `continuous` option
+departs from the estimator it describes; there `did_dcdh` is checked against that
+estimator built by hand and run through `did_multiplegt_dyn` without the option. See
 [Differences from other packages](../implementations.md#conventions-that-differ) and
 [Validation](../validation.md).
 

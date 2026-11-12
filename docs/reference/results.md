@@ -42,5 +42,7 @@
 .. autoexception:: UnimputedObservationsWarning
 .. autoexception:: ExperimentalWarning
 
+.. autoexception:: ContinuousBaselineWarning
+
 .. autoexception:: BootstrapFailureWarning
 ```

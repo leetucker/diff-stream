@@ -177,11 +177,18 @@ differences:
   estimate it computed for the same horizon (with 4 effects, every effect shows the
   switchers of effect 4). Its weighted count ("Switchers.w") and its estimates use the
   right switchers, and `switchers()` here reports them.
-- *Names.* `trends_nonparam` is `trends_by`, `trends_lin` is `linear_trends`, and
+- *Names.* `trends_nonparam` is `trends_by`, `trends_lin` is `linear_trends`,
+  `continuous` is `continuous_baseline`, and
   `weight` is `weights` (with `allow_time_varying_weights=True` for weights that
   change over time).
-- *Options not implemented:* `continuous`,
-  `cluster` (standard errors are clustered by group), `same_switchers`,
+- *A continuous first-period treatment with missing periods.* With
+  `incomplete_units="keep"` and switchers that miss periods between their first and
+  last, `did_multiplegt_dyn`'s `continuous` option gives estimates that differ from
+  the estimator it describes: the same command, without the option, on the treatment
+  binarized at the switch with the polynomial controls added (which is how the option
+  works). `continuous_baseline` here equals that construction, and equals the option
+  whenever switchers have no such gaps.
+- *Options not implemented:* `same_switchers`,
   `same_switchers_pl`, `less_conservative_se`, `more_granular_demeaning`,
   `dont_drop_larger_lower`, `drop_if_d_miss_before_first_switch`, `date_first_switch`,
   `by`, `by_path`, `predict_het` and `bootstrap`.

@@ -25,7 +25,7 @@ Everything here is importable from `diff_stream`.
 | `DCDHResult` | the effects, placebos and average total effect of a switching treatment |
 | `BJSPlaceboResult` | the BJS pre-trend leads |
 | `BaconResult`, `TWFEWeightResult`, `RefitBootstrapResult` | the diagnostics' and the bootstrap's results |
-| `LowEffectiveSampleWarning`, `ReferenceWindowWarning`, `UnimputedObservationsWarning`, `BootstrapFailureWarning`, `ExperimentalWarning` | warnings |
+| `LowEffectiveSampleWarning`, `ReferenceWindowWarning`, `UnimputedObservationsWarning`, `BootstrapFailureWarning`, `ExperimentalWarning`, `ContinuousBaselineWarning` | warnings |
 | **[Utilities](utilities.md)** | |
 | `simulate_panel`, `simulate_conditional_panel` | simulated panels with known effects (`diff_stream.simulate`) |
 | `etable`, `limit_threads`, `Profile` | from hdfe-stream and stream-limits |

@@ -33,7 +33,11 @@
   (`linear_trends`), and tests that the placebos are zero and that the effects are
   equal. It matches the authors' R DIDmultiplegtDYN, except that its covariance matrix
   is a valid one and, with linear trends, it takes no first differences across missing
-  periods (see Differences from other packages).
+  periods (see Differences from other packages). Standard errors can be clustered
+  above the group (`cluster`), and a continuous first-period treatment is compared
+  through a polynomial in it (`continuous_baseline`, the authors' `continuous`
+  option), whose standard errors the authors caution may be too small; fits with it
+  issue a `ContinuousBaselineWarning`.
 
 ## 0.1.0
 
