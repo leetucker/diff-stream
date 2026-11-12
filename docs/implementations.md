@@ -116,6 +116,15 @@ its point estimates, with these differences:
   doubly robust (`"dr"`), which is not implemented here, so compare with
   `estimation_method="reg"`. diff-diff absorbs no fixed effects: here one fixed-effect
   term is absorbed, which equals entering its levels as dummies.
+- *No untreated units.* diff-diff 4.0.0's `control_group="lowest_dose"` (the paper's
+  Remark 3.1) is the same estimator as `control_group="lowest_dose"` here, and its
+  estimates, curves, curve standard errors, cells and event study match these. Its
+  overall ACRT standard error treats the treated units' average slope as known, as
+  above. diff-diff lists the universal base period as a cell with an effect of 0,
+  which is not listed here. diff-diff takes no covariates with it; here covariates
+  and a fixed effect are allowed (experimental), as is a group of reference doses
+  (`reference_dose`), which equals diff-diff's estimates with those doses set to one
+  value.
 - *The overall ATT* is a cohort-weighted average of post-treatment cells, R did's
   `aggte(type = "group")`. `aggregate("overall")` weights cells by their units
   instead, as for Callaway-Sant'Anna.

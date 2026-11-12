@@ -64,7 +64,9 @@ So the choice is mostly between two families: comparisons with one base period
   treated is Callaway-Sant'Anna's. Comparing the effects of different doses needs a
   stronger assumption than parallel trends: that the units receiving each dose would
   have had the same effect of it as the units receiving others (Callaway,
-  Goodman-Bacon and Sant'Anna 2024).
+  Goodman-Bacon and Sant'Anna 2024). When every unit is treated at once,
+  `control_group="lowest_dose"` gives the effects relative to the lowest dose's,
+  under that stronger assumption.
 
 Reporting two (one from each family) is common; a large difference between
 them points at a pre-trend.
