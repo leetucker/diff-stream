@@ -1,16 +1,18 @@
 """The general fit of did_continuous: one pass structure for every option beyond contdid's.
 
-It is used with covariates or a fixed effect, the lowest-dose comparison, weights,
+It is used with covariates or fixed effects, the lowest-dose comparison, weights,
 an unbalanced panel or clustering above the unit; without any of them the fit in
 ``continuous`` is used, and this one gives the same results.
 
 In each cohort-period cell j (base period b, covariate period p = min(t, b)), the
 comparison units observed in both periods have their outcome change regressed, with
-their weights in period t, on the covariates at p and their fixed-effect level at p.
-The regression is solved exactly from weighted sums by level (Frisch-Waugh-Lovell:
-the covariates are demeaned within levels), so a fixed effect with many levels needs
-no iterative solver. Without covariates or a fixed effect it is the comparison units'
-weighted mean change. Each treated unit observed in the cell has its change less the
+their weights in period t, on the covariates at p and their fixed-effect levels at p.
+With one fixed-effect term the regression is solved exactly from weighted sums by
+level (Frisch-Waugh-Lovell: the covariates are demeaned within levels), so a fixed
+effect with many levels needs no iterative solver. Without covariates or a fixed
+effect it is the comparison units' weighted mean change. With several terms it is
+fitted by hdfe-stream (``continuous_absorbed``), which also gives the comparison
+units' influence; everything else is the same. Each treated unit observed in the cell has its change less the
 prediction fitted on the dose basis: beta_j = A_j^-1 sum w psi a, with
 A_j = sum w psi psi'. ATT(d) = psi(d)'beta_j, ACRT(d) = psi'(d)'beta_j, and the
 binarized ATT is the weighted mean of a. Everything is per cell, so the units and
@@ -19,14 +21,18 @@ weights may differ between cells.
 With the lowest-dose comparison, the units at the reference doses are relabeled as
 the comparison group (group 0) and the others form the cohort; nothing else changes.
 
-Treated units whose level has no comparison units in a cell of their cohort they are
-observed in cannot be adjusted: they are left out of their cohort's estimates, and
+Treated units whose levels cannot be estimated from the comparison units (with one
+term: whose level has none) in a cell of their cohort they are observed in cannot be
+adjusted: they are left out of their cohort's estimates, and
 remain comparison units for the others. Scores are summed by unit, or by cluster
 when clustering above the unit.
 """
 
+from contextlib import ExitStack
+
 import numpy as np
 
+from . import continuous_absorbed
 from ._core.dose_kernels import (
     cell_comparison_sums,
     cell_treated_sums,
@@ -38,9 +44,13 @@ from ._core.nuisance import solve_checked
 from .cohort_scores import CohortScoreCovariance
 
 
-def table_bytes(M, L, P, K, C, W):
-    """Memory of the per-cell tables and the cluster sums of the general fit."""
-    cells = M * L * (P + 3 + 2 * K) + M * (K * (P + 2 * K + 4) + P * (P + 3))
+def table_bytes(M, levels, P, K, C, W):
+    """Memory of the per-cell tables and the cluster sums of the general fit.
+
+    ``levels`` lists the number of levels of each fixed-effect term.
+    """
+    F, L = max(len(levels), 1), max(levels, default=1)
+    cells = M * L * (P + 2) + M * F * L * (5 + 2 * K) + M * (K * (P + 2 * K + 4) + P * (P + 3))
     return 8 * (cells + C * (W + 1)) + 2 * M * C
 
 
@@ -77,9 +87,10 @@ def fit_general(
     controls,
     *,
     dose_column,
-    fe_column,
+    fe_columns,
     n_levels,
     covariate_columns,
+    threads=None,
     relabel=None,
     cluster_column=None,
     n_clusters=0,
@@ -89,8 +100,10 @@ def fit_general(
 ):
     """The cells, their covariance and the units left out, in the unadjusted fit's layout.
 
-    ``relabel(g, d)`` gives each unit's group from its cohort and dose (the
-    lowest-dose comparison); ``cluster_column`` the design column of a cluster index
+    ``fe_columns`` are the design columns of the fixed-effect terms' levels, with
+    ``n_levels`` levels each; with several terms the comparison regressions are
+    fitted by hdfe-stream (``threads`` its threads). ``relabel(g, d)`` gives each unit's group
+    from its cohort and dose (the lowest-dose comparison); ``cluster_column`` the design column of a cluster index
     above the unit, with ``n_clusters`` levels. Returns a dict with the binarized ATT
     and the ACRT per cell, the cells' dose coefficients, the covariance blocks (V,
     cross and the centered share covariance), the cohorts' weighted sizes, each cell's
@@ -99,8 +112,10 @@ def fit_general(
     draws.
     """
     times = store.times
-    M, G, T = len(cells), len(groups), len(times)
-    K, P, L = basis.width, len(covariate_columns), max(n_levels, 1)
+    T = len(times)
+    K, P = basis.width, len(covariate_columns)
+    F, L = max(len(fe_columns), 1), max(n_levels, default=1)
+    absorb = len(fe_columns) > 1
     groups_array = np.asarray(groups)
     gi = np.array([groups.index(g) for g, t in cells], dtype=np.int64)
     ti = np.array([t - times[0] for g, t in cells], dtype=np.int64)
@@ -128,9 +143,9 @@ def fit_general(
         k = np.searchsorted(groups_array, g)
         X = np.ascontiguousarray(x[:, :, cov]) if P else np.zeros((len(g), T, 0))
         lv = (
-            integer_column(x, fe_column)
-            if fe_column is not None
-            else np.zeros((len(g), T), dtype=np.int64)
+            np.stack([integer_column(x, c) for c in fe_columns], axis=2)
+            if fe_columns
+            else np.zeros((len(g), T, 1), dtype=np.int64)
         )
         cl = (
             unit_value(x, cluster_column, "cluster").astype(np.int64)
@@ -145,12 +160,32 @@ def fit_general(
         for batch in store.batches(include_x=True, include_weights=True, row_weights=True):
             yield arrays(batch)
 
-    # Pass A: the comparison regressions' sums, cell by cell.
+    with ExitStack() as stack:
+        absorbed = (
+            stack.enter_context(continuous_absorbed.Absorbed(store, threads)) if absorb else None
+        )
+        return _fit(
+            store, basis, groups, cells, controls, gi, ti, bases, period, T, K, P, F, L,
+            batches, absorbed, cluster_column, n_clusters,
+            bootstrap_reps, bootstrap_seed, bootstrap_weights,
+        )  # fmt: skip
+
+
+def _comparisons(batches, cells, gi, ti, bases, period, controls, P, L):
+    """One fixed-effect term (or none): each cell's comparison regression, exactly.
+
+    Returns gamma, alpha by level, which levels have comparison units, the levels'
+    covariate means, the inverse of the demeaned covariates' moments and the levels'
+    comparison weights.
+    """
+    M = len(cells)
     n, sy = np.zeros((M, L)), np.zeros((M, L))
     sx, xx, xy = np.zeros((M, L, P)), np.zeros((M, P, P)), np.zeros((M, P))
     for k, y, X, lv, _, w, _, _ in batches():
-        cell_comparison_sums(k, y, X, lv, w, gi, ti, bases, period, controls, n, sx, sy, xx, xy)
-
+        cell_comparison_sums(
+            k, y, X, np.ascontiguousarray(lv[:, :, 0]), w, gi, ti, bases, period, controls,
+            n, sx, sy, xx, xy,
+        )  # fmt: skip
     gamma, alpha = np.zeros((M, P)), np.zeros((M, L))
     xbar, inverse = np.zeros((M, L, P)), np.zeros((M, P, P))
     for j, (g, t) in enumerate(cells):
@@ -173,20 +208,48 @@ def fit_general(
             inverse[j] = solve_checked(W, np.eye(P), context)
         alpha[j] = np.where(present, mean_change - means @ gamma[j], 0.0)
         xbar[j] = means
+    return gamma, alpha, n > 0, xbar, inverse, n
+
+
+def _fit(
+    store, basis, groups, cells, controls, gi, ti, bases, period, T, K, P, F, L,
+    batches, absorbed, cluster_column, n_clusters,
+    bootstrap_reps, bootstrap_seed, bootstrap_weights,
+):  # fmt: skip
+    """The passes of `fit_general`. ``absorbed`` (or None) fits the comparison
+    regressions with hdfe-stream."""
+    M, G = len(cells), len(groups)
+    groups_array = np.asarray(groups)
+    # Pass A: the comparison regressions, cell by cell.
+    gamma, alpha = np.zeros((M, P)), np.zeros((M, F, L))
+    present = np.zeros((M, F, L), dtype=bool)
+    probe, probe_x = np.zeros((M, F, L)), np.zeros((M, P))
+    if absorbed is not None:
+        absorbed.fit(
+            batches, cells, gi, ti, bases, period, controls, gamma, alpha, present, probe,
+            probe_x,
+        )  # fmt: skip
+    else:
+        gamma, alpha[:, 0], present[:, 0], xbar, inverse, n = _comparisons(
+            batches, cells, gi, ti, bases, period, controls, P, L
+        )
 
     # Pass B: the treated units' moments on their adjusted changes, cell by cell.
     A, S = np.zeros((M, K, K)), np.zeros((M, K))
     total, size, slope = np.zeros(M), np.zeros(M), np.zeros((M, K))
-    level_basis, level_count = np.zeros((M, L, K)), np.zeros((M, L))
+    level_basis, level_count = np.zeros((M, F, L, K)), np.zeros((M, F, L))
     basis_x, treated_x = np.zeros((M, K, P)), np.zeros((M, P))
     left_out, cohort_weight = np.zeros(G, dtype=np.int64), np.zeros(G)
     total_weight = 0.0
     # which clusters each cell's comparison and treated units are in
     seen = np.zeros((2, M, n_clusters), dtype=bool) if cluster_column is not None else None
 
-    def treated_rows(k, y, lv, d):
+    def treated_rows(k, y, X, lv, d):
         treated = groups_array[k] != 0
-        kept = kept_units(k, treated, y, lv, gi, ti, bases, period, n)
+        kept = kept_units(
+            k, treated, y, X, lv, gi, ti, bases, period, present, probe, probe_x,
+            continuous_absorbed.TOLERANCE,
+        )  # fmt: skip
         Pm, Dm = np.zeros((len(k), K)), np.zeros((len(k), K))
         use = treated & kept
         if use.any():
@@ -194,7 +257,7 @@ def fit_general(
         return treated, kept, Pm, Dm
 
     for k, y, X, lv, d, w, cl, anchor in batches():
-        treated, kept, Pm, Dm = treated_rows(k, y, lv, d)
+        treated, kept, Pm, Dm = treated_rows(k, y, X, lv, d)
         if seen is not None:
             for j in range(M):
                 observed = np.isfinite(y[:, ti[j]]) & np.isfinite(y[:, bases[j]])
@@ -232,7 +295,8 @@ def fit_general(
     for c, g in enumerate(groups):
         if g != 0 and cohort_weight[c] == 0:
             raise ValueError(
-                f"no unit of cohort {g} has comparison units in its fixed-effect level"
+                f"no unit of cohort {g} has fixed-effect levels that can be estimated "
+                "from its comparison units"
             )
     ainv = np.zeros((M, K, K))
     for j, (g, t) in enumerate(cells):
@@ -250,21 +314,27 @@ def fit_general(
     acrt = np.einsum("jk,jk->j", dbar, beta)
 
     # How a comparison unit's residual moves each cell's coefficients.
-    level_weight, slope_weight = np.zeros((M, L, K)), np.zeros((M, K, P))
-    att_level_weight, att_slope_weight = np.zeros((M, L)), np.zeros((M, P))
-    for j in range(M):
+    level_weight, slope_weight = np.zeros((M, F, L, K)), np.zeros((M, K, P))
+    att_level_weight, att_slope_weight = np.zeros((M, F, L)), np.zeros((M, P))
+    if absorbed is not None:
+        absorbed.influence(
+            level_basis, level_count, basis_x, treated_x, ainv, size,
+            level_weight, slope_weight, att_level_weight, att_slope_weight,
+        )  # fmt: skip
+    for j in range(M if absorbed is None else 0):
         nl = n[j]
-        present = nl > 0
+        used = nl > 0
+        basis_sums, count_sums = level_basis[j, 0], level_count[j, 0]
         if P:
-            H = ainv[j] @ (basis_x[j] - level_basis[j].T @ xbar[j]) @ inverse[j]
-            h = (treated_x[j] - level_count[j] @ xbar[j]) @ inverse[j] / size[j]
+            H = ainv[j] @ (basis_x[j] - basis_sums.T @ xbar[j]) @ inverse[j]
+            h = (treated_x[j] - count_sums @ xbar[j]) @ inverse[j] / size[j]
             slope_weight[j], att_slope_weight[j] = H, h
         else:
             H, h = np.zeros((K, 0)), np.zeros(0)
-        level_weight[j][present] = (level_basis[j][present] @ ainv[j].T) / nl[present, None]
-        level_weight[j] -= xbar[j] @ H.T
-        att_level_weight[j][present] = level_count[j][present] / (size[j] * nl[present])
-        att_level_weight[j] -= xbar[j] @ h
+        level_weight[j, 0][used] = (basis_sums[used] @ ainv[j].T) / nl[used, None]
+        level_weight[j, 0] -= xbar[j] @ H.T
+        att_level_weight[j, 0][used] = count_sums[used] / (size[j] * nl[used])
+        att_level_weight[j, 0] -= xbar[j] @ h
 
     # Pass C: the units' scores, in the layout of the unadjusted fit.
     W = M * (K + 3)
@@ -312,7 +382,7 @@ def fit_general(
         att_slope_weight,
     )
     for k, y, X, lv, d, w, cl, anchor in batches():
-        _, kept, Pm, Dm = treated_rows(k, y, lv, d)
+        _, kept, Pm, Dm = treated_rows(k, y, X, lv, d)
         unit_anchor = anchor * kept
         if cluster_column is not None:
             full = general_scores(k, kept, y, X, lv, w, Pm, Dm, *common, identity, W)

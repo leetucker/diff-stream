@@ -9,8 +9,10 @@ The fit reuses the Callaway-Sant'Anna cells, base periods and control groups
 (``estimators.setup``), the cohort-period means of staging, and the cohort-block
 covariance. The dose is staged as the only covariate. Three passes over the staged
 units follow: the treated doses (for the knots), each cohort's spline moments, and
-the units' influence scores. With covariates or a fixed effect the cells come from
-``continuous_covariates`` instead (experimental).
+the units' influence scores. With covariates, fixed effects, weights, clusters, the
+lowest-dose comparison or an unbalanced panel the cells come from
+``continuous_general`` instead (and, with several fixed-effect terms,
+``continuous_absorbed``).
 """
 
 import warnings
@@ -350,7 +352,10 @@ class DoseResponseResult(RegressionResult):
             f"{dose}; control group: {control}",
         ]
         if d.get("covariate_names") is not None:
-            fe = f"; fixed effect: {d['fixed_effect']}" if d.get("fixed_effect") else ""
+            fe = ""
+            if d.get("fixed_effect"):
+                several = len(d["fixed_effect_levels"]) > 1
+                fe = f"; fixed effect{'s' if several else ''}: {d['fixed_effect']}"
             covariates = ", ".join(d["covariate_names"]) or "none"
             lines.append(f"covariates: {covariates}{fe} (experimental: see the docs)")
         return lines
@@ -390,14 +395,15 @@ def _continuous(
     force_general=False,
 ):
     # force_general (tests only): the general fit even when the unadjusted one applies
-    yname, covariates, fixed_effect = continuous_covariates.parse(fml, dose, panel)
-    adjusted = covariates is not None or fixed_effect is not None
+    yname, covariates, fixed_effects = continuous_covariates.parse(fml, dose, panel)
+    adjusted = covariates is not None or fixed_effects is not None
     lowest = control_group == "lowestdose"
     experimental = [
         phrase
         for phrase, used in (
             ("covariates", covariates is not None),
-            ("a fixed effect", fixed_effect is not None),
+            ("a fixed effect", fixed_effects is not None and len(fixed_effects) == 1),
+            ("fixed effects", fixed_effects is not None and len(fixed_effects) > 1),
         )
         if used
     ]
@@ -457,10 +463,12 @@ def _continuous(
     baseline = current_rss_gb() or 0
     general = adjusted or lowest or force_general or weights is not None or cluster is not None
     with thread_scope(threads):
-        n_levels, n_clusters = 1, 0
+        n_levels, n_clusters = [], 0
         staged_data = source(data) if adjusted or cluster is not None else data
-        if fixed_effect is not None:
-            staged_data, n_levels = continuous_covariates.join_levels(staged_data, fixed_effect)
+        fe_names = [continuous_covariates.fe_column(i) for i in range(len(fixed_effects or []))]
+        for term, name in zip(fixed_effects or [], fe_names, strict=True):
+            staged_data, levels = continuous_covariates.join_levels(staged_data, term, name)
+            n_levels.append(levels)
         if cluster is not None:
             # the clusters are numbered and staged as a design column, like the levels
             staged_data, n_clusters = continuous_covariates.join_levels(
@@ -473,10 +481,7 @@ def _continuous(
             # The design keeps its intercept, so that categorical covariates are coded
             # against a reference level; the intercept and the dose are not covariates.
             rhs = " + ".join(
-                [dose]
-                + ([covariates] if covariates is not None else [])
-                + ([continuous_covariates.FE] if fixed_effect is not None else [])
-                + clustered
+                [dose] + ([covariates] if covariates is not None else []) + fe_names + clustered
             )
             staged_formula = f"{yname} ~ {rhs}"
         else:
@@ -538,7 +543,7 @@ def _continuous(
                         f"panel has {len(treated_cohorts)} cohorts), as in the paper's "
                         "Remark 3.1"
                     )
-            covariate_columns, fe_column, cluster_column = [], None, None
+            covariate_columns, fe_columns, cluster_column = [], [], None
             if cluster is not None:
                 cluster_column = list(store.design.names).index(continuous_covariates.CLUSTER)
             if adjusted:
@@ -546,19 +551,11 @@ def _continuous(
                 if dose not in names or "Intercept" not in names:
                     raise ValueError("cannot find the dose in the covariates' design")
                 dose_column = names.index(dose)
-                fe_column = (
-                    names.index(continuous_covariates.FE) if fixed_effect is not None else None
-                )
+                fe_columns = [names.index(c) for c in fe_names]
                 covariate_columns = [
                     j
                     for j, c in enumerate(names)
-                    if c
-                    not in (
-                        "Intercept",
-                        dose,
-                        continuous_covariates.FE,
-                        continuous_covariates.CLUSTER,
-                    )
+                    if c not in ("Intercept", dose, continuous_covariates.CLUSTER, *fe_names)
                 ]
                 covariate_names = [names[j] for j in covariate_columns]
             else:
@@ -622,7 +619,7 @@ def _continuous(
                 if general:
                     numeric += continuous_general.table_bytes(
                         M, n_levels, len(covariate_columns), K, n_clusters, W
-                    ) + 8 * B * T * (len(covariate_columns) + 4)
+                    ) + 8 * B * T * (len(covariate_columns) + len(n_levels) + 4)
                 return numeric + 8 * treated_units
 
             B = min(batch_units or 16384, N)
@@ -709,8 +706,9 @@ def _continuous(
                     bases,
                     controls,
                     dose_column=dose_column,
-                    fe_column=fe_column,
+                    fe_columns=fe_columns,
                     n_levels=n_levels,
+                    threads=threads,
                     covariate_columns=covariate_columns,
                     relabel=relabel,
                     cluster_column=cluster_column,
@@ -909,8 +907,12 @@ def _continuous(
             if adjusted:
                 diagnostics.update(
                     covariate_names=covariate_names,
-                    fixed_effect="^".join(fixed_effect) if fixed_effect is not None else None,
-                    fixed_effect_levels=n_levels if fixed_effect is not None else None,
+                    fixed_effect=(
+                        " + ".join("^".join(term) for term in fixed_effects)
+                        if fixed_effects is not None
+                        else None
+                    ),
+                    fixed_effect_levels=n_levels if fixed_effects is not None else None,
                     covariates_time_invariant=store.x_time_invariant,
                     treated_units_left_out=fit["left_out"],
                 )
@@ -918,8 +920,8 @@ def _continuous(
                     left = sum(fit["left_out"].values())
                     diagnostics["warnings"].append(
                         f"{left:,} treated units are left out of their cohort's estimates: "
-                        "their fixed-effect level has no comparison units in some of the "
-                        "cohort's periods (see treated_units_left_out)."
+                        "their fixed-effect levels cannot be estimated from the comparison "
+                        "units in some of the cohort's periods (see treated_units_left_out)."
                     )
 
             def cells_result(block, values):
@@ -1060,13 +1062,14 @@ def did_continuous(
     Parameters
     ----------
     fml : str
-        ``"y ~ 1"``; experimental: covariates and one absorbed fixed effect,
-        ``"y ~ x + C(industry) | region"``. In each cohort and period, the comparison
-        units' change is regressed on them (at the base period) and the treated units'
-        changes less their predictions are fitted on the dose; a fixed effect is
-        region-by-period. The authors have not developed this, and a fit with
-        covariates issues an ``ExperimentalWarning``; see the documentation for the
-        assumptions it needs.
+        ``"y ~ 1"``; experimental: covariates and absorbed fixed effects,
+        ``"y ~ x + C(occupation) | region"`` or ``"y ~ x | region + industry"``. In each
+        cohort and period, the comparison units' change is regressed on them (at the
+        base period) and the treated units' changes less their predictions are fitted
+        on the dose; a fixed effect is region-by-period. One term is absorbed exactly;
+        several are absorbed by hdfe-stream, and assume that their effects on the trend
+        add up. The authors have not developed this, and a fit with covariates issues
+        an ``ExperimentalWarning``; see the documentation for the assumptions it needs.
     {DATA}
     dose : str
         Each unit's dose: positive and constant within a treated unit. The doses
