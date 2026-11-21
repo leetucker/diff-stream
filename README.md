@@ -25,7 +25,7 @@ fit.aggregate().summary()           # event study
 fit.aggregate("overall").summary()  # overall ATT
 ```
 
-**Version 0.1.0.** The estimators, inference and documentation are complete and
+**Version 0.2.0.** The estimators, inference and documentation are complete and
 tested; the [benchmarks](docs/benchmarks/index.md) compare them with other implementations.
 
 ## What it does

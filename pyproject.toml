@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "diff-stream"
-version = "0.1.0"
+version = "0.2.0"
 description = "Staggered difference-in-differences on data larger than memory: Callaway-Sant'Anna, Sun-Abraham, Borusyak-Jaravel-Spiess imputation, two-stage DiD and extended TWFE, with TWFE diagnostics"
 readme = "README.md"
 license = "MIT"
@@ -32,7 +32,7 @@ dependencies = [
     # the profile and the result base classes (hdfe_stream.core's stable names)
     # 0.9.1: HDFEResult.solve_normal_equations, which BJS with absorbed fixed effects uses
     # 0.10.0: wide fits stay fast under a tight memory limit (Sun-Abraham with many variables)
-    "hdfe-stream[formula]>=0.10.0",
+    "hdfe-stream[formula]>=0.11.0",
     "stream-limits>=0.3.0",     # thread and memory limits for jobs on a scheduler
     "polars>=1.37,!=1.41.*",    # 1.41 panics in streaming joins of wide frames
     # NumPy 2 and the first releases built for it. With NumPy 1.x linear algebra

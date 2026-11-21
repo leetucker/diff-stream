@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
+
+Adds two estimators for designs beyond staggered, absorbing treatment: a continuous
+dose (`did_continuous`) and a treatment that switches on and off (`did_dcdh`).
+Requires hdfe-stream 0.11.0 or later.
 
 - **`did_continuous`**: Callaway, Goodman-Bacon and Sant'Anna's
   difference-in-differences with a continuous treatment. It gives the dose-response
