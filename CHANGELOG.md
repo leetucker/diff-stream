@@ -19,7 +19,8 @@ Requires hdfe-stream 0.11.0 or later.
   observed in both of its periods. Sampling weights (`weights`) weight every
   regression and average; weights that change over time are experimental. Standard
   errors can be clustered above the unit (`cluster="occupation"`).
-  Covariates and one absorbed fixed effect (`"y ~ x | region"`) are experimental: the
+  Covariates and absorbed fixed effects (`"y ~ x | region"`, or several terms,
+  `"y ~ x | region + industry"`, absorbed with hdfe-stream) are experimental: the
   authors have not developed them, and fits with them issue an `ExperimentalWarning`
   (a subclass of hdfe-stream's) that links to their assumptions. It takes
   staggered adoption, never-treated or not-yet-treated comparisons and both base

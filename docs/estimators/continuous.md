@@ -34,7 +34,7 @@ fit.aggregate(target="slope").summary()  # event study of the ACRT
   [No untreated units](#no-untreated-units-the-lowest-dose-comparison)).
 - The panel should be balanced: `incomplete_units="drop"` drops units with missing
   periods, and `"keep"` keeps them (experimental, see
-  [An unbalanced panel](#an-unbalanced-panel)). Covariates and a fixed effect are
+  [An unbalanced panel](#an-unbalanced-panel)). Covariates and fixed effects are
   experimental (see [Experimental extensions](#experimental-extensions)).
 - **`weights`**: a column of sampling weights, such as each unit's number of people
   when the units are groups. They weight the units in every regression and average
@@ -51,7 +51,7 @@ fit.aggregate(target="slope").summary()  # event study of the ACRT
 | A discrete dose (`dose_type="discrete"`) | The paper's saturated regression (Eq. 4.1) | diff-diff | no |
 | No untreated units: the units at the lowest dose as the comparison (`control_group="lowest_dose"`) | The paper's Remark 3.1 | diff-diff | no |
 | The units up to a dose as the comparison (`reference_dose`) | Remark 3.1 with a group of doses in place of one (derived [below](#a-group-of-reference-doses)) | diff-diff, with the reference units' doses set to one value | no |
-| Covariates and a fixed effect (`"y ~ x \| region"`) | An extension; the paper shows what is identified given covariates (Supplementary Appendix SE.3) but develops no estimator | diff-diff's regression adjustment; Callaway-Sant'Anna; a direct calculation | yes |
+| Covariates and fixed effects (`"y ~ x \| region"`, `"y ~ x \| region + industry"`) | An extension; the paper shows what is identified given covariates (Supplementary Appendix SE.3) but develops no estimator | diff-diff's regression adjustment, with the fixed effects as dummies; Callaway-Sant'Anna; a direct calculation | yes |
 | An unbalanced panel (`incomplete_units="keep"`) | An extension; the paper assumes a balanced panel | A direct calculation | yes |
 | Sampling weights, constant within units (`weights`) | The paper's estimators with each unit weighted, as R did weights Callaway-Sant'Anna | diff-diff's survey weights (estimates); R did's weighted Callaway-Sant'Anna (the effect of being treated); a direct calculation | no |
 | Weights that change over time (`allow_time_varying_weights=True`) | An extension | A direct calculation | yes |
@@ -154,7 +154,7 @@ group of levels, merge them into one level first.
 
 ## Experimental extensions
 
-### Covariates and a fixed effect
+### Covariates and fixed effects
 
 ```python
 fit = did_continuous(
@@ -173,27 +173,33 @@ an extension, and every fit with them issues an `ExperimentalWarning` that links
 this section.
 
 **How they enter.** In each cohort and period, the comparison units' outcome change is
-regressed on the covariates and the fixed effect. Each treated unit's change less its
+regressed on the covariates and the fixed effects. Each treated unit's change less its
 predicted change is then fitted on the dose, as without covariates. This is Callaway
 and Sant'Anna's outcome-regression adjustment, and the effect of being treated equals
 `did_callaway_santanna(..., adjustment="regression")` with the same covariates.
 
-- **The formula**: covariates before `|`, and one fixed-effect term after it, which
-  may be an interaction (`region^industry`). The fixed effect is absorbed exactly,
-  whatever its number of levels. Because each cohort and period has its own
-  regression, `| region` gives region-by-period effects. The unit and the period
-  cannot be fixed effects: unit effects are already differenced out, and the
-  regressions already differ by period. Several fixed-effect terms are not supported
-  yet; a categorical variable with few levels can be given as a covariate,
-  `C(industry)`.
+- **The formula**: covariates before `|`, and fixed-effect terms after it, each a
+  column or an interaction (`| region`, `| region + industry`, `| region^industry`).
+  Because each cohort and period has its own regression, `| region` gives
+  region-by-period effects. The unit and the period cannot be fixed effects: unit
+  effects are already differenced out, and the regressions already differ by period.
+- **How they are absorbed**: one term is absorbed exactly, whatever its number of
+  levels. Several terms are absorbed by hdfe-stream, in one fit for each set of
+  comparison regressions that share their comparison units and periods (with one
+  treatment date and the lowest-dose comparison, a single fit), so they take longer
+  than one term.
 - **Covariate values**: each unit's covariates and fixed-effect level are taken in the
   base period, or in the period itself when it comes first (pre-treatment periods with
   `base_period="universal"`), as in R's did. Values after treatment, which treatment
   may have changed, are not used.
-- **Units left out**: a treated unit whose fixed-effect level has no comparison units
-  in one of its cohort's periods cannot be adjusted. It is left out of its cohort's
-  estimates, with a warning, and stays a comparison unit for other cohorts. The
-  numbers are in `diagnostics["treated_units_left_out"]`.
+- **Units left out**: a treated unit whose fixed effects cannot be estimated from the
+  comparison units in one of its cohort's periods cannot be adjusted. With one term,
+  that is when its level has no comparison units. With several, it is also when its
+  levels are not linked through the comparison units: with region and industry, when
+  no chain of comparison units (a region shared with one, whose industry is shared
+  with another, and so on) leads from its region to its industry. It is left out of
+  its cohort's estimates, with a warning, and stays a comparison unit for other
+  cohorts. The numbers are in `diagnostics["treated_units_left_out"]`.
 - **With the lowest-dose comparison**: the comparison regression is fitted on the
   reference units, so `| region` measures each region's untreated change by its own
   reference units, and regions without any are left out.
@@ -204,11 +210,16 @@ units that received it, averaged over their covariates. It needs:
 - *Parallel trends given the covariates*: among units with the same covariates (and
   fixed-effect level), the outcome without treatment would have changed in the same
   way whatever the cohort and the dose.
-- *Overlap*: comparison units with covariates like the treated units'. For the fixed
-  effect, comparison units in each level, each period.
+- *Overlap*: comparison units with covariates like the treated units'. For a fixed
+  effect, comparison units in each level, each period; for several, comparison units
+  that link the treated units' levels.
 - *A linear comparison regression*: the untreated change is linear in the
-  covariates. This holds by construction for the fixed effect and for categorical
-  covariates; for continuous covariates it is an assumption.
+  covariates. This holds by construction for one fixed-effect term (an interaction is
+  one term) and for categorical covariates; for continuous covariates it is an
+  assumption.
+- *Additive fixed effects*, with several terms: the untreated change is a region
+  part plus an industry part. A change particular to a region and industry pair is
+  ruled out; `| region^industry` allows one, but needs comparison units in each pair.
 
 ACRT(d), the overall ACRT and any comparison of the effects of different doses also
 need *strong parallel trends given the covariates*: units at each dose would have had
@@ -361,6 +372,15 @@ entered as dummies, for both dose types and comparison groups: the estimates, bo
 curves and their standard errors, the cohort-period effects and the event study. The
 effect of being treated equals Callaway-Sant'Anna's regression adjustment, an absorbed
 fixed effect equals its dummies, and every standard error equals a direct calculation.
+
+Several fixed-effect terms are checked against diff-diff's regression adjustment with
+the levels of both terms entered as dummies, for both dose types and comparison
+groups: the estimates, both curves and their standard errors, the cohort-period
+effects and the event study. They equal one absorbed term with the other as dummies,
+a term nested in another changes nothing, and every standard error equals a direct
+calculation, with treated units whose levels are not linked left out, and with an
+unbalanced panel, weights, clusters and the lowest-dose comparison.
+
 See
 [Differences from other packages](../implementations.md#conventions-that-differ) and
 [Validation](../validation.md).
