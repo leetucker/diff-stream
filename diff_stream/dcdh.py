@@ -32,6 +32,8 @@ from ._core.dcdh_kernels import group_terms
 from ._core.partition import staging_bytes
 from ._present import public_profile
 from .continuous_covariates import join_levels
+from .sensitivity import PLOT_DOC as _plot_doc
+from .sensitivity import SIGNATURE_DOC as _sensitivity_doc
 from .store import PanelStore, inspect, source
 
 PUBLIC = "did_dcdh"
@@ -79,6 +81,45 @@ class DCDHResult(RegressionResult):
         if not names:
             raise ValueError("fit with placebos >= 1 to test pre-trends")
         return self.wald_test(keep=[f"^{n}$" for n in names])
+
+    def plot_event_study(
+        self, *, horizons=None, alpha=0.05, joint=False, ax=None, title=None, **joint_options
+    ):
+        """Plot the event study (see below)."""
+        from .sensitivity import plot_event_study
+
+        return plot_event_study(
+            self, horizons=horizons, alpha=alpha, joint=joint, ax=ax, title=title, **joint_options
+        )
+
+    def trend_sensitivity(
+        self,
+        *,
+        target=None,
+        horizons=None,
+        restriction="relative_magnitudes",
+        M=None,
+        bias=None,
+        monotonicity=None,
+        ci_method=None,
+        alpha=0.05,
+        **options,
+    ):
+        """Sensitivity of the event study to violations of parallel trends (see below)."""
+        from .sensitivity import trend_sensitivity
+
+        return trend_sensitivity(
+            self,
+            target=target,
+            horizons=horizons,
+            restriction=restriction,
+            M=M,
+            bias=bias,
+            monotonicity=monotonicity,
+            ci_method=ci_method,
+            alpha=alpha,
+            **options,
+        )
 
     def effects_equal_test(self):
         """Wald test that the effects are all equal (did_multiplegt_dyn's effects_equal)."""
@@ -1294,3 +1335,7 @@ def did_dcdh(
     options = dict(locals())
     fml, data = options.pop("fml"), options.pop("data")
     return public_profile(_dcdh(fml, data, **_options.internal(options)))
+
+
+DCDHResult.trend_sensitivity.__doc__ = _sensitivity_doc
+DCDHResult.plot_event_study.__doc__ = _plot_doc

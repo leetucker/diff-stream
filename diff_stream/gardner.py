@@ -23,6 +23,8 @@ from ._core.within import row_sums
 from ._present import internal, label_frame, labels_of, present, public_profile
 from .cs import RETAIN_SHARE, RetainedBatches
 from .linear import RowDesign
+from .sensitivity import PLOT_DOC as _plot_doc
+from .sensitivity import SIGNATURE_DOC as _sensitivity_doc
 from .store import PanelStore, inspect
 
 
@@ -84,6 +86,45 @@ class TwoStageResult(RegressionResult):
         from .pretrend import pretrend_test
 
         return pretrend_test(self, level=level, horizons=horizons)
+
+    def plot_event_study(
+        self, *, horizons=None, alpha=0.05, joint=False, ax=None, title=None, **joint_options
+    ):
+        """Plot the event study (see below)."""
+        from .sensitivity import plot_event_study
+
+        return plot_event_study(
+            self, horizons=horizons, alpha=alpha, joint=joint, ax=ax, title=title, **joint_options
+        )
+
+    def trend_sensitivity(
+        self,
+        *,
+        target=None,
+        horizons=None,
+        restriction="relative_magnitudes",
+        M=None,
+        bias=None,
+        monotonicity=None,
+        ci_method=None,
+        alpha=0.05,
+        **options,
+    ):
+        """Sensitivity of the event study to violations of parallel trends (see below)."""
+        from .sensitivity import trend_sensitivity
+
+        return trend_sensitivity(
+            self,
+            target=target,
+            horizons=horizons,
+            restriction=restriction,
+            M=M,
+            bias=bias,
+            monotonicity=monotonicity,
+            ci_method=ci_method,
+            alpha=alpha,
+            **options,
+        )
 
     def with_vcov(self, vcov):
         if vcov not in ("CRV0", "CRV1"):
@@ -499,3 +540,7 @@ def did_two_stage(
     options = dict(locals())
     fml, data = options.pop("fml"), options.pop("data")
     return public_profile(_two_stage(fml, data, **_options.internal(options)))
+
+
+TwoStageResult.trend_sensitivity.__doc__ = _sensitivity_doc
+TwoStageResult.plot_event_study.__doc__ = _plot_doc
