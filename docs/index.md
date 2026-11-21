@@ -46,6 +46,8 @@ other designs: a treatment that takes several values and switches on and off
 - standard errors clustered by unit that include the uncertainty in the cohort
   shares used to aggregate, simultaneous confidence bands, and a bootstrap
   that refits the whole estimator;
+- sensitivity analysis for parallel trends (Rambachan and Roth's, as in R's
+  HonestDiD), on any of the event studies;
 - jobs on a cluster scheduler, with memory and thread limits taken from the
   allocation.
 
@@ -61,9 +63,6 @@ Use something else when:
   ecosystems (plots, sensitivity analysis) are larger.
 - **The outcome needs a nonlinear model** (logit, Poisson ETWFE): use R's
   etwfe or Stata's `jwdid`.
-- **You need sensitivity analysis for parallel trends.** Pass the event-study
-  coefficients and covariance (`fit.aggregate().beta`, `.vcov`) to R's
-  [HonestDiD](https://github.com/asheshrambachan/HonestDiD).
 
 See [Choosing an estimator](choosing.md) for how the five differ, and
 [Differences from other packages](implementations.md) for their conventions.
@@ -106,6 +105,7 @@ data
 estimators/index
 results
 inference
+sensitivity
 diagnostics
 examples/index
 ```

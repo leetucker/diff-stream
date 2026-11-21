@@ -22,6 +22,7 @@ test suite needs neither R nor Stata.
 | Goodman-Bacon | R bacondecomp | every comparison's estimate and weight, with and without covariates and weights |
 | TWFE weights | the authors' R TwoWayFEWeights (`feTR`) | cell weights and both sensitivity measures, with switching treatment, unbalanced panels, covariates and weights |
 | Refit bootstrap | R did on the same resampled units | each refit's estimates, and the intervals from base R |
+| Sensitivity to parallel trends | the authors' R HonestDiD 0.2.8 (`honest_did` on R did's event study; `createSensitivityResults` on a fixest TWFE event study) | on the mpdta panel: the event study passed (estimates and covariance), and the robust intervals for relative magnitudes (C-LF, conditional) and smoothness (FLCI, C-F, C-LF, conditional), with R's least-favorable critical values. The computation itself, in hdfe-stream, is compared with HonestDiD at every grid point for every restriction, sign and monotonicity variant and interval, on nine event studies |
 
 Estimates and covariances agree to within 2e-7 absolute, and usually to
 1e-10; the Stata comparisons, for instance, differ by at most 6e-8 in an

@@ -86,8 +86,9 @@ different things:
 - Two-stage estimates leads in its second stage; ETWFE with never-treated
   controls estimates pre-treatment effects.
 
-Not rejecting a pre-trend does not show that trends are parallel. For
-sensitivity analysis, see the note on HonestDiD on the [front page](index.md).
+Not rejecting a pre-trend does not show that trends are parallel.
+[Sensitivity to parallel trends](sensitivity.md) asks how large a departure
+from parallel trends the result survives.
 
 ## Diagnosing a two-way fixed effects estimate
 

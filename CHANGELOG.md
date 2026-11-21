@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.3.0
+
+Adds sensitivity analysis for parallel trends. Requires hdfe-stream 0.12.0 or later.
+
+- **`trend_sensitivity()`** on the event studies of `did_callaway_santanna` (with
+  `base_period="universal"`), `did_sun_abraham`, `did_extended_twfe` (never-treated
+  controls), `did_two_stage`, `did_stacked` and `did_dcdh`: Rambachan and Roth's
+  confidence intervals for an effect when parallel trends fails by up to M times the
+  violation before treatment, and the breakdown value. The restrictions, intervals and
+  defaults are those of R's HonestDiD 0.2.8, and the intervals agree with it, tested on
+  the mpdta event study with `honest_did()` and on a two-way fixed effects event study
+  fitted by fixest. The fit's event times, reference period, anticipation and joint
+  covariance are found for you. BJS (whose pre-treatment leads have no covariance with
+  its effects) and Callaway-Sant'Anna with a varying base period are refused, as R's
+  `honest_did` refuses the latter. The computation is hdfe-stream's
+  `core.sensitivity`, about a hundred times faster than the R package. See
+  [Sensitivity to parallel trends](https://leetucker.github.io/diff-stream/sensitivity.html).
+- **`plot_event_study()`** on the same fits (and BJS): estimates and intervals by event
+  time with the reference period, as pyfixest's `iplot` draws them. Plots need
+  matplotlib, which is not a dependency (`pip install diff-stream[plot]`).
+
 ## 0.2.0
 
 Adds two estimators for designs beyond staggered, absorbing treatment: a continuous

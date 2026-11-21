@@ -13,6 +13,8 @@ result methods:
 | `wald_test(R, q)` | a joint Wald test |
 | `with_vcov("CRV1")` | the same fit with the other clustered covariance |
 | `etable(...)` | a table of several fits (`diff_stream.etable`, through pyfixest) |
+| `plot_event_study()` | the event study plotted: estimates and intervals by event time, with the reference period (needs matplotlib) |
+| `trend_sensitivity()` | intervals robust to violations of parallel trends ([Sensitivity to parallel trends](sensitivity.md)) |
 
 ## The cohort-period effects
 
@@ -73,6 +75,15 @@ common source of misleading event-study shapes.
 `diagnostics["excluded_cohorts"]` lists the cohorts a balancing option dropped
 and why.
 
+## Plotting an event study
+
+`fit.plot_event_study()` draws each event time's estimate and confidence
+interval, the omitted reference period at zero and a dashed line after it, as
+pyfixest's `iplot` does. A cohort-time fit is aggregated by event time first;
+`horizons=` selects event times, `joint=True` gives simultaneous intervals, and
+`ax=` draws on existing axes. It needs matplotlib, which is not a dependency
+(`pip install diff-stream[plot]`).
+
 ## Pre-trend tests
 
 `fit.pretrend_test()` is a Wald test that the clean pre-treatment effects are
@@ -86,6 +97,10 @@ p value and exactly which coefficients, cells and event times were tested.
 - BJS needs `pretrend_leads=L` at fit time (see [BJS](estimators/bjs.md)).
 
 Anticipation periods and the omitted reference are never tested.
+
+A pre-trend test that does not reject does not show that trends are parallel.
+`fit.trend_sensitivity()` gives intervals that allow parallel trends to fail by
+a chosen amount: see [Sensitivity to parallel trends](sensitivity.md).
 
 ## Temporary files
 

@@ -162,8 +162,8 @@ differences:
   group, so they are not covariances: correlations can exceed one, and the matrix can
   have negative eigenvalues. Its own joint tests (`p_jointplacebo`,
   `p_equality_effects`) are computed correctly, and agree with `pretrend_test()` and
-  `effects_equal_test()` here. `fit.vcov` here is the covariance those tests use. Pass
-  it, not `coef$vcov`, to sensitivity analyses such as HonestDiD.
+  `effects_equal_test()` here. `fit.vcov` here is the covariance those tests use, and
+  the one `fit.trend_sensitivity()` uses.
 - *Missing treatments.* `did_multiplegt_dyn` accepts rows with an outcome but no
   treatment and fills the treatment in by its own rules. Here such rows are an error;
   missing periods (no row) are supported, with `incomplete_units="keep"`, as
@@ -208,6 +208,20 @@ interval has no bias correction, so endpoints can differ from R's
 `boot.ci`. Simultaneous bands from refits are not implemented (the multiplier
 bootstrap gives them for Callaway-Sant'Anna).
 
+**Sensitivity to parallel trends.** `trend_sensitivity` gives the intervals of R's
+HonestDiD 0.2.8 (its names for the restrictions and intervals, and the few deliberate
+differences, are on
+[hdfe-stream's page](https://leetucker.github.io/hdfe-stream/reference/sensitivity.html)).
+Compared with HonestDiD's own entry point for `did` results, `honest_did()`: it also
+refuses a varying base period; it tests 1,000 grid points where `honest_did` tests
+100, so its interval ends are finer; and the target is chosen by event time
+(`target=`) rather than by position (`e=`). The Python package diff-diff 4.0.0 has the
+method too, with two differences worth knowing: its relative-magnitudes interval
+widens the estimated identified set by z standard errors (its conditional test is
+disabled), which is not the method's interval and has no coverage guarantee; and its
+event study for de Chaisemartin and D'Haultfoeuille's estimator uses only the standard
+errors, a diagonal covariance, where the placebos and effects are correlated.
+
 **Diagnostics.** `bacon_decomp` matches R's bacondecomp; `twfe_weights`
 matches the `feTR` type of the authors' TwoWayFEWeights. The other types
 (`feS`, first-difference) and continuous treatments are not implemented.
@@ -216,5 +230,3 @@ matches the `feTR` type of the authors' TwoWayFEWeights. The other types
 
 - Nonlinear ETWFE (logit, Poisson): R's etwfe, Stata's `jwdid`.
 - Fixed effects interacted with the unit (unit-specific trends).
-- Sensitivity analysis for parallel trends: pass `fit.aggregate().beta` and
-  `.vcov` to R's HonestDiD.
