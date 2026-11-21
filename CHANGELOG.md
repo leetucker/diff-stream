@@ -15,7 +15,7 @@ Adds sensitivity analysis for parallel trends. Requires hdfe-stream 0.12.0 or la
   covariance are found for you. BJS (whose pre-treatment leads have no covariance with
   its effects) and Callaway-Sant'Anna with a varying base period are refused, as R's
   `honest_did` refuses the latter. The computation is hdfe-stream's
-  `core.sensitivity`, about a hundred times faster than the R package. See
+  `core.sensitivity`, a few hundred times faster than the R package. See
   [Sensitivity to parallel trends](https://leetucker.github.io/diff-stream/sensitivity.html).
 - **`plot_event_study()`** on the same fits (and BJS): estimates and intervals by event
   time with the reference period, as pyfixest's `iplot` draws them. Plots need

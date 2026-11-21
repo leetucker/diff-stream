@@ -12,10 +12,13 @@ which the effect stays significant.
 
 It is the method of the authors' R package
 [HonestDiD](https://github.com/asheshrambachan/HonestDiD), with the same
-restrictions, intervals and defaults, and gives the same intervals, about a hundred
+restrictions, intervals and defaults, and gives the same intervals, a few hundred
 times faster (the computation is
 [hdfe-stream's](https://leetucker.github.io/hdfe-stream/reference/sensitivity.html),
-which documents it in full).
+which documents it in full and benchmarks it). The analysis uses only the event
+study's coefficients and their covariance, so its time depends on the number of
+event times, not on the size of the panel: on a large panel, estimating the event
+study takes most of the time.
 
 ```python
 from diff_stream import did_callaway_santanna
