@@ -29,8 +29,10 @@ fit.aggregate("overall").summary()  # overall ATT
 ## When to use this, and when not to
 
 Use diff-stream when the panel is large (tens of millions of rows and up, or
-more than fits in memory) and treatment is staggered and absorbing: units
-start treatment at different times and stay treated. In particular:
+more than fits in memory). Most of its estimators are for staggered, absorbing
+treatment: units start treatment at different times and stay treated. Two are for
+other designs: a treatment that takes several values and switches on and off
+(`did_dcdh`), and a continuous dose (`did_continuous`). In particular:
 
 - an event study or overall ATT that is robust to effects varying across
   cohorts and over time, by any of six estimators, with the same results
@@ -57,11 +59,6 @@ Use something else when:
   [etwfe](https://grantmcdermott.com/etwfe/), and Stata's `csdid`,
   `did_imputation`, `did2s` and `jwdid`, are just as fast, and their
   ecosystems (plots, sensitivity analysis) are larger.
-- **Treatment switches on and off, and its first-period values are continuous, or you
-  need clustering above the group.** `did_dcdh` compares groups with the same
-  first-period treatment and clusters by group; de Chaisemartin and D'Haultfoeuille's
-  `did_multiplegt_dyn` (R, Stata) also handles these. `twfe_weights()` here
-  accepts switching treatment, as a diagnostic.
 - **The outcome needs a nonlinear model** (logit, Poisson ETWFE): use R's
   etwfe or Stata's `jwdid`.
 - **You need sensitivity analysis for parallel trends.** Pass the event-study

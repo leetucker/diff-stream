@@ -213,9 +213,6 @@ matches the `feTR` type of the authors' TwoWayFEWeights. The other types
 
 ## Not implemented
 
-- For a switching treatment (`did_dcdh`): a continuous first-period treatment and
-  clustering above the group; de Chaisemartin and D'Haultfoeuille's
-  `did_multiplegt_dyn` (R, Stata) has them.
 - Nonlinear ETWFE (logit, Poisson): R's etwfe, Stata's `jwdid`.
 - Fixed effects interacted with the unit (unit-specific trends).
 - Sensitivity analysis for parallel trends: pass `fit.aggregate().beta` and
