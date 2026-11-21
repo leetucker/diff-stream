@@ -764,7 +764,7 @@ def test_covariates_warn_and_are_reported(covariate_panel):
         did_continuous("y ~ x", covariate_panel, **COVARIATE_KW, dose="dose")
     assert fit.diagnostics["covariate_names"] == ["x"]
     assert fit.diagnostics["fixed_effect"] == "region"
-    assert fit.diagnostics["fixed_effect_levels"] == 8
+    assert fit.diagnostics["fixed_effect_levels"] == [8]
     assert (
         fit._summary_lines()[-1]
         == "covariates: x; fixed effect: region (experimental: see the docs)"
@@ -776,7 +776,9 @@ def test_covariates_warn_and_are_reported(covariate_panel):
     [
         ("y ~ x | id", "already differenced out"),
         ("y ~ x | time", "already differs by period"),
-        ("y ~ x | region + first_treat", "one fixed-effect term"),
+        ("y ~ x | region + region", "given twice"),
+        ("y ~ x | region + id", "already differenced out"),
+        ("y ~ x | region + C(industry)", "cannot read the fixed effect"),
         ("y ~ x | region | x", "at most one"),
         ("y ~ dose + x", "not as a covariate"),
         ("y ~ x | nowhere", "unknown fixed-effect columns"),
@@ -857,11 +859,12 @@ def general_oracle(
 
     Each cell's comparison units observed in its two periods have their change
     regressed, with their weights in the period compared, on an intercept, x at the
-    covariate period (``covariates``) and region dummies (``fixed_effect``); the
-    treated units observed in it have their adjusted changes fitted on the fit's
-    dose basis. ``reference(d)`` marks the lowest-dose comparison's reference units.
-    Treated units whose region has no comparison units in a cell they are observed
-    in are left out of their cohort. ``fixed_slopes`` holds each cell's average slope
+    covariate period (``covariates``) and region dummies (``fixed_effect=True``, or
+    dummies of each of the unit-level columns it lists); the treated units observed
+    in it have their adjusted changes fitted on the fit's dose basis. ``reference(d)``
+    marks the lowest-dose comparison's reference units. Treated units whose design
+    is not estimable from the comparison units (with one term: whose region has
+    none) in a cell they are observed in are left out of their cohort. ``fixed_slopes`` holds each cell's average slope
     of the basis fixed, as diff-diff does for the overall ACRT, and ``fixed_shares``
     the cohort shares in the overall ATT, as it does there. ``gradients=True``
     returns the units' (or clusters') gradients in place of the standard errors.
@@ -878,7 +881,9 @@ def general_oracle(
     Omega = wide(weights) if weights is not None else np.where(np.isfinite(Y), 1.0, np.nan)
     units = panel.group_by("id").first().sort("id")
     assert units["id"].to_list() == ids.to_list()
-    G, D, R = (units[c].to_numpy() for c in ("first_treat", dose, "region"))
+    G, D = (units[c].to_numpy() for c in ("first_treat", dose))
+    terms = ["region"] if fixed_effect is True else list(fixed_effect or [])
+    levels = [units[c].to_numpy() for c in terms]
     if reference is not None:
         G = np.where(reference(D), 0, G)
     basis, universal = fit._basis, fit.diagnostics["base_period"] == "universal"
@@ -897,12 +902,36 @@ def general_oracle(
             control = G == 0
         return b, observed, control & observed
 
+    def design(g, t):
+        """The cell's design (its comparison units' independent columns) and which of
+        the cohort's units observed in the cell have an estimable design."""
+        b, observed, control = frame(g, t)
+        columns = [np.ones(len(G))]
+        if covariates:
+            columns.append(X[:, min(t, b) - 1])
+        for R in levels:
+            columns += [(R == r).astype(float) for r in np.unique(R[control])]
+        Z = np.column_stack(columns)
+        Zc = Z[control]
+        independent = []
+        for c in range(Z.shape[1]):
+            if np.linalg.matrix_rank(Zc[:, independent + [c]]) > len(independent):
+                independent.append(c)
+        _, s, vt = np.linalg.svd(Zc, full_matrices=True)
+        null = vt[np.sum(s > 1e-9 * s[0]) :].T
+        mine = (G == g) & observed
+        estimable = np.zeros(len(G), dtype=bool)
+        estimable[mine] = np.abs(Z[mine] @ null).max(axis=1, initial=0) < 1e-8
+        # a level without comparison units has no column: such units are not estimable
+        for R in levels:
+            estimable[mine] &= np.isin(R[mine], R[control])
+        return Z[:, independent], mine, estimable
+
+    designs = {(g, t): design(g, t) for g, t in cells}
     kept = np.ones(len(G), dtype=bool)
-    if fixed_effect:
-        for g, t in cells:
-            _, observed, control = frame(g, t)
-            mine = (G == g) & observed
-            kept[mine] &= np.isin(R[mine], R[control])
+    for mine_design in designs.values():
+        _, mine, estimable = mine_design
+        kept[mine & ~estimable] = False
 
     def estimate(u, fixed=None):
         att, acrt, slopes = [], [], []
@@ -910,12 +939,7 @@ def general_oracle(
             b, observed, control = frame(g, t)
             om = Omega[:, t - 1] * u
             change = Y[:, t - 1] - Y[:, b - 1]
-            columns = [np.ones(len(G))]
-            if covariates:
-                columns.append(X[:, min(t, b) - 1])
-            if fixed_effect:
-                columns += [(R == r).astype(float) for r in np.unique(R[control])[1:]]
-            Z = np.column_stack(columns)
+            Z = designs[(g, t)][0]
             Zc, wc = Z[control], om[control]
             gamma = np.linalg.solve(Zc.T @ (wc[:, None] * Zc), Zc.T @ (wc * change[control]))
             mine = (G == g) & observed & kept
@@ -1584,3 +1608,253 @@ def test_cluster_errors(lowest_panel, options, message):
         did_continuous(
             "y ~ 1", lowest_panel, **LOWEST_KW, dose="dose", reference_dose=3.0, **options
         )
+
+
+# Several fixed-effect terms (experimental): the comparison regressions are fitted by
+# hdfe-stream, and must equal the same regressions with all but one term as dummies,
+# and the dense calculation with every term as dummies.
+
+
+def _with_industry(panel):
+    """A unit-level industry (not nested in region) and macro region (nested in it)."""
+    return panel.with_columns(industry=(pl.col("id") * 7 + 3) % 5, macro=pl.col("region") // 3)
+
+
+@pytest.mark.parametrize("cg", CONTROLS)
+@pytest.mark.parametrize("kind", COVARIATE_FITS)
+def test_several_fixed_effects_equal_one_with_the_others_as_dummies(covariate_panel, kind, cg):
+    fml, options = COVARIATE_FITS[kind]
+    data = _with_industry(covariate_panel)
+    options = dict(**COVARIATE_KW, **options, control_group=cg)
+    with pytest.warns(ExperimentalWarning, match="covariates and fixed effects goes beyond"):
+        absorbed = did_continuous(fml + " + industry", data, **options)
+    dummies = fit_quietly(fml.replace("| region", "+ C(industry) | region"), data, **options)
+    assert absorbed.diagnostics["fixed_effect"] == "region + industry"
+    assert absorbed.diagnostics["fixed_effect_levels"] == [8, 5]
+    assert absorbed.diagnostics["covariate_names"] == ["x"]
+    assert absorbed._summary_lines()[-1] == (
+        "covariates: x; fixed effects: region + industry (experimental: see the docs)"
+    )
+    assert_allclose(absorbed.beta, dummies.beta, rtol=1e-10)
+    assert_allclose(absorbed.vcov, dummies.vcov, rtol=1e-8)
+    assert_allclose(absorbed._att.beta, dummies._att.beta, rtol=1e-9, atol=1e-12)
+    assert_allclose(absorbed._att.vcov, dummies._att.vcov, rtol=1e-8, atol=1e-15)
+    for target in ("level", "slope"):
+        a, b = absorbed.dose_response(target), dummies.dose_response(target)
+        assert_allclose(a["estimate"].to_numpy(), b["estimate"].to_numpy(), rtol=1e-9, atol=1e-12)
+        assert_allclose(a["std_error"].to_numpy(), b["std_error"].to_numpy(), rtol=1e-8)
+    a, b = absorbed.aggregate(), dummies.aggregate()
+    assert_allclose(a.beta, b.beta, rtol=1e-9, atol=1e-12)
+    assert_allclose(a.se, b.se, rtol=1e-8)
+
+
+def test_a_nested_fixed_effect_changes_nothing(covariate_panel):
+    """Macro regions are nested in regions, so region + macro spans what region does:
+    the hdfe-stream fit must give the exact fit of region alone."""
+    small = _with_industry(covariate_panel.filter(pl.col("id") < SMALL))
+    options = dict(**COVARIATE_KW, dose="dose")
+    nested = fit_quietly("y ~ x | region + macro", small, **options)
+    exact = fit_quietly("y ~ x | region", small, **options)
+    assert_allclose(nested.beta, exact.beta, rtol=1e-11)
+    assert_allclose(nested.vcov, exact.vcov, rtol=1e-10)
+    assert_allclose(
+        nested.dose_response("slope")["std_error"],
+        exact.dose_response("slope")["std_error"],
+        rtol=1e-10,
+    )
+
+
+@pytest.mark.parametrize(
+    "fml,covariates,cg",
+    [
+        ("y ~ x | region + industry", True, "never_treated"),
+        ("y ~ 1 | region + industry", False, "not_yet_treated"),
+        ("y ~ x | region^macro + industry", True, "not_yet_treated"),
+    ],
+)
+def test_several_fixed_effects_match_the_dense_oracle(covariate_panel, fml, covariates, cg):
+    small = _with_industry(covariate_panel.filter(pl.col("id") < SMALL))
+    fit = fit_quietly(fml, small, **COVARIATE_KW, dose="dose", control_group=cg)
+    estimate, se = general_oracle(
+        small, fit, "y", "dose", cg, covariates=covariates, fixed_effect=["region", "industry"]
+    )
+    assert_allclose(fit.beta, estimate, rtol=1e-10)
+    assert_allclose(fit.se, se, rtol=1e-8)
+
+
+def test_several_fixed_effects_unbalanced_weighted_and_clustered(covariate_panel):
+    """The hdfe-stream path with every other extension: an unbalanced panel, weights
+    and clustering above the unit."""
+    small = _unbalanced(_with_industry(covariate_panel.filter(pl.col("id") < SMALL)), 5)
+    small = small.with_columns(w=1 + (pl.col("id") % 4) / 4, cl=pl.col("id") % 40)
+    fit = fit_quietly(
+        "y ~ x | region + industry",
+        small,
+        **COVARIATE_KW,
+        dose="dose",
+        control_group="not_yet_treated",
+        incomplete_units="keep",
+        weights="w",
+        cluster="cl",
+    )
+    estimate, se = general_oracle(
+        small,
+        fit,
+        "y",
+        "dose",
+        "not_yet_treated",
+        covariates=True,
+        fixed_effect=["region", "industry"],
+        weights="w",
+        cluster="cl",
+    )
+    assert_allclose(fit.beta, estimate, rtol=1e-10)
+    assert_allclose(fit.se, se, rtol=1e-8)
+
+
+def test_lowest_dose_with_several_fixed_effects_matches_the_dense_oracle(lowest_panel):
+    data = _with_industry(lowest_panel)
+    fit = fit_quietly(
+        "y ~ 1 | region + industry", data, **LOWEST_KW, dose="dose", reference_dose=3.0
+    )
+    estimate, se = general_oracle(
+        data,
+        fit,
+        "y",
+        "dose",
+        "lowest_dose",
+        reference=lambda d: d <= 3.0,
+        fixed_effect=["region", "industry"],
+    )
+    assert_allclose(fit.beta, estimate, rtol=1e-10)
+    assert_allclose(fit.se, se, rtol=1e-8)
+
+
+@pytest.mark.parametrize("cg", CONTROLS)
+def test_levels_not_linked_to_the_comparison_units_are_left_out(covariate_panel, cg):
+    """The never-treated units of region 7 are all in industry 9, which no other region
+    has: region 7 and industry 9 form a component of their own. A treated unit of region
+    7 in industry 9 can be adjusted; one of region 7 in another industry cannot, though
+    each of its levels has comparison units."""
+    small = _with_industry(covariate_panel.filter(pl.col("id") < SMALL))
+    linked = (pl.col("region") == 7) & ((pl.col("first_treat") == 0) | (pl.col("id") % 2 == 0))
+    data = small.with_columns(
+        pl.when(linked).then(9).otherwise(pl.col("industry")).alias("industry")
+    )
+    fit = fit_quietly(
+        "y ~ x | region + industry", data, **COVARIATE_KW, dose="dose", control_group=cg
+    )
+    left = fit.diagnostics["treated_units_left_out"]
+    unlinked = data.filter(
+        (pl.col("time") == 1)
+        & (pl.col("region") == 7)
+        & (pl.col("first_treat") > 0)
+        & (pl.col("industry") != 9)
+    )
+    if cg == "never_treated":
+        expected = unlinked.group_by("first_treat").len()
+        assert left == dict(zip(expected["first_treat"], expected["len"], strict=True))
+    else:
+        # later cohorts' units of region 7 link it to the other industries in the
+        # earlier cells, but every cohort has cells compared with the never treated alone
+        assert 0 < sum(left.values()) <= unlinked.height
+    assert any("cannot be estimated" in w for w in fit.diagnostics["warnings"])
+    estimate, se = general_oracle(
+        data, fit, "y", "dose", cg, covariates=True, fixed_effect=["region", "industry"]
+    )
+    assert_allclose(fit.beta, estimate, rtol=1e-10)
+    assert_allclose(fit.se, se, rtol=1e-8)
+
+
+@pytest.mark.resource
+def test_several_fixed_effects_under_a_memory_limit(
+    resource_runner, resource_enforcement, covariate_panel, tmp_path
+):
+    """Under a memory watchdog, with small staging pieces and batches, the same fit."""
+    import os
+    import sys
+
+    options = dict(preprocess_mb=4, batch_units=37, n_threads=2)
+    code = f"""
+import json
+import warnings
+import polars as pl
+from benchmarks._files import read_csv
+from diff_stream import did_continuous
+warnings.simplefilter("ignore")
+data = read_csv({str(DATA / "continuous_covariates_panel.csv")!r}).with_columns(
+    industry=(pl.col("id") * 7 + 3) % 5)
+r = did_continuous("y ~ x | region + industry", data, panel=("id", "time"),
+    cohort="first_treat", dose="dose", workdir={str(tmp_path / "child")!r}, **{options!r})
+print(json.dumps(dict(beta=r.beta.tolist(), vcov=r.vcov.tolist(),
+    curve=r.dose_response()["std_error"].to_list())))
+"""
+    threads = dict.fromkeys(
+        [
+            "STREAM_LIMITS_MAX_THREADS",
+            "POLARS_MAX_THREADS",
+            "OPENBLAS_NUM_THREADS",
+            "OMP_NUM_THREADS",
+            "NUMBA_NUM_THREADS",
+        ],
+        "2",
+    )
+    env = dict(os.environ, **threads, PYTHONPATH=str(Path(__file__).parents[1]))
+    result = resource_runner([sys.executable, "-c", code], memory_gb=1.5, env=env, timeout=300)
+    assert result.status == "ok", result.as_dict()
+    assert result.mode == resource_enforcement["mode"]
+    fitted = json.loads(result.stdout.strip().splitlines()[-1])
+    baseline = fit_quietly(
+        "y ~ x | region + industry", _with_industry(covariate_panel), **COVARIATE_KW, dose="dose"
+    )
+    assert_allclose(fitted["beta"], baseline.beta, rtol=1e-10)
+    assert_allclose(fitted["vcov"], baseline.vcov, rtol=1e-8)
+    assert_allclose(fitted["curve"], baseline.dose_response()["std_error"], rtol=1e-8)
+
+
+FIXED_EFFECTS = DATA / "continuous_fixed_effects_reference"
+
+
+@pytest.mark.parametrize("cg", CONTROLS)
+@pytest.mark.parametrize("kind", COVARIATE_FITS)
+def test_several_fixed_effects_match_diff_diff(covariate_panel, kind, cg):
+    """diff-diff with both terms' levels as dummy covariates."""
+    for name, h in json.loads((FIXED_EFFECTS / "PROVENANCE.json").read_text())["files"].items():
+        assert digest(Path(__file__).parents[1] / name) == h, name
+    fml, options = COVARIATE_FITS[kind]
+    fit = fit_quietly(
+        fml + " + industry",
+        _with_industry(covariate_panel),
+        **COVARIATE_KW,
+        **options,
+        control_group=cg,
+    )
+    name = f"{kind}_{cg}"
+    overall = read_csv(FIXED_EFFECTS / f"overall_{name}.csv")
+    assert_allclose(fit.beta, overall["estimate"].to_numpy(), rtol=1e-12)
+    curves = read_csv(FIXED_EFFECTS / f"curves_{name}.csv")
+    dose = COVARIATE_GRID if kind == "continuous" else None
+    level, slope = fit.dose_response(dose=dose), fit.dose_response("slope", dose=dose)
+    assert_allclose(level["dose"].to_numpy(), curves["dose"].to_numpy())
+    for frame, target in ((level, "att"), (slope, "acrt")):
+        assert_allclose(frame["estimate"].to_numpy(), curves[target].to_numpy(), rtol=1e-11)
+        assert_allclose(
+            frame["std_error"].to_numpy(), curves[f"{target}_se"].to_numpy(), rtol=1e-10
+        )
+    cells = read_csv(FIXED_EFFECTS / f"cells_{name}.csv")
+    assert fit._att.cells == list(zip(cells["g"], cells["t"], strict=True))
+    assert_allclose(fit._att.beta, cells["att"].to_numpy(), rtol=1e-10, atol=1e-13)
+    assert_allclose(fit._acrt.beta, cells["acrt"].to_numpy(), rtol=1e-10, atol=1e-13)
+    event = read_csv(FIXED_EFFECTS / f"event_{name}.csv")
+    assert_allclose(fit.aggregate().beta, event["estimate"].to_numpy(), rtol=1e-10, atol=1e-13)
+
+
+def test_several_fixed_effects_do_not_depend_on_threads_or_batches(covariate_panel):
+    data = _with_industry(covariate_panel)
+    options = dict(panel=("id", "time"), cohort="first_treat", dose="dose")
+    base = fit_quietly("y ~ x | region + industry", data, **options, n_threads=2)
+    one = fit_quietly(
+        "y ~ x | region + industry", data, **options, n_threads=1, batch_units=37, preprocess_mb=4
+    )
+    assert_allclose(one.beta, base.beta, rtol=1e-11)
+    assert_allclose(one.vcov, base.vcov, rtol=1e-9)

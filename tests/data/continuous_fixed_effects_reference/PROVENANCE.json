@@ -1,0 +1,25 @@
+{
+  "reference": "diff-diff 4.0.0 (ContinuousDiD, estimation_method='reg', covariates x and the dummies of region and of a unit-level industry, (id * 7 + 3) mod 5, at the base period, varying base period), with never-treated and with not-yet-treated controls, a cubic spline in the continuous dose and the saturated regression of the discrete dose. diff-diff absorbs no fixed effects; additive fixed effects are the same regression as their dummies, so did_continuous absorbs both terms (y ~ x | region + industry) and is compared with these fits. Point estimates, curves and their standard errors, cells and event-study estimates are compared directly. diff-diff's overall and event-study standard errors hold estimated shares fixed; the dense oracle checks did_continuous's.",
+  "files": {
+    "benchmarks/external/continuous_covariates_panel.py": "b8c5d2ab7f3fc318d4d2aa25d1c47460ad8bf77afbef0ecd1d0870ebee9b6460",
+    "benchmarks/external/continuous_fixed_effects_reference.py": "dd465ec466b4ec9eb601dc478d5f8f28aadddcd0dd91948ddbbb29ac25ed264a",
+    "tests/data/continuous_covariates_panel.csv": "9108011b7ce8c17ccd2f0998b7baf9534839f7b688a097b1b02e1d15370577e9",
+    "tests/data/continuous_fixed_effects_reference/cells_continuous_never_treated.csv": "9ff6115ce10b3047c66c5d0620c5a402762504216dc0e75907ca0599d861ff77",
+    "tests/data/continuous_fixed_effects_reference/cells_continuous_not_yet_treated.csv": "256438b9b67577f30105419f733345628f01dea2c2a94a857b5a16d73e4cfcc7",
+    "tests/data/continuous_fixed_effects_reference/cells_discrete_never_treated.csv": "f4bc90246dcf23a5471f7e27873509606bf6f3b7368b59123cf079324968062b",
+    "tests/data/continuous_fixed_effects_reference/cells_discrete_not_yet_treated.csv": "5e7ef42537a61af88f9f3d0df19f712e4363f91c912e3c52345209cb2febcd9a",
+    "tests/data/continuous_fixed_effects_reference/curves_continuous_never_treated.csv": "1d1299de97e2899e313a5e0ce9a423bb523ed7a6c6431a823965eff932f14944",
+    "tests/data/continuous_fixed_effects_reference/curves_continuous_not_yet_treated.csv": "657d91d3b0fb762df7f8f4d57001213a2af4f9491c5afee538563487e44c7c7d",
+    "tests/data/continuous_fixed_effects_reference/curves_discrete_never_treated.csv": "98de10015bea26a2f5475f6f54be133f85078f8580ddf7349641389bbf390bd3",
+    "tests/data/continuous_fixed_effects_reference/curves_discrete_not_yet_treated.csv": "03b7ad15d67af1deaedba5bf70d73aa530136b70af7e11840b2296210741a311",
+    "tests/data/continuous_fixed_effects_reference/event_continuous_never_treated.csv": "bce7888bc8f83c1b4695d52564ac7c9307797b4ec1ddf80ff008469537d23b0a",
+    "tests/data/continuous_fixed_effects_reference/event_continuous_not_yet_treated.csv": "3e70d13714dd4f24545d31ddd3b70aa85a06ae29b94b56ee57c1e809bbaea575",
+    "tests/data/continuous_fixed_effects_reference/event_discrete_never_treated.csv": "c52932c6db1cd12bf8d26af5f37ea53ec38776088f9e64b552b6675a44bf4e7c",
+    "tests/data/continuous_fixed_effects_reference/event_discrete_not_yet_treated.csv": "cd5161c1abdea934a8165f811cf30b8031e42b03afcd16fc5a41d2e15bc454d5",
+    "tests/data/continuous_fixed_effects_reference/overall_continuous_never_treated.csv": "72f9d505f725dc18df65f3aeb22bef3e484d46c1fb2fb24ff6d3702729c640ba",
+    "tests/data/continuous_fixed_effects_reference/overall_continuous_not_yet_treated.csv": "a780457b3f26a444ea7afe4c0e5ee6758ddf1dae025675976227d09b9595dc0f",
+    "tests/data/continuous_fixed_effects_reference/overall_discrete_never_treated.csv": "e8a850b5d4e31536f72f1c12580d7a019032cadb03e01f2a221480051988a2b9",
+    "tests/data/continuous_fixed_effects_reference/overall_discrete_not_yet_treated.csv": "906a5ced53f2052f8cefcfba0db0ee768123dafe6adc65ea2dccb7a74a8e1de2",
+    "tests/data/continuous_fixed_effects_reference/versions.csv": "0fe3452c547967860efa31c68debe86e4b0b0e034205b5c5ac668b80c913149c"
+  }
+}
