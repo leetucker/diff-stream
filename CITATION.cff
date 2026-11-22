@@ -8,7 +8,7 @@ authors:
     given-names: Lee
     email: lee.c.tucker@census.gov
 version: 0.3.0
-date-released: 2026-11-20
+date-released: 2026-11-22
 license: MIT
 repository-code: "https://github.com/leetucker/diff-stream"
 url: "https://github.com/leetucker/diff-stream"
