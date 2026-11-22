@@ -36,6 +36,9 @@
 .. autoclass:: RefitBootstrapResult
    :members:
 
+.. autoclass:: TrendSensitivityResult
+   :members: breakdown, M, plot, summary_text, summary_dict
+
 .. autoexception:: LowEffectiveSampleWarning
 
 .. autoexception:: ReferenceWindowWarning

@@ -298,6 +298,11 @@ class DoseResponseResult(RegressionResult):
             }
         )
 
+    def trend_sensitivity(self, **options):
+        """Not available for continuous treatments: the sensitivity analysis
+        (Rambachan and Roth, 2023) is defined for a binary event study."""
+        raise ValueError("trend_sensitivity is not available for did_continuous results")
+
     def aggregate(self, kind="event_time", *, target="level", **options):
         """Aggregate the binarized ATT (target="level") or the ACRT (target="slope").
 

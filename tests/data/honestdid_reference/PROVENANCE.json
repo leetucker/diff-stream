@@ -1,0 +1,9 @@
+{
+  "reference": "R HonestDiD 0.2.8 on the mpdta panel: honest_did() (HonestDiD:::honest_did.AGGTEobj) on did's Callaway-Sant'Anna event study with base_period = 'universal' (relative_magnitude with C-LF and Conditional, smoothness with FLCI and C-LF, at honest_did's 100 grid points), and createSensitivityResults(_relativeMagnitudes) on a fixest TWFE event study of the never-treated counties and the 2006 cohort (C-LF, Conditional, FLCI, C-F), with the event studies they used. R's folded-normal quantile is replaced by the exact one, and its least-favorable critical values are recorded with fingerprints of their covariances, so the comparisons are exact. Three TWFE cases in which R stops with an error are recorded with the message.",
+  "files": {
+    "benchmarks/external/honestdid_reference.R": "3a4f93b19d3d11a45002ce0afe488b6af43a57be87f648eb2e231701c87cb0ba",
+    "tests/data/mpdta.csv": "2283bea1221a152420f98dfa20f633c5d054ea51d881115c8cd702a97bcd3167",
+    "tests/data/honestdid_reference/R_session.txt": "40097369e18956461b4fead7e3aac8f36807017e5416efd497fd8977a642a254",
+    "tests/data/honestdid_reference/honestdid.json.gz": "9b2322f53ce3047e1da69653b8af350a34330c25a4099f98f943ca4071198256"
+  }
+}

@@ -19,6 +19,8 @@ from ._present import (
 from .aggregation import period_type, plan
 from .bjs import BJSInference
 from .bjs_placebo import BJSPlaceboResult
+from .sensitivity import PLOT_DOC as _plot_doc
+from .sensitivity import SIGNATURE_DOC as _sensitivity_doc
 
 
 @dataclass(kw_only=True)
@@ -210,6 +212,45 @@ class DIDResult(RegressionResult):
         from .pretrend import pretrend_test
 
         return pretrend_test(self, level=level, horizons=horizons)
+
+    def plot_event_study(
+        self, *, horizons=None, alpha=0.05, joint=False, ax=None, title=None, **joint_options
+    ):
+        """Plot the event study (see below)."""
+        from .sensitivity import plot_event_study
+
+        return plot_event_study(
+            self, horizons=horizons, alpha=alpha, joint=joint, ax=ax, title=title, **joint_options
+        )
+
+    def trend_sensitivity(
+        self,
+        *,
+        target=None,
+        horizons=None,
+        restriction="relative_magnitudes",
+        M=None,
+        bias=None,
+        monotonicity=None,
+        ci_method=None,
+        alpha=0.05,
+        **options,
+    ):
+        """Sensitivity of the event study to violations of parallel trends (see below)."""
+        from .sensitivity import trend_sensitivity
+
+        return trend_sensitivity(
+            self,
+            target=target,
+            horizons=horizons,
+            restriction=restriction,
+            M=M,
+            bias=bias,
+            monotonicity=monotonicity,
+            ci_method=ci_method,
+            alpha=alpha,
+            **options,
+        )
 
     def placebos(self):
         """Separate BJS clean-lead regression result, fitted with pretrend_leads=L.
@@ -534,3 +575,7 @@ class DIDResult(RegressionResult):
             ),
             *self.diagnostics.get("warnings", []),
         ]
+
+
+DIDResult.trend_sensitivity.__doc__ = _sensitivity_doc
+DIDResult.plot_event_study.__doc__ = _plot_doc

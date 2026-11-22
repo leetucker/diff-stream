@@ -24,10 +24,11 @@ from .etwfe import did_extended_twfe  # noqa: E402
 from .gardner import TwoStageResult, did_two_stage  # noqa: E402
 from .reference import ReferenceWindowWarning  # noqa: E402
 from .results import DIDResult  # noqa: E402
+from .sensitivity import TrendSensitivityResult  # noqa: E402
 from .stacked import StackedResult, did_stacked  # noqa: E402
 from .twfe_weights import TWFEWeightResult, twfe_weights  # noqa: E402
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = [
     "did_callaway_santanna",
     "did_sun_abraham",
@@ -49,6 +50,7 @@ __all__ = [
     "BaconResult",
     "TWFEWeightResult",
     "RefitBootstrapResult",
+    "TrendSensitivityResult",
     "BootstrapFailureWarning",
     "LowEffectiveSampleWarning",
     "ReferenceWindowWarning",

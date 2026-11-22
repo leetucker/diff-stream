@@ -36,6 +36,12 @@ class BJSPlaceboResult(RegressionResult):
         """Observed cohort/date support and original-scale weight totals."""
         return label_frame(self._support, labels_of(self))
 
+    def trend_sensitivity(self, **options):
+        """Not available: the leads have no covariance with the treatment effects."""
+        from .sensitivity import trend_sensitivity
+
+        return trend_sensitivity(self, **options)
+
     def pretrend_test(self, *, level="auto", horizons=None):
         """Joint clean-lead Wald test; horizon selection does not refit the model."""
         from .pretrend import pretrend_test
